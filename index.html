@@ -1,0 +1,3108 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#03080b">
+<title>V121 • KS Operations Center V20</title>
+<script>window.CESIUM_BASE_URL="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/";</script>
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Cesium.js"></script>
+<link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Widgets/widgets.css">
+<style id="embedded-style">
+*{box-sizing:border-box}html,body,#cesiumContainer{margin:0;width:100%;height:100%;overflow:hidden}body{background:#010306;color:#eef4f4;font-family:"Segoe UI",Arial,sans-serif}.svg-sprite{position:absolute;width:0;height:0;overflow:hidden}
+:root{--lime:#aaff24;--orange:#ff8b24;--cyan:#29bfff;--glass:rgba(3,10,14,.92);--line:rgba(255,255,255,.13)}
+#cesiumContainer{position:fixed;top:72px;left:300px;right:0;bottom:0;width:auto;height:auto;background:#010306}
+.cesium-viewer-toolbar,.cesium-viewer-animationContainer,.cesium-viewer-timelineContainer,.cesium-viewer-bottom{display:none!important}
+.topbar{position:fixed;z-index:30;top:0;left:0;right:0;height:72px;display:grid;grid-template-columns:330px 1fr 540px;align-items:center;padding:0 18px;background:linear-gradient(90deg,#03090c,#081013,#03090c);border-bottom:1px solid rgba(170,255,36,.16)}
+.brand{display:flex;align-items:center;gap:12px}.brand>b{font-size:40px;color:var(--lime);font-style:italic}.brand strong{display:block;font-size:17px;letter-spacing:.16em}.brand small{display:block;color:var(--lime);font-size:9px;letter-spacing:.12em;margin-top:2px}
+nav{display:flex;justify-content:center;gap:28px;font:800 10px monospace;letter-spacing:.13em}nav a{color:#dfe6e6}
+.right-zone{display:grid;grid-template-columns:180px 1fr;align-items:center;gap:16px}.mode-switch{display:flex;padding:3px;border:1px solid #ffffff18;border-radius:18px;background:#03080b}.mode-switch button{flex:1;height:28px;border:0;border-radius:15px;background:transparent;color:#7f8b8c;font:800 9px monospace}.mode-switch button.active{color:var(--lime);background:#102016;box-shadow:inset 0 0 0 1px #aaff244f}
+.telemetry{text-align:right;font:700 9px monospace;color:#8b9898}.telemetry b{color:var(--lime);font-size:13px;margin-left:7px}.telemetry>div:last-child{color:var(--lime);font-size:10px;margin-top:5px;white-space:nowrap}.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.glass{background:linear-gradient(180deg,rgba(4,12,16,.95),rgba(2,8,11,.92));border:1px solid rgba(170,255,36,.18);box-shadow:0 18px 60px #0008;backdrop-filter:blur(14px)}
+.left-panel{position:fixed;z-index:20;left:12px;top:88px;width:274px;border-radius:16px;padding:11px}.section-title{display:flex;align-items:center;gap:8px;color:var(--lime);font-size:14px;font-weight:900;padding:4px 6px 10px}.section-title svg{width:18px;height:18px}.master-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.master-actions button{height:42px;border-radius:9px;border:1px solid #ffffff1f;background:#071014;color:#dfe6e6;font:800 9px monospace}.master-actions #showAll{border-color:#aaff2440;color:#e6ffc6}.eye{color:var(--lime);font-size:14px;margin-right:4px}
+.layer-row{display:grid;grid-template-columns:30px 1fr 38px;align-items:center;gap:8px;padding:10px 5px;border-top:1px solid #ffffff12}.layer-icon svg{width:22px;height:22px}.layer-icon.green{color:var(--lime)}.layer-icon.orange{color:var(--orange)}.layer-icon.cyan{color:var(--cyan)}.layer-icon.white{color:#fff}.layer-row b{display:block;font-size:11px}.layer-row small{display:block;color:#829090;font-size:8px;margin-top:3px}.layer-row input{appearance:none;width:34px;height:18px;border-radius:12px;background:#293236;position:relative}.layer-row input:after{content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;border-radius:50%;background:#dbe2e2;transition:.18s}.layer-row input:checked{background:#75c91c}.layer-row input:checked:after{left:18px;background:#e2ffb8}
+.tools-title{color:var(--lime);font:900 10px monospace;letter-spacing:.1em;padding:10px 6px 4px}.tool-row{width:100%;display:grid;grid-template-columns:27px 1fr 12px;align-items:center;gap:7px;min-height:47px;background:transparent;border:0;border-top:1px solid #ffffff12;color:#eef4f4;text-align:left;padding:7px 6px}.tool-row svg{width:21px;height:21px}.tool-row b{display:block;font-size:10px}.tool-row small{display:block;font-size:8px;color:#7f8d8d;margin-top:2px}.tool-row i{font-size:20px;color:#788687}.tool-row .plus{font-size:23px;color:var(--lime)}
+.selected-panel{position:fixed;z-index:22;right:14px;top:96px;width:245px;border-radius:15px;padding:14px}.selected-head{display:flex;justify-content:space-between;color:var(--lime);font:900 9px monospace;letter-spacing:.1em;border-bottom:1px solid #ffffff14;padding-bottom:10px}.selected-head button{border:0;background:transparent;color:#8b9999;font-size:20px}.info-code{font-size:18px;color:var(--lime);font-weight:900;margin-top:14px}.info-name{font-size:12px;font-weight:700;margin-top:4px}.info-grid{display:grid;grid-template-columns:78px 1fr;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #ffffff12;font-size:9px}.info-grid span{color:#788788}.info-grid b{font-weight:700}.field{display:block;margin-top:12px}.field span{display:block;color:#8c9a9a;font:800 8px monospace;margin-bottom:5px}.field input,.field select{width:100%;padding:10px;background:#020608;border:1px solid #ffffff20;border-radius:7px;color:white}.selected-panel>button,.modal-card>button{width:100%;margin-top:8px;padding:10px;border-radius:7px;border:1px solid #ffffff1e;background:#081014;color:#e6eeee;font:800 9px monospace}.primary-action{background:var(--lime)!important;color:#061006!important;border-color:var(--lime)!important}.danger{color:#ff786c!important}#cameraOutput{width:100%;height:58px;margin-top:8px;background:#020608;border:1px solid #aaff2430;color:#cfff92;font:8px monospace;padding:8px}
+.bottom-dock{position:fixed;z-index:18;left:10px;right:10px;bottom:8px;min-height:94px;border-radius:14px;display:grid;grid-template-columns:190px 430px minmax(350px,1fr) minmax(310px,.9fr) 46px;overflow:hidden}.bottom-dock section{min-width:0}.primary-airports{display:grid;grid-template-columns:1fr 1fr;background:#06100d}.primary-airports button{border:0;border-right:1px solid #ffffff12;background:transparent;color:white}.primary-airports b{display:block;color:var(--lime);font-size:27px}.primary-airports span{display:block;font-size:9px;line-height:1.25;color:#e1e8e8;font-weight:700}
+.airport-strip{display:grid;grid-template-columns:repeat(6,1fr)}.airport-strip button{border:0;border-right:1px solid #ffffff12;background:transparent;color:white}.airport-strip svg{width:24px;height:24px;color:var(--lime)}.airport-strip b{display:block;font-size:14px;color:var(--lime)}.airport-strip span{display:block;font-size:8.5px;color:#dfe5e5;font-weight:600;margin-top:3px}
+.storage-strip,.aliaga-strip{position:relative;padding-top:22px;border-left:1px solid #ffffff12}.strip-title{position:absolute;top:5px;left:9px;display:flex;align-items:center;gap:5px;font:900 9px monospace}.strip-title svg{width:15px;height:15px}.orange{color:var(--orange)}.cyan{color:var(--cyan)}.strip-cards{height:72px;display:flex}.strip-cards button{flex:1;border:0;border-right:1px solid #ffffff10;background:transparent;padding:7px;color:white}.strip-cards svg{width:27px;height:27px}.strip-cards b{display:block;font-size:10px;line-height:1.15;margin-top:3px}.storage-strip .strip-cards{color:var(--orange)}.aliaga-strip .strip-cards{color:var(--cyan)}.world-btn{border:0;border-left:1px solid #ffffff12;background:transparent;color:var(--lime)}.world-btn svg{width:24px;height:24px}
+.private-dock{display:flex!important;align-items:stretch;justify-content:center;overflow-x:auto;padding:0 10px}.private-group{display:flex;border-right:1px solid #ffffff12}.private-title{width:90px;padding:13px 9px;color:var(--lime);font:900 9px monospace}.private-cards{display:flex}.private-cards button{min-width:140px;border:0;border-left:1px solid #ffffff10;background:transparent;color:white}.private-cards b{display:block;font-size:11px}.private-cards small{font-size:8px;color:#9ba7a7}.private-empty{display:flex;align-items:center;gap:12px;color:#829090}.private-empty b{color:var(--lime)}
+.modal{position:fixed;z-index:100;inset:0;background:#0009;display:grid;place-items:center}.modal-card{position:relative;width:min(430px,calc(100% - 36px));padding:26px;background:#061015;border:1px solid #aaff2440;border-radius:15px}.modal-card h3{color:var(--lime);margin-top:0}.modal-card p{font-size:13px;color:#b7c2c2}.close{position:absolute!important;right:10px;top:6px!important;width:auto!important;background:transparent!important;border:0!important;font-size:22px!important}.capture{padding:10px;margin-top:12px;background:#020608;border:1px solid #ffffff15;color:#cfff92;font:9px monospace}
+.token-gate{position:fixed;z-index:200;inset:0;display:grid;place-items:center;background:#010407ed}.token-card{width:min(500px,calc(100% - 40px));padding:30px;background:#050b0f;border:1px solid #aaff2440}.token-card small{color:var(--lime)}.token-card h1{font-size:38px}.token-card p{color:#9ba8a8}.token-card input{width:100%;padding:12px;background:#020507;border:1px solid #ffffff22;color:white}.token-card button{margin-top:10px;padding:12px 18px;background:var(--lime);border:0;font-weight:900}
+[hidden]{display:none!important}
+@media(max-width:1300px){.topbar{grid-template-columns:280px 1fr 470px}.bottom-dock{grid-template-columns:180px 390px 1fr 46px}.aliaga-strip{display:none}}
+/* ================= V21 refinements ================= */
+.topbar{
+  grid-template-columns:520px 1fr 430px!important;
+  padding:0 14px!important;
+}
+.brand-zone{display:flex;align-items:center;gap:22px;min-width:0}
+.brand{flex:0 0 auto}
+.brand strong{font-size:18px!important}
+.brand small{font-size:9px!important}
+.brand-zone .mode-switch{width:176px;flex:0 0 176px}
+.brand-zone .mode-switch button{font-size:10px!important}
+nav{gap:30px!important;font-size:11px!important}
+.right-zone{display:block!important;min-width:0}
+.telemetry{text-align:right!important;padding-right:6px}
+.telemetry>div:first-child{font-size:10px!important;white-space:nowrap}
+.telemetry>div:last-child{
+  font-size:10.5px!important;
+  white-space:nowrap!important;
+  word-spacing:2px!important;
+  overflow:visible!important;
+}
+.telemetry b{font-size:14px!important}
+
+/* ADB/BJV balanced: ADNAN MENDERES stays one line */
+.primary-airports{grid-template-columns:1fr 1fr!important}
+.primary-airports button{padding:8px 5px!important;min-width:0}
+.primary-airports b{font-size:27px!important;line-height:1}
+.primary-airports span{
+  font-size:8.5px!important;
+  line-height:1.28!important;
+  white-space:normal!important;
+}
+.primary-airports button[data-code="ADB"] span:first-line{white-space:nowrap}
+.primary-airports button[data-code="ADB"]{min-width:96px}
+.primary-airports button[data-code="BJV"]{min-width:94px}
+
+/* Category headings larger and clearer */
+.strip-title{
+  font-size:10.5px!important;
+  letter-spacing:.035em!important;
+  font-weight:900!important;
+}
+.strip-title svg{width:18px!important;height:18px!important}
+.storage-strip,.aliaga-strip{padding-top:25px!important}
+
+/* Big visual icons, closer to the approved mockup */
+.strip-cards svg{width:31px!important;height:31px!important;margin-bottom:2px}
+.strip-cards b{font-size:10px!important;font-weight:800!important}
+.storage-strip .strip-cards button{color:var(--orange)!important}
+.aliaga-strip .strip-cards button{color:var(--cyan)!important}
+
+/* Selected point */
+.selected-panel .info-code{font-size:17px!important}
+.selected-panel .info-name{font-size:10px!important;color:#aeb9b9!important}
+#saveView{
+  background:var(--orange)!important;
+  color:#140900!important;
+  border-color:var(--orange)!important;
+}
+#saveName{color:#c9ff85!important}
+
+/* slightly more compact panel because content is cleaner */
+.selected-panel{width:238px!important}
+
+/* Keep header readable on wide desktop */
+@media(max-width:1500px){
+  .topbar{grid-template-columns:470px 1fr 390px!important}
+  .brand-zone{gap:14px}
+  .brand-zone .mode-switch{width:154px;flex-basis:154px}
+  nav{gap:20px!important}
+}
+
+/* V22 — dynamic operation dock */
+.storage-strip .strip-cards,
+.aliaga-strip .strip-cards{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(105px,1fr))!important;
+}
+.storage-strip .strip-cards button{color:var(--orange)!important}
+.storage-strip .strip-cards .stad-storage{color:var(--orange)!important}
+.aliaga-strip .strip-cards button{color:var(--cyan)!important}
+
+/* V23 Logistics */
+.brand#brandSecret{cursor:pointer;user-select:none}.brand#brandSecret:hover strong{color:#dfffaa}
+.logistics-head{padding:13px 6px 7px;color:var(--lime);font:900 11px monospace;letter-spacing:.08em;border-top:1px solid #ffffff12}
+.simulate-all,.stop-sim{width:100%;height:38px;margin-top:8px;border-radius:8px;font:900 9px monospace}.simulate-all{background:rgba(170,255,36,.13);border:1px solid #aaff2450;color:var(--lime)}.stop-sim{background:#081014;border:1px solid #ffffff1d;color:#b8c3c3}
+.logistics-dock{grid-template-columns:150px 1fr 48px!important}.log-summary{display:flex!important;flex-direction:column;justify-content:center;align-items:center;background:#07100d;border-right:1px solid #ffffff12}.log-summary b{font-size:25px;color:var(--lime)}.log-summary span{font:900 9px monospace}.log-summary small{font:800 8px monospace;color:#859393;margin-top:5px}
+.log-route-list{display:grid!important;grid-template-columns:repeat(4,minmax(155px,1fr));overflow-x:auto}.log-route-list button{min-width:155px;border:0;border-right:1px solid #ffffff10;background:transparent;color:#e9eeee;padding:9px;text-align:left}.log-route-list button span{float:left;font-size:20px;margin-right:8px}.log-route-list button b{display:block;font-size:9.5px;white-space:nowrap}.log-route-list button small{display:block;font:700 7.5px monospace;margin-top:5px}.log-route-list .sea span,.log-route-list .sea small{color:var(--cyan)}.log-route-list .road span,.log-route-list .road small{color:var(--orange)}
+.secret-card{width:350px!important}.secret-error{height:18px;color:#ff765f;font:800 9px monospace;padding-top:6px}#secretPassword{font-size:16px;letter-spacing:.05em}
+
+/* V24 FRESH */
+.log-route-list button small{font-size:9px!important;line-height:1.35!important;font-weight:900!important}
+
+/* V25 backup controls */
+.backup-icon{font-size:22px;color:var(--lime);font-weight:900;line-height:1}
+#exportDataBtn.saved{background:rgba(170,255,36,.12)!important;box-shadow:inset 0 0 0 1px rgba(170,255,36,.35)}
+.backup-status{min-height:17px;margin-top:8px;font:800 8px monospace;letter-spacing:.04em}
+.backup-status.ok{color:#b7ff4b}.backup-status.bad{color:#ff765f}
+
+/* ================= V26 FIXED ================= */
+
+/* readable secondary labels */
+.layer-row small,.tool-row small{
+  font-size:9px!important;
+  line-height:1.35!important;
+  color:#a5b1b1!important;
+}
+
+/* save crosshair & feedback */
+.aim-crosshair{
+  position:fixed;z-index:17;pointer-events:none;
+  color:#b7ff36;font:800 22px/1 monospace;
+  transform:translate(-50%,-50%);
+  text-shadow:0 0 7px #000,0 0 10px rgba(170,255,36,.35);
+  opacity:.78;
+}
+#saveView.saved-flash{
+  background:#8fdc27!important;color:#071006!important;
+  box-shadow:0 0 18px rgba(170,255,36,.35)!important;
+}
+#saveView:disabled{opacity:1!important}
+
+/* logistics subtitle readability */
+.log-route-list button small{
+  font-size:9px!important;
+  line-height:1.35!important;
+  font-weight:900!important;
+}
+
+/* dynamic operation dock */
+#operationDock{transition:grid-template-columns .22s ease,height .22s ease}
+#operationDock.tall-dock{min-height:134px!important}
+.airport-strip.two-row{
+  grid-template-columns:repeat(3,1fr)!important;
+  grid-template-rows:repeat(2,1fr)!important;
+}
+.storage-strip .strip-cards.two-row,
+.aliaga-strip .strip-cards.two-row{
+  grid-template-columns:repeat(3,1fr)!important;
+  grid-template-rows:repeat(2,1fr)!important;
+}
+.compact button{padding-left:4px!important;padding-right:4px!important}
+.compact svg{width:22px!important;height:22px!important}
+.two-row svg{width:19px!important;height:19px!important}
+.two-row b{font-size:9px!important}
+.two-row span{font-size:7.8px!important}
+
+/* STAD storage orange */
+.storage-strip [data-code="STAD"]{color:var(--orange)!important}
+
+/* ================= V27 WEB READY ================= */
+.aim-crosshair{display:none!important}
+
+/* Logistics HUD: transparent, compact, content-driven */
+.logistics-dock{
+  background:rgba(3,10,14,.34)!important;
+  backdrop-filter:blur(6px)!important;
+  -webkit-backdrop-filter:blur(6px)!important;
+  min-height:76px!important;
+  height:auto!important;
+  overflow:visible!important;
+  align-items:stretch!important;
+}
+.log-route-list{
+  display:grid!important;
+  grid-template-columns:repeat(var(--log-cols,6),minmax(0,1fr))!important;
+  grid-auto-rows:minmax(58px,auto)!important;
+  overflow:visible!important;
+  align-content:stretch!important;
+}
+.log-route-list button{
+  min-width:0!important;
+  min-height:58px!important;
+  padding:9px 10px!important;
+  background:rgba(2,8,11,.18)!important;
+  border-right:1px solid rgba(255,255,255,.10)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+}
+.log-route-list button b{
+  font-size:10.8px!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  white-space:normal!important;
+}
+.log-route-list button small{
+  font-size:9.4px!important;
+  line-height:1.25!important;
+  font-weight:900!important;
+  margin-top:4px!important;
+}
+.log-route-list button span{font-size:21px!important}
+.log-summary{background:rgba(3,12,10,.30)!important}
+.logistics-dock .world-btn{background:rgba(3,12,10,.18)!important}
+
+/* When all network runs, upper HUDs become more transparent too. */
+.all-logistics-running .topbar{
+  background:rgba(3,9,12,.43)!important;
+  backdrop-filter:blur(6px)!important;
+}
+.all-logistics-running .left-panel{
+  background:rgba(4,12,16,.40)!important;
+  backdrop-filter:blur(6px)!important;
+}
+.all-logistics-running .logistics-dock{
+  background:rgba(2,8,11,.22)!important;
+}
+
+/* Kırıkkale is storage orange */
+[data-code="KIRIKKALE"]{color:var(--orange)!important}
+
+/* ================= V28 LOGISTICS SIMULATION ================= */
+
+/* Bottom HUD is compact transparent glass, never a black wall */
+.logistics-dock{
+  background:rgba(2,8,12,.16)!important;
+  backdrop-filter:blur(4px)!important;
+  -webkit-backdrop-filter:blur(4px)!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:150px!important;
+  overflow:visible!important;
+}
+.log-summary{
+  background:rgba(3,10,12,.13)!important;
+}
+.log-route-list{
+  grid-template-columns:repeat(var(--log-cols,7),minmax(0,1fr))!important;
+  grid-auto-rows:62px!important;
+  align-content:center!important;
+  overflow:visible!important;
+}
+.log-route-list button{
+  min-height:62px!important;
+  padding:7px 9px!important;
+  background:rgba(2,8,12,.10)!important;
+  border-right:1px solid rgba(255,255,255,.08)!important;
+  border-bottom:1px solid rgba(255,255,255,.06)!important;
+}
+.log-route-list button b{
+  font-size:11px!important;
+  line-height:1.15!important;
+}
+.log-route-list button small{
+  font-size:9.5px!important;
+  line-height:1.15!important;
+}
+.logistics-dock .world-btn{
+  background:rgba(2,8,12,.08)!important;
+}
+
+/* In full simulation, chrome is nearly invisible but controls remain readable */
+.all-logistics-running .topbar{
+  background:rgba(2,8,12,.12)!important;
+  backdrop-filter:blur(3px)!important;
+}
+.all-logistics-running .left-panel{
+  background:rgba(2,8,12,.15)!important;
+  backdrop-filter:blur(3px)!important;
+}
+.all-logistics-running .logistics-dock{
+  background:rgba(2,8,12,.10)!important;
+}
+.all-logistics-running .log-route-list button,
+.all-logistics-running .log-summary,
+.all-logistics-running .logistics-dock .world-btn{
+  background:rgba(2,8,12,.07)!important;
+}
+
+/* Shipment notice */
+.shipment-alert{
+  position:fixed;
+  right:24px;
+  bottom:168px;
+  z-index:40;
+  width:270px;
+  min-height:70px;
+  padding:14px 76px 12px 15px;
+  border-radius:12px;
+  border:1px solid rgba(170,255,36,.30);
+  background:rgba(5,11,12,.66);
+  backdrop-filter:blur(7px);
+  box-shadow:0 8px 28px rgba(0,0,0,.28);
+}
+.shipment-alert b{
+  display:block;
+  color:var(--lime);
+  font:900 11px/1.2 monospace;
+  margin-bottom:7px;
+}
+.shipment-alert span{
+  display:block;
+  color:#d4dddd;
+  font:700 9px/1.3 monospace;
+}
+.shipment-alert em{
+  position:absolute;
+  right:15px;
+  top:20px;
+  color:var(--lime);
+  font:900 23px/1 monospace;
+  font-style:normal;
+}
+
+/* Make map labels read clearly in logistics overview */
+.all-logistics-running .cesium-viewer canvas{
+  filter:saturate(1.04) contrast(1.02);
+}
+
+@media(max-height:850px){
+ .logistics-dock{max-height:132px!important}
+ .log-route-list{grid-auto-rows:55px!important}
+ .log-route-list button{min-height:55px!important;padding:5px 7px!important}
+ .shipment-alert{bottom:145px}
+}
+
+/* ================= V29 FINAL ALIGNMENT ================= */
+
+/* Main bottom location/navigation strip: transparent over the map */
+.bottom-nav,
+.v29-bottom-nav{
+  background:transparent!important;
+  box-shadow:none!important;
+  border-top:1px solid rgba(166,255,35,.18)!important;
+  overflow:visible!important;
+  align-items:flex-end!important;
+}
+
+/* Every visual item uses one common baseline */
+.bottom-nav .nav-item,
+.bottom-nav .bottom-item,
+.bottom-nav [data-code]{
+  min-height:78px!important;
+  height:78px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  background:rgba(2,8,11,.28)!important;
+  backdrop-filter:blur(4px)!important;
+  -webkit-backdrop-filter:blur(4px)!important;
+}
+
+/* Group containers no longer create a thick black title row */
+.bottom-nav .group,
+.bottom-nav .nav-group,
+.v29-storage-group,
+.v29-aliaga-group{
+  position:relative!important;
+  background:rgba(2,8,11,.22)!important;
+  overflow:visible!important;
+  align-self:flex-end!important;
+}
+
+/* Storage and Aliaga titles float ABOVE their groups on fully transparent ground */
+.v29-storage-group::before,
+.v29-aliaga-group::before{
+  position:absolute;
+  left:14px;
+  top:-22px;
+  z-index:8;
+  padding:0 8px;
+  background:transparent!important;
+  font:900 10px/18px "Segoe UI",Arial,sans-serif;
+  letter-spacing:.35px;
+  white-space:nowrap;
+  text-shadow:0 2px 4px rgba(0,0,0,.95);
+  pointer-events:none;
+}
+.v29-storage-group::before{
+  content:"🚚  DEPOLAMA / ÇEKİŞ";
+  color:#ff8b24;
+}
+.v29-aliaga-group::before{
+  content:"🏭  ALİAĞA SOCAR TESİSLERİ";
+  color:#29bfff;
+}
+
+/* Hide duplicated in-flow headings where they exist */
+.v29-storage-group > .group-title,
+.v29-storage-group > .nav-title,
+.v29-storage-group > h3,
+.v29-aliaga-group > .group-title,
+.v29-aliaga-group > .nav-title,
+.v29-aliaga-group > h3{
+  display:none!important;
+}
+
+/* Same icon/name baseline across airport/storage/Aliağa */
+.bottom-nav svg,
+.bottom-nav .icon,
+.bottom-nav .nav-icon{
+  flex:0 0 28px!important;
+  width:28px!important;
+  height:28px!important;
+  margin:0 0 5px!important;
+}
+.bottom-nav b,
+.bottom-nav .name,
+.bottom-nav .nav-name{
+  min-height:15px!important;
+  line-height:15px!important;
+  margin:0!important;
+}
+.bottom-nav small,
+.bottom-nav .sub,
+.bottom-nav .nav-sub{
+  min-height:12px!important;
+  line-height:12px!important;
+  margin-top:2px!important;
+}
+
+/* Logistics route HUD remains compact and transparent */
+.logistics-dock{
+  background:rgba(2,8,12,.10)!important;
+  backdrop-filter:blur(3px)!important;
+  -webkit-backdrop-filter:blur(3px)!important;
+  max-height:136px!important;
+}
+.all-logistics-running .logistics-dock{background:rgba(2,8,12,.06)!important}
+.all-logistics-running .topbar{background:rgba(2,8,12,.07)!important}
+
+/* V111 NORMAL 2D SEARCH */
+.v111mapsearch{margin:10px 8px;padding:9px;border:1px solid #38501e;border-radius:8px;background:#06100d}
+.v111ttl{font-size:10px;font-weight:900;color:#aaff24;margin-bottom:6px}
+.v111row{display:flex;gap:5px}
+.v111row input{min-width:0;flex:1;background:#0b1517;color:#eef4f4;border:1px solid #35474b;border-radius:5px;padding:7px;font-size:9px}
+.v111row button{background:#17251a;color:#aaff24;border:1px solid #6da421;border-radius:5px;font-weight:900}
+#v111Stat{font-size:7px;color:#9aa8a8;margin-top:5px}
+
+/* CLEAN EMPTY ADB_3D SHELL */
+#ksV111Shell{display:none;position:fixed;inset:0;z-index:99990;pointer-events:none}
+#ksV111Shell.open{display:block}
+#ksV111Shell .bar{position:absolute;left:14px;right:14px;top:14px;height:56px;display:flex;align-items:center;justify-content:space-between;
+ padding:0 14px;border:1px solid #6f6048;border-radius:9px;background:rgba(5,12,11,.94);color:#f2e7c9;pointer-events:auto;box-shadow:0 12px 34px #0009}
+#ksV111Shell .bar>div{display:flex;flex-direction:column;gap:2px}
+#ksV111Shell .bar b{font:900 13px Segoe UI,Arial}
+#ksV111Shell .bar span{font:800 9px Segoe UI,Arial;color:#aeb8b3;letter-spacing:.8px}
+#ksV111Shell .bar button{padding:9px 14px;border-radius:6px;border:1px solid #806044;background:#1c140f;color:#f2e7c9;font-weight:900;cursor:pointer}
+#ksV111Shell .empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;
+ padding:22px 30px;border:1px solid #6f6048;border-radius:12px;background:rgba(5,12,11,.84);color:#f2e7c9}
+#ksV111Shell .empty b{font-size:17px}
+#ksV111Shell .empty span{font-size:12px}
+#ksV111Shell .empty small{color:#aeb8b3}
+body.ks-v111-3d #operationDock,body.ks-v111-3d .bottom-dock,body.ks-v111-3d .logistics-dock{opacity:0!important;pointer-events:none!important}
+
+
+/* V116 ADB 3D */
+#ks116{display:none;position:fixed;inset:0;z-index:300000;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#eee5d0}
+#ks116.open{display:block}
+body.ks116active>#cesiumContainer{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important}
+body.ks116active>.app-shell,body.ks116active>.topbar,body.ks116active>.left-panel,body.ks116active>.right-panel,body.ks116active>.bottom-dock,body.ks116active>.logistics-dock{display:none!important}
+.ks116top{position:absolute;left:5px;right:5px;top:5px;height:48px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,10,8,.97);border:1px solid #675a40;border-radius:7px;pointer-events:auto}
+.ks116top>div{display:flex;gap:7px;align-items:center}.ks116top>div:first-child{flex-direction:column;align-items:flex-start;gap:1px}.ks116top b{font-size:12px}.ks116top small{font-size:8px;color:#b7a47d;font-weight:900}.ks116top span{font-size:9px;color:#cab98f;font-weight:900}.ks116top button{padding:7px 10px}
+#ks116 button{border:1px solid #554c3b;background:#101916;color:#eee4cc;border-radius:6px;font-weight:900;cursor:pointer}
+.ks116panel{position:absolute;left:5px;top:60px;bottom:8px;width:235px;padding:9px;background:rgba(3,11,9,.96);border:1px solid #574d39;border-radius:8px;overflow:auto;pointer-events:auto}
+.ks116panel h4{margin:5px 2px 7px;color:#cbb98e;font-size:9px;letter-spacing:.7px}.ks116grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}.ks116grid button{min-height:31px;font-size:9px}.ks116grid button.active{background:#756548!important;border-color:#f2e7c9!important}
+#ks116List{display:flex;flex-direction:column;gap:4px}#ks116List button{text-align:left;padding:7px;font-size:9px}#ks116List button.sel{background:#756548;border-color:#f2e7c9}
+#ks116Status{position:absolute;left:252px;bottom:10px;padding:8px 11px;background:rgba(3,10,8,.94);border:1px solid #514a39;border-radius:7px;font-size:9px;font-weight:900}
+.ks116pad{position:absolute;right:12px;bottom:12px;width:174px;padding:8px;display:grid;grid-template-columns:repeat(3,54px);gap:5px;background:rgba(3,11,9,.96);border:1px solid #594f3e;border-radius:9px;pointer-events:auto}.ks116pad button{height:40px}
+
+
+#ks116Marquee{position:fixed;z-index:300020;pointer-events:none;border:2px solid #f2e7c9;background:rgba(242,231,201,.15);box-shadow:0 0 12px rgba(242,231,201,.35)}
+body.ks116active #selectedPanel,
+body.ks116active #operationDock,
+body.ks116active #helpPanel,
+body.ks116active #searchPanel,
+body.ks116active .bottom-dock,
+body.ks116active .logistics-dock{display:none!important}
+
+
+/* V120 categorized library + V95-style editing pad */
+#ks120Cats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+#ks120Cats button{min-height:32px;font-size:9px}
+#ks120Cats button.ks131iconCat{
+  background:#050708!important;color:#fff!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:7px!important;padding:4px 8px!important;
+}
+#ks120Cats button.ks131iconCat svg{
+  width:19px!important;height:19px!important;flex:0 0 19px!important;
+  color:#fff!important;fill:none;stroke:#fff;
+}
+#ks120Cats button.ks131iconCat.aircraft svg{fill:#fff!important;stroke:none!important}
+#ks120Cats button.ks131iconCat span{font:900 9px Segoe UI!important;letter-spacing:.3px!important}
+
+#ks120Cats button.active,#ks120SubLibrary{margin:6px 0 10px;padding:6px;border:1px solid #3e453d;border-radius:7px;background:#08110f}
+.ks120subTitle{font:900 8px Segoe UI;color:#cbb98e;letter-spacing:.7px;margin:0 0 5px 1px}
+.ks120subgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.ks120subgrid button{min-height:31px;font-size:9px}
+.ks120subgrid button.active{background:#756548!important;border-color:#f2e7c9!important;color:#fff!important}
+#ks120Palette{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:-4px 0 10px;padding:7px;background:#08110f;border:1px solid #4c4a3d;border-radius:7px}
+#ks120Palette[hidden]{display:none!important}
+#ks120Palette .ks120swatch,#ks120Palette input{width:100%;height:25px;padding:0;border:1px solid #7c7462;border-radius:4px;min-width:0}
+.ks116pad{width:220px!important;grid-template-columns:repeat(3,1fr)!important;gap:3px!important;padding:4px!important;border-color:#415a36!important}
+.ks116pad button{min-height:50px!important;height:50px!important;background:#0e1c13!important;color:#aaff24!important;border:1px solid #5d8128!important;font-size:15px!important}
+.ks116pad .arrow{font-size:30px!important;font-weight:1000!important}
+.ks116pad small{font-size:9px!important}.ks116pad .danger{color:#ff6a67!important;border-color:#87413d!important;font-size:16px!important}
+
+
+/* V121 property editor / autosave / draft points */
+#ks121SaveState{font-size:8px!important;color:#9fb08b!important;border:1px solid #40513c;border-radius:5px;padding:5px 7px;transition:.15s}
+#ks121SaveState.saved{color:#baff6a!important;border-color:#83a847;box-shadow:0 0 8px rgba(160,255,80,.25)}
+#ks121Props{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:7px 0 10px;padding:8px;border:1px solid #4c4a3d;border-radius:7px;background:#08110f}
+#ks121Props[hidden]{display:none!important}
+#ks121Props .ks121propTitle{grid-column:1/-1;font:900 9px Segoe UI;color:#d4c399;letter-spacing:.5px}
+#ks121Props label{display:flex;flex-direction:column;gap:3px;font:800 8px Segoe UI;color:#aebaa8}
+#ks121Props input{width:100%;box-sizing:border-box;background:#0f1815;color:#f0e7cf;border:1px solid #596052;border-radius:5px;padding:5px}
+#ks121Props .ks121hint{grid-column:1/-1;font:700 8px Segoe UI;color:#8f9a8d;line-height:1.35}
+
+</style>
+</head>
+<body>
+<style>
+#standaloneBootError{
+ display:none;position:fixed;inset:0;z-index:999999;
+ background:#05090b;color:#b7ff36;font:700 15px/1.5 Consolas,monospace;
+ padding:30px
+}
+</style>
+<div id="standaloneBootError">
+KS OPERATIONS CENTER başlatılamadı.<br>
+F12 → Console ekranındaki ilk kırmızı hatayı kontrol edin.
+</div>
+<script>
+window.addEventListener("error",function(e){
+ console.error("KS STARTUP ERROR:",e.error||e.message);
+});
+</script>
+
+<svg aria-hidden="true" class="svg-sprite">
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16Z" fill="currentColor"/></symbol>
+  <symbol id="i-tank" viewBox="0 0 24 24"><path d="M5 7c0-2 14-2 14 0v11c0 2-14 2-14 0V7Zm0 0c0 2 14 2 14 0M7 4h10M7 20v2m10-2v2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM5 9h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-refinery" viewBox="0 0 24 24"><path d="M3 21V11l5 3v-4l5 3V5h4l1 16M12 21h9M15 8h3M15 12h3M6 18h2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3V11Z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6 7-13a7 7 0 1 0-14 0c0 7 7 13 7 13Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 9a2.7 2.7 0 1 1 4.2 2.2c-1 .7-1.7 1.2-1.7 2.8M12 18h.01" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+</svg>
+
+<div id="cesiumContainer"></div>
+
+<header class="topbar">
+  <div class="brand-zone">
+  <div class="brand" id="brandSecret" title="Şahsi alan">
+    <b>K</b>
+    <div><strong>KENAN SEYHAN</strong><small>AVIATION / OPERATIONS / TECHNOLOGY</small></div>
+  </div>
+</div>
+  <nav><a>ANA SAYFA</a><a>HAKKIMDA</a><a>HAVACILIK</a><a>PROJELER</a><a>İLETİŞİM</a></nav>
+  <div class="right-zone">
+    <div class="mode-switch" id="modeSwitch">
+      <button data-mode="operation" class="active">OPERASYON</button>
+      <button data-mode="logistics">LOJİSTİK</button>
+    </div>
+    <div class="telemetry">
+      <div><span class="status-dot"></span> SYSTEM ONLINE <b id="clock">--:--:--</b></div>
+      <div id="telemetry">LAT -- · LON -- · ALT -- · HDG -- · PITCH --</div>
+    </div>
+  </div>
+</header>
+
+<aside class="left-panel glass">
+  <div class="section-title"><svg><use href="#i-globe"/></svg><span>KATMANLAR</span></div>
+  <div class="master-actions">
+    <button id="showAll"><span class="eye">◉</span>HEPSİNİ GÖSTER</button>
+    <button id="hideAll"><span class="eye">◌</span>HEPSİNİ KAPAT</button>
+  </div>
+  <div id="operationLayers">
+    <label class="layer-row"><span class="layer-icon green"><svg><use href="#i-plane"/></svg></span><span><b>BİZİM MEYDANLAR</b><small>ADB, BJV + Türkiye meydanları</small></span><input type="checkbox" data-layer="airports" checked></label>
+    <label class="layer-row"><span class="layer-icon orange"><svg><use href="#i-tank"/></svg></span><span><b>DEPOLAMA / ÇEKİŞ</b><small>Akaryakıt depolama ve çekiş noktaları</small></span><input type="checkbox" data-layer="storage" checked></label>
+    <label class="layer-row"><span class="layer-icon cyan"><svg><use href="#i-refinery"/></svg></span><span><b>ALİAĞA SOCAR TESİSLERİ</b><small>STAD, STAR, PETKİM</small></span><input type="checkbox" data-layer="aliaga" checked></label>
+    <label class="layer-row"><span class="layer-icon white"><svg><use href="#i-globe"/></svg></span><span><b>DÜNYA HAVALİMANLARI</b><small>Önemli uluslararası meydanlar</small></span><input type="checkbox" data-layer="world" checked></label>
+  </div>
+  <div id="logisticsLayers" hidden>
+    <div class="logistics-head">JET A1 LOJİSTİK AĞI</div>
+    <label class="layer-row"><span class="layer-icon cyan">⚓</span><span><b>DENİZ TAŞIMASI</b><small>STAD → Derince / Antalya depoları</small></span><input type="checkbox" id="seaRoutes" checked></label>
+    <label class="layer-row"><span class="layer-icon orange"><svg><use href="#i-truck"/></svg></span><span><b>KARA TAŞIMASI</b><small>Depo / kaynak → meydan</small></span><input type="checkbox" id="roadRoutes" checked></label>
+    <button id="simulateAll" class="simulate-all">▶ TÜM AĞI SİMÜLE ET</button>
+    <button id="stopSimulation" class="stop-sim">■ DURDUR / TEMİZLE</button>
+  </div>
+  <div id="privateLayers" hidden></div>
+
+  <div class="tools-title">ARAÇLAR</div>
+  <button class="tool-row" id="saveCurrent"><svg><use href="#i-pin"/></svg><span><b>KOORDİNAT KAYDET</b><small>Bu noktayı kaydet</small></span><i>›</i></button>
+  <button class="tool-row" id="addPlaceBtn"><span class="plus">＋</span><span><b>YENİ YER</b><small>Haritaya nokta ekle</small></span><i>›</i></button>
+  <button class="tool-row" id="exportDataBtn"><span class="backup-icon">⇩</span><span><b>KAYITLARI DIŞA AKTAR</b><small>Konum ve kamera yedeği</small></span><i>›</i></button>
+  <button class="tool-row" id="importDataBtn"><span class="backup-icon">⇧</span><span><b>KAYITLARI İÇE AKTAR</b><small>Yedekten geri yükle</small></span><i>›</i></button>
+  <input id="importDataFile" type="file" accept=".json,application/json" hidden>
+  <button class="tool-row" id="helpBtn"><svg><use href="#i-help"/></svg><span><b>YARDIM</b><small>Kullanım ipuçları</small></span><i>›</i></button>
+</aside>
+
+<aside class="selected-panel glass" id="selectedPanel" hidden>
+  <div class="selected-head"><span>SEÇİLİ NOKTA</span><button id="closeSelected">×</button></div>
+  <div id="selectedInfo"></div>
+  <label class="field"><span>NOKTA ADI</span><input id="pointNameInput"></label>
+  <button id="saveName">ADI KAYDET</button>
+  <button id="saveView" class="primary-action">KONUM + KAMERA KAYDET</button>
+  <button id="adb3dBtn" class="adb3d-action" hidden>◈ ADB 3D OPERASYON</button>
+  <button id="deletePoint" class="danger" hidden>SİL</button>
+  <textarea id="cameraOutput" readonly></textarea>
+  <div id="backupStatus" class="backup-status"></div>
+</aside>
+<div class="bottom-dock glass" id="operationDock">
+  <section class="primary-airports">
+    <button data-code="ADB"><b>ADB</b><span>ADNAN MENDERES<br>HAVALİMANI</span></button>
+    <button data-code="BJV"><b>BJV</b><span>MİLAS-BODRUM<br>HAVALİMANI</span></button>
+  </section>
+  <section class="airport-strip" id="airportStrip"></section>
+  <section class="storage-strip"><div class="strip-title orange"><svg><use href="#i-truck"/></svg>DEPOLAMA / ÇEKİŞ</div><div class="strip-cards" id="storageStrip"></div></section>
+  <section class="aliaga-strip"><div class="strip-title cyan"><svg><use href="#i-refinery"/></svg>ALİAĞA SOCAR TESİSLERİ</div><div class="strip-cards" id="aliagaStrip"></div></section>
+  <button id="worldBtn" class="world-btn" title="Dünya görünümü"><svg><use href="#i-globe"/></svg></button>
+</div>
+
+<div class="bottom-dock glass logistics-dock" id="logisticsDock" hidden>
+  <section class="log-summary"><b>JET A1</b><span>LOJİSTİK AĞI</span><small>DENİZ + KARA</small></section>
+  <section class="log-route-list" id="logRouteList"></section>
+  <button id="logWorldBtn" class="world-btn"><svg><use href="#i-globe"/></svg></button>
+</div>
+<div class="bottom-dock glass private-dock" id="privateDock" hidden></div>
+
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-card">
+    <button class="close" id="helpClose">×</button>
+    <h3>KULLANIM</h3>
+    <p><b>Döndür:</b> Sol tuş + sürükle</p>
+    <p><b>Yakınlaş / uzaklaş:</b> Mouse tekerleği</p>
+    <p><b>3D açı:</b> Sağ tuş + sürükle</p>
+    <p><b>Nokta kaydet:</b> Kadrajı ayarla, seçili noktada KONUM + KAMERA KAYDET.</p>
+  </div>
+</div>
+
+<div class="modal" id="addModal" hidden>
+  <div class="modal-card">
+    <button class="close" id="addClose">×</button>
+    <h3>YENİ YER</h3>
+    <label class="field"><span>YER ADI</span><input id="newName"></label>
+    <label class="field"><span>TÜR</span><select id="newType"><option value="airports">Havalimanı</option><option value="storage">Depolama / Çekiş</option><option value="aliaga">Aliağa SOCAR Tesisi</option><option value="private">Özel</option></select></label>
+    <label class="field" id="groupField" hidden><span>ÖZEL GRUP</span><input id="newGroup" placeholder="EV, İŞ, FAVORİLER..."></label>
+    <div class="capture" id="captureInfo">Haritada istediğin kadrajı ayarla.</div>
+    <button id="captureBtn">MEVCUT KONUMU AL</button>
+    <button id="createBtn" class="primary-action">YERİ KAYDET</button>
+  </div>
+</div>
+
+<div class="modal" id="secretModal" hidden>
+  <div class="modal-card secret-card"><button class="close" id="secretClose">×</button><h3>ŞAHSİ ALAN</h3><p>Giriş parolasını yaz.</p>
+  <label class="field"><span>PAROLA</span><input id="secretPassword" type="password"></label><div id="secretError" class="secret-error"></div>
+  <button id="secretEnter" class="primary-action">GİRİŞ</button></div>
+</div>
+<div class="token-gate" id="tokenGate" hidden>
+  <div class="token-card">
+    <small>GERÇEK DÜNYA MOTORU</small><h1>CESIUM TOKEN</h1>
+    <p>Tarayıcıda kayıtlı token varsa bu ekran otomatik geçilir.</p>
+    <input id="tokenInput" placeholder="Cesium ion token">
+    <button id="tokenStart">DÜNYAYI AÇ</button>
+  </div>
+</div>
+
+
+
+
+<script id="embedded-config">
+window.APP_CONFIG = {
+  CESIUM_TOKEN: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IlA4aWZ6N1JSVy12czc4bWwiLCJqdGkiOiI5NzBjYjY1My0xMmYzLTQzYzgtOWM1ZC0wNzRmNzM2ZDYyMTEiLCJpZCI6NDcxMzIzLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODc1ODI1MTZ9.z91v7YSV0CQ8YInXXNg7hLPTpVrdjG95PdTA3oGCNPc"
+};
+
+</script>
+<script id="embedded-app">
+const BASE_POINTS={
+ADB:{name:"ADNAN MENDERES HAVALİMANI",icao:"LTBJ",category:"airports",lat:38.28622,lon:27.15556,height:2360,heading:18,pitch:-34},
+BJV:{name:"MİLAS-BODRUM HAVALİMANI",icao:"LTFE",category:"airports",lat:37.25241,lon:27.65739,height:2182,heading:104,pitch:-31},
+AYT:{name:"ANTALYA",icao:"LTAI",category:"airports",lat:36.8987,lon:30.8005,height:3600,heading:180,pitch:-40},
+ESB:{name:"ANKARA",icao:"LTAC",category:"airports",lat:40.1281,lon:32.9951,height:3500,heading:35,pitch:-40},
+IST:{name:"İSTANBUL",icao:"LTFM",category:"airports",lat:41.2753,lon:28.7519,height:4200,heading:20,pitch:-42},
+SAW:{name:"S. GÖKÇEN",icao:"LTFJ",category:"airports",lat:40.8986,lon:29.3092,height:3300,heading:55,pitch:-40},
+DLM:{name:"DALAMAN",icao:"LTBS",category:"airports",lat:36.7131,lon:28.7925,height:3000,heading:18,pitch:-39},
+GZP:{name:"GAZİPAŞA",icao:"LTFG",category:"airports",lat:36.2993,lon:32.3014,height:2600,heading:90,pitch:-38},
+CEKISAN:{name:"ÇEKİSAN ANTALYA",category:"storage",lat:36.85,lon:30.78,height:3500,heading:0,pitch:-42},
+SHELL_DERINCE:{name:"SHELL DERİNCE",category:"storage",lat:40.75,lon:29.82,height:3500,heading:0,pitch:-42},
+SHELL_ANTALYA:{name:"SHELL ANTALYA",category:"storage",lat:36.84,lon:30.78,height:3500,heading:0,pitch:-42},
+STAD:{name:"STAD",category:"storage",lat:38.80,lon:26.95,height:4500,heading:0,pitch:-45},
+STAR:{name:"STAR",category:"aliaga",lat:38.80,lon:26.95,height:4500,heading:0,pitch:-45},
+PETKIM:{name:"PETKİM",category:"aliaga",lat:38.80,lon:26.95,height:4500,heading:0,pitch:-45},
+LHR:{name:"LONDON HEATHROW",category:"world",lat:51.47,lon:-0.4543,height:6500,heading:0,pitch:-50},
+DXB:{name:"DUBAI INTERNATIONAL",category:"world",lat:25.2532,lon:55.3657,height:6500,heading:0,pitch:-50},
+JFK:{name:"NEW YORK JFK",category:"world",lat:40.6413,lon:-73.7781,height:6500,heading:0,pitch:-50}
+};
+const LOGISTICS_FIXED={
+ KIRIKKALE:{name:"KIRIKKALE",category:"storage",systemNode:true,logisticsNode:true,
+ lat:39.742613564257525,lon:33.45950705873421,height:2670.6374068051828,
+ heading:34.85512427601907,pitch:-40.304555125058016}
+};
+const LOG_ROUTES=[
+ {id:"SEA_DERINCE",type:"sea",from:"STAD",to:"SHELL_DERINCE",label:"STAD → SHELL DERİNCE"},
+ {id:"SEA_AKDENIZ",type:"sea",from:"STAD",to:"CEKISAN",label:"STAD → AKDENİZ ANTALYA"},
+ {id:"SEA_SHELL_ANTALYA",type:"sea",from:"STAD",to:"SHELL_ANTALYA",label:"STAD → SHELL ANTALYA"},
+ {id:"ROAD_ADB",type:"road",from:"STAD",to:"ADB",label:"STAD → ADB"},
+ {id:"ROAD_BJV",type:"road",from:"STAD",to:"BJV",label:"STAD → BJV"},
+ {id:"ROAD_DLM",type:"road",from:"STAD",to:"DLM",label:"STAD → DLM"},
+ {id:"ROAD_ESB",type:"road",from:"KIRIKKALE",to:"ESB",label:"KIRIKKALE → ESB"},
+ {id:"ROAD_SAW",type:"road",from:"SHELL_DERINCE",to:"SAW",label:"SHELL DERİNCE → SAW"},
+ {id:"ROAD_IST",type:"road",from:"SHELL_DERINCE",to:"IST",label:"SHELL DERİNCE → IST"},
+ {id:"ROAD_AYT_AKDENIZ",type:"road",from:"CEKISAN",to:"AYT",label:"AKDENİZ ANTALYA → AYT"},
+ {id:"ROAD_GZP_AKDENIZ",type:"road",from:"CEKISAN",to:"GZP",label:"AKDENİZ ANTALYA → GZP"},
+ {id:"ROAD_AYT_SHELL",type:"road",from:"SHELL_ANTALYA",to:"AYT",label:"SHELL ANTALYA → AYT"},
+ {id:"ROAD_GZP_SHELL",type:"road",from:"SHELL_ANTALYA",to:"GZP",label:"SHELL ANTALYA → GZP"}
+];
+const OP_KEYS=["ADB","BJV","AYT","ESB","IST","SAW","DLM","GZP","CEKISAN","SHELL_DERINCE","SHELL_ANTALYA","STAD","STAR","PETKIM","LHR","DXB","JFK"];
+
+const V26_SEED_FLAG="ksV26FixedSeeded";
+if(!localStorage.getItem(V26_SEED_FLAG)){
+  if(!localStorage.getItem("ksPointOverridesV24Fresh"))
+    localStorage.setItem("ksPointOverridesV24Fresh","{\"CEKISAN\": {\"name\": \"AKDEN\u0130Z ANTALYA\", \"lat\": 36.833929561167764, \"lon\": 30.608310104733643, \"height\": 1690.2082207936608, \"heading\": 3.467448550509289e-12, \"pitch\": -42.03493583309027}, \"SHELL_DERINCE\": {\"name\": \"SHELL DER\u0130NCE\", \"lat\": 40.75091382676806, \"lon\": 29.84143928846036, \"height\": 2188.3802803495905, \"heading\": 0, \"pitch\": -42.034877481814114}, \"SHELL_ANTALYA\": {\"name\": \"SHELL ANTALYA\", \"lat\": 36.84010154021184, \"lon\": 30.601020997984982, \"height\": 631.3449618829085, \"heading\": 359.99999999999807, \"pitch\": -42.03491698644576}, \"STAD\": {\"name\": \"STAD\", \"lat\": 38.77369014256039, \"lon\": 26.934985845352717, \"height\": 1184.8709507809626, \"heading\": 2.2737367544323206e-13, \"pitch\": -45.040411968865904}, \"STAR\": {\"name\": \"STAR\", \"lat\": 38.79846944238605, \"lon\": 26.928110595144215, \"height\": 1056.124374577121, \"heading\": 359.9999999999959, \"pitch\": -45.06668983606921}, \"PETKIM\": {\"name\": \"PETK\u0130M\", \"lat\": 38.78602081112696, \"lon\": 26.93490712857334, \"height\": 1288.6465205363093, \"heading\": 6.252776074688882e-13, \"pitch\": -45.04040304902941}, \"ESB\": {\"name\": \"ANKARA\", \"lat\": 40.12008436844157, \"lon\": 32.997796840738935, \"height\": 5158.75994379912, \"heading\": 34.929036130448594, \"pitch\": -40.14715558539734}, \"DLM\": {\"name\": \"DALAMAN\", \"lat\": 36.70372304109252, \"lon\": 28.788642904035733, \"height\": 2997.844501138937, \"heading\": 17.992366544834226, \"pitch\": -39.033288648789224}, \"SAW\": {\"name\": \"S. G\u00d6K\u00c7EN\", \"lat\": 40.890404377305344, \"lon\": 29.304100618133145, \"height\": 3480.8488104239837, \"heading\": 54.974985124706734, \"pitch\": -40.035252000898375}, \"GZP\": {\"name\": \"GAZ\u0130PA\u015eA\", \"lat\": 36.29474624716049, \"lon\": 32.29003367383687, \"height\": 2055.1267628444775, \"heading\": 89.97802341565472, \"pitch\": -38.02984729902573}, \"IST\": {\"name\": \"\u0130STANBUL\", \"lat\": 41.258676195065924, \"lon\": 28.745602770211423, \"height\": 5070.615476057686, \"heading\": 19.987471302975678, \"pitch\": -42.04185016641723}, \"AYT\": {\"name\": \"ANTALYA\", \"lat\": 36.91199948147973, \"lon\": 30.792998766171248, \"height\": 3990.6319617180834, \"heading\": 179.99999999999773, \"pitch\": -40.038772253176056}}");
+  if(!localStorage.getItem("ksUserPointsV24Fresh"))
+    localStorage.setItem("ksUserPointsV24Fresh","{\"USR_MT8LKIRJ\": {\"name\": \"EV\", \"category\": \"private\", \"group\": \"EV\", \"lat\": 38.238382558294646, \"lon\": 27.285455100442835, \"height\": 439.73655071554464, \"heading\": 359.9999999999998, \"pitch\": -89.99914625538254}, \"USR_MT8M08KY\": {\"name\": \"S B\u0130NA\", \"category\": \"aliaga\", \"group\": \"\", \"lat\": 38.78906551429275, \"lon\": 26.94969317741288, \"height\": 368.76797168497507, \"heading\": 359.9999999999968, \"pitch\": -45.05194604764947}}");
+  localStorage.setItem(V26_SEED_FLAG,"1");
+}
+
+
+// V35: ADB 3D state MUST exist before boot() calls worldView().
+var adb3dActive=false;
+var adb3dIds=[];
+var adb3dSavedCamera=null;
+
+const OVERRIDE_KEY="ksPointOverridesV24Fresh";
+const USER_KEY="ksUserPointsV24Fresh";
+let overrides={};let userPoints={};
+try{overrides=JSON.parse(localStorage.getItem(OVERRIDE_KEY)||"{}")}catch(e){}
+try{userPoints=JSON.parse(localStorage.getItem(USER_KEY)||"{}")}catch(e){}
+for(const [__id,__p] of Object.entries(userPoints)){
+  const __n=(__p?.name||"").trim().toLocaleUpperCase("tr-TR");
+  if(__id==="ANTALYA_TERMINAL" || __n==="ANTALYA ORTAK TERMİNALİ" || __n==="KIRIKKALE"){
+    delete userPoints[__id];
+  }
+}
+localStorage.setItem(USER_KEY,JSON.stringify(userPoints));
+const points={};
+for(const k of Object.keys(BASE_POINTS))points[k]={...BASE_POINTS[k],...(overrides[k]||{}),code:k};
+for(const [k,p] of Object.entries(userPoints))points[k]={...p,code:k,category:p.category||"private"};
+for(const [k,p] of Object.entries(LOGISTICS_FIXED))points[k]={...p,...(overrides[k]||{}),category:p.category,systemNode:true,logisticsNode:true,code:k};
+let viewer=null,selectedCode="",mode="operation",captured=null;
+const layerState={airports:true,storage:true,aliaga:true,world:true};
+
+function saveOverrides(){localStorage.setItem(OVERRIDE_KEY,JSON.stringify(overrides))}
+function saveUsers(){localStorage.setItem(USER_KEY,JSON.stringify(userPoints))}
+function persistPoint(code,p){
+ if(!code||!p)return;
+
+ const exact={...p};
+
+ // System logistics point: preserve system identity/category.
+ if(typeof LOGISTICS_FIXED!=="undefined" && LOGISTICS_FIXED[code]){
+   overrides[code]={...(overrides[code]||{}),...exact};
+   saveOverrides();
+   points[code]={
+     ...LOGISTICS_FIXED[code],
+     ...overrides[code],
+     category:LOGISTICS_FIXED[code].category,
+     systemNode:LOGISTICS_FIXED[code].systemNode??true,
+     logisticsNode:LOGISTICS_FIXED[code].logisticsNode??true,
+     code
+   };
+   return;
+ }
+
+ // Built-in operation point.
+ if(typeof BASE_POINTS!=="undefined" && BASE_POINTS[code]){
+   overrides[code]={...(overrides[code]||{}),...exact};
+   saveOverrides();
+   points[code]={...BASE_POINTS[code],...overrides[code],code};
+   return;
+ }
+
+ // User-created point.
+ userPoints[code]={...(userPoints[code]||{}),...exact};
+ saveUsers();
+ points[code]={...userPoints[code],code};
+}
+function iconSvg(cat,color,code=""){
+ let shape;
+ if(code==="KIRIKKALE"){
+   shape='<path d="M4 19V9l5 3V8l5 3V4h4v15M3 20h18M15 7h3M15 11h3" fill="none" stroke="'+color+'" stroke-width="1.7"/>';
+ }else if(cat==="storage" && code==="STAD"){
+   shape='<path d="M6 7c0-2 12-2 12 0v10c0 2-12 2-12 0V7Zm0 0c0 2 12 2 12 0M8 4h8M8 19v2m8-2v2" fill="none" stroke="'+color+'" stroke-width="1.7"/>';
+ }else if(cat==="storage"){
+   shape='<path d="M3 8h10v8H3zM13 11h4l3 3v2h-7M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM5 10h6" fill="none" stroke="'+color+'" stroke-width="1.7" stroke-linejoin="round"/>';
+ }else if(cat==="aliaga"){
+   shape='<path d="M4 19V9l5 3V8l5 3V4h4v15M3 20h18" fill="none" stroke="'+color+'" stroke-width="1.8"/>';
+ }else if(cat==="private"){
+   shape='<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="'+color+'" stroke-width="1.8"/>';
+ }else{
+   shape='<path d="M20 15v-2l-7-4V4a1 1 0 0 0-2 0v5l-7 4v2l7-2v5l-2 1v1l3-1 3 1v-1l-2-1v-5z" fill="'+color+'"/>';
+ }
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(2,8,10,.88)" stroke="'+color+'" stroke-width="1.3"/>'+shape+'</svg>');
+}
+function catColor(cat){return cat==="storage"?"#ff8b24":cat==="aliaga"?"#29bfff":cat==="private"?"#ffffff":cat==="world"?"#8aa7ff":cat==="logistics_source"?"#ff8b24":"#aaff24"}
+function buildEntity(code){
+ const p=points[code];if(!p||!viewer)return;
+ viewer.entities.removeById(code);
+ const color=catColor(p.category);
+ viewer.entities.add({id:code,name:p.name,position:Cesium.Cartesian3.fromDegrees(Number(p.lon),Number(p.lat),0),
+  billboard:{image:iconSvg(p.category,color,code),width:p.category==="world"?22:32,height:p.category==="world"?22:32,
+   distanceDisplayCondition:new Cesium.DistanceDisplayCondition(2500,p.category==="world"?12000000:9000000)},
+  label:{text:p.name,font:"700 13px Segoe UI",fillColor:Cesium.Color.fromCssColorString(color),
+   outlineColor:Cesium.Color.BLACK,outlineWidth:4,style:Cesium.LabelStyle.FILL_AND_OUTLINE,
+   pixelOffset:new Cesium.Cartesian2(0,-28),distanceDisplayCondition:new Cesium.DistanceDisplayCondition(3500,p.category==="world"?5000000:9000000)}
+ });
+}
+function rebuildEntities(){for(const code of Object.keys(points))buildEntity(code);applyVisibility()}
+function applyVisibility(){
+ if(!viewer)return;
+ for(const [code,p] of Object.entries(points)){
+  const e=viewer.entities.getById(code);if(!e)continue;
+  if(mode==="private")e.show=p.category==="private";
+  else if(mode==="logistics")e.show=p.category!=="private" && (p.category==="logistics_source" || ["KIRIKKALE","STAD","SHELL_DERINCE","SHELL_ANTALYA","CEKISAN","ADB","BJV","DLM","ESB","SAW","IST","AYT","GZP"].includes(code));
+  else e.show=p.category!=="private" && p.category!=="logistics" && layerState[p.category]!==false;
+ }
+}
+function aimCanvasPoint(){
+ const c=viewer.scene.canvas;
+ let right=c.clientWidth;
+ const panel=document.getElementById("selectedPanel");
+ if(panel && !panel.hidden){
+   const cr=c.getBoundingClientRect(),pr=panel.getBoundingClientRect();
+   right=Math.max(80,Math.min(c.clientWidth,pr.left-cr.left-12));
+ }
+ return new Cesium.Cartesian2(right/2,c.clientHeight/2);
+}
+function updateAimCrosshair(){}
+function cameraSnap(){
+ if(!viewer)return null;
+
+ const canvas=viewer.scene.canvas;
+ const center=typeof aimCanvasPoint==="function"
+   ?aimCanvasPoint()
+   :new Cesium.Cartesian2(canvas.clientWidth/2,canvas.clientHeight/2);
+
+ let targetCartesian;
+ try{
+   targetCartesian=viewer.scene.pickPositionSupported
+     ?viewer.scene.pickPosition(center)
+     :undefined;
+ }catch(e){}
+
+ if(!Cesium.defined(targetCartesian)){
+   const ray=viewer.camera.getPickRay(center);
+   targetCartesian=viewer.scene.globe.pick(ray,viewer.scene);
+ }
+ if(!Cesium.defined(targetCartesian))return null;
+
+ const target=Cesium.Cartographic.fromCartesian(targetCartesian);
+ const cam=viewer.camera.positionCartographic;
+
+ return{
+   // POINT POSITION = exact terrain point at visible map center
+   lat:Cesium.Math.toDegrees(target.latitude),
+   lon:Cesium.Math.toDegrees(target.longitude),
+
+   // CAMERA POSITION = exact camera world position
+   cameraLat:Cesium.Math.toDegrees(cam.latitude),
+   cameraLon:Cesium.Math.toDegrees(cam.longitude),
+   cameraAlt:cam.height,
+
+   // CAMERA ORIENTATION = exact
+   cameraHeading:Cesium.Math.toDegrees(viewer.camera.heading),
+   cameraPitch:Cesium.Math.toDegrees(viewer.camera.pitch),
+   cameraRoll:Cesium.Math.toDegrees(viewer.camera.roll||0),
+
+   // Legacy display aliases only; still full precision values
+   height:cam.height,
+   heading:Cesium.Math.toDegrees(viewer.camera.heading),
+   pitch:Cesium.Math.toDegrees(viewer.camera.pitch)
+ };
+}
+function worldView(){
+ if(adb3dActive && typeof adb3dClear==='function')adb3dClear();
+ if(!viewer)return;selectedCode="";document.getElementById("selectedPanel").hidden=true;
+ viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(27.5,38.2,11500000),
+  orientation:{heading:0,pitch:Cesium.Math.toRadians(-90),roll:0},duration:2.6,easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT})
+}
+
+/* ================= V142 CINEMATIC CAMERA =================
+   Purpose:
+   - Never dive almost vertically onto ADB.
+   - Give imagery / 3D tiles time to load while approaching.
+   - Arrive on a shallow horizontal arc, then settle into the exact saved view.
+   - One camera path is shared by normal ADB and ADB 3D entry.
+*/
+const KS_CAM={
+  normalPause:450,
+  adbPause:700,
+  adbStage1:2.8,
+  adbStage2:2.5,
+  adbFinal:2.4,
+  normalStage1:1.8,
+  normalFinal:1.9
+};
+function ksWait(ms,fn){setTimeout(()=>{try{fn()}catch(e){}},Math.max(0,ms||0))}
+function ksExactCameraOf(p){
+ if(!p)return null;
+ if(!Number.isFinite(Number(p.cameraLat))||!Number.isFinite(Number(p.cameraLon))||!Number.isFinite(Number(p.cameraAlt)))return null;
+ return{
+   lon:Number(p.cameraLon),lat:Number(p.cameraLat),alt:Number(p.cameraAlt),
+   heading:Cesium.Math.toRadians(Number(p.cameraHeading)||0),
+   pitch:Cesium.Math.toRadians(Number.isFinite(Number(p.cameraPitch))?Number(p.cameraPitch):-45),
+   roll:Cesium.Math.toRadians(Number(p.cameraRoll)||0)
+ };
+}
+function ksFlyExact(c,duration){
+ if(!c||!viewer)return;
+ viewer.camera.flyTo({
+   destination:Cesium.Cartesian3.fromDegrees(c.lon,c.lat,c.alt),
+   orientation:{heading:c.heading,pitch:c.pitch,roll:c.roll},
+   duration:duration||2.2,
+   easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT
+ });
+}
+function ksAngleDelta(a,b){
+ let d=(b-a)%(Math.PI*2);
+ if(d>Math.PI)d-=Math.PI*2;
+ if(d<-Math.PI)d+=Math.PI*2;
+ return d;
+}
+function ksEase01(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function ksADBTarget(p){
+ // One authoritative target for the entire approach.
+ // Slight height above ellipsoid keeps the visual centre on the airport, not below terrain.
+ const h=Number.isFinite(Number(p.ground))?Number(p.ground):0;
+ return Cesium.Cartesian3.fromDegrees(Number(p.lon),Number(p.lat),h);
+}
+function ksCurrentHPR(target){
+ try{
+   const enu=Cesium.Transforms.eastNorthUpToFixedFrame(target);
+   const inv=Cesium.Matrix4.inverseTransformation(enu,new Cesium.Matrix4());
+   const local=Cesium.Matrix4.multiplyByPoint(inv,viewer.camera.positionWC,new Cesium.Cartesian3());
+   const range=Math.max(50,Cesium.Cartesian3.magnitude(local));
+   // HeadingPitchRange convention: heading 0 looks from north side toward target.
+   const heading=Math.atan2(local.x,local.y);
+   const horiz=Math.sqrt(local.x*local.x+local.y*local.y);
+   const pitch=-Math.atan2(Math.abs(local.z),Math.max(1,horiz));
+   return{heading,pitch,range};
+ }catch(e){return null}
+}
+function ksADBOrbitApproach(p,exact,done){
+ if(!viewer||!p)return;
+ const target=ksADBTarget(p);
+ const sphere=new Cesium.BoundingSphere(target,60);
+ const total=Math.max(4,Number(window.KS_ADB_APPROACH_TOTAL)||10);
+ const current=ksCurrentHPR(target);
+ const finalHeading=exact&&Number.isFinite(exact.heading)?exact.heading:Cesium.Math.toRadians(Number(p.heading)||0);
+ const turn=Cesium.Math.toRadians(Number(window.KS_ADB_APPROACH_TURN)||105);
+ const startRange=Math.max(current?.range||0,(Number(window.KS_ADB_APPROACH_RANGE)||52)*1000);
+ const startHeading=current?.heading ?? (finalHeading-turn);
+ const startPitch=Math.min(-Cesium.Math.toRadians(12),current?.pitch ?? Cesium.Math.toRadians(-32));
+ const orbitEndHeading=finalHeading;
+ // Stay target-locked until the orbit has fully finished.
+ const endRange=exact ? Math.max(1800,Math.min(6500,Math.max(1800,(Number(exact.alt)||4500)*1.35))) : 4500;
+ const endPitch=Cesium.Math.toRadians(-36);
+ const delta=ksAngleDelta(startHeading,orbitEndHeading);
+ const t0=performance.now(),ms=total*1000;
+ viewer.camera.cancelFlight();
+ let stopped=false;
+ function frame(now){
+   if(stopped||!viewer)return;
+   const u=Math.min(1,(now-t0)/ms),e=ksEase01(u);
+   const heading=startHeading+delta*e;
+   const pitch=startPitch+(endPitch-startPitch)*e;
+   // Smooth logarithmic closing gives a slow, natural curved approach.
+   const range=Math.exp(Math.log(startRange)+(Math.log(endRange)-Math.log(startRange))*e);
+   viewer.camera.lookAt(target,new Cesium.HeadingPitchRange(heading,pitch,range));
+   // lookAt is the invariant: ADB remains the camera's visual centre every frame.
+   try{viewer.scene.requestRender()}catch(err){}
+   if(u<1){requestAnimationFrame(frame);return}
+   // Release target lock only after the centred orbit is complete.
+   viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+   if(exact){
+     viewer.camera.flyTo({
+       destination:Cesium.Cartesian3.fromDegrees(exact.lon,exact.lat,exact.alt),
+       orientation:{heading:exact.heading,pitch:exact.pitch,roll:exact.roll},
+       duration:Math.max(4,(Number(window.KS_ADB_APPROACH_TOTAL)||10)*.55),
+       easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
+       complete:()=>{if(done)done()}
+     });
+   }else if(done)done();
+ }
+ requestAnimationFrame(frame);
+ return()=>{stopped=true;try{viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY)}catch(e){}};
+}
+function ksCinematicApproach(p, exact, isADB=false, done){
+ if(!viewer||!p)return;
+ const lon=Number(p.lon),lat=Number(p.lat);
+ if(!Number.isFinite(lon)||!Number.isFinite(lat)){if(exact)ksFlyExact(exact,2.2);return}
+ if(isADB){
+   // V142: ADB is the immutable visual centre throughout the slow curved approach.
+   ksADBOrbitApproach(p,exact,done);
+   return;
+ }
+ // Other points retain the gentle V138/V142 arrival.
+ const target=Cesium.Cartesian3.fromDegrees(lon,lat,0);
+ const sphere=new Cesium.BoundingSphere(target,60);
+ const finalHeading=exact?exact.heading:Cesium.Math.toRadians(Number(p.heading)||0);
+ viewer.camera.flyToBoundingSphere(sphere,{
+   duration:KS_CAM.normalStage1,
+   offset:new Cesium.HeadingPitchRange(finalHeading-Cesium.Math.toRadians(55),Cesium.Math.toRadians(-38),25000),
+   easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
+   complete:()=>ksWait(KS_CAM.normalPause,()=>{
+     if(exact){
+       viewer.camera.flyTo({
+         destination:Cesium.Cartesian3.fromDegrees(exact.lon,exact.lat,exact.alt),
+         orientation:{heading:exact.heading,pitch:exact.pitch,roll:exact.roll},
+         duration:KS_CAM.normalFinal,easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT,
+         complete:()=>{if(done)done()}
+       });
+     }else if(done)done();
+   })
+ });
+}
+
+function fly(code){
+ // V47: selecting ANY point while 3D is active must terminate the old 3D scene first.
+ if(typeof adb3dActive!=="undefined" && adb3dActive){
+   adbV47Clear3DState({restoreOperation:false});
+ }
+
+ const p=points[code];
+ if(!p||!viewer)return;
+
+ selectedCode=code;
+ showSelected(p);
+
+ const hasExactCamera=
+   Number.isFinite(Number(p.cameraLat)) &&
+   Number.isFinite(Number(p.cameraLon)) &&
+   Number.isFinite(Number(p.cameraAlt));
+
+ if(hasExactCamera){
+   ksCinematicApproach(p,ksExactCameraOf(p),String(code).toUpperCase()==="ADB");
+   return;
+ }
+
+ // Legacy fallback only for points that have never been saved with V32.
+ const target=Cesium.Cartesian3.fromDegrees(Number(p.lon),Number(p.lat),0);
+ const sphere=new Cesium.BoundingSphere(target,25);
+ const pitch=p.pitch??-40,heading=p.heading??0,height=p.height??3500;
+ const range=Math.max(
+   600,
+   height/Math.max(.16,Math.sin(Math.abs(Cesium.Math.toRadians(pitch))))
+ );
+
+ ksCinematicApproach(p,null,String(code).toUpperCase()==="ADB",()=>{
+   viewer.camera.flyToBoundingSphere(sphere,{
+     duration:1.8,
+     offset:new Cesium.HeadingPitchRange(
+       Cesium.Math.toRadians(heading),
+       Cesium.Math.toRadians(pitch),
+       range
+     ),
+     easingFunction:Cesium.EasingFunction.CUBIC_IN_OUT
+   });
+ });
+}
+function showSelected(p){
+ const panel=document.getElementById("selectedPanel");
+ panel.hidden=false;
+
+ const isAirport=p.category==="airports"||p.category==="world";
+ const title=isAirport ? `${p.code}${p.icao?" / "+p.icao:""}` : p.name;
+ const subtitle=isAirport
+   ?p.name
+   :(p.category==="storage"
+      ?"DEPOLAMA / ÇEKİŞ"
+      :p.category==="aliaga"
+        ?"ALİAĞA SOCAR TESİSLERİ"
+        :p.category==="logistics_source"
+          ?"DEPOLAMA / ÇEKİŞ"
+          :"ÖZEL");
+
+ const cameraAlt=Number.isFinite(Number(p.cameraAlt)) ? Number(p.cameraAlt) : Number(p.height||0);
+ const cameraHdg=Number.isFinite(Number(p.cameraHeading)) ? Number(p.cameraHeading) : Number(p.heading||0);
+ const cameraPitch=Number.isFinite(Number(p.cameraPitch)) ? Number(p.cameraPitch) : Number(p.pitch||0);
+
+ document.getElementById("selectedInfo").innerHTML=
+   `<div class="info-code">${title}</div>
+    <div class="info-name">${subtitle}</div>
+    <div class="info-grid">
+      <span>TÜR</span><b>${subtitle}</b>
+      <span>KOORDİNAT</span><b>${Number(p.lat).toFixed(5)}° N<br>${Number(p.lon).toFixed(5)}° E</b>
+      <span>KAMERA</span><b>ALT ${Math.round(cameraAlt)} m<br>HDG ${cameraHdg.toFixed(1)}° / PITCH ${cameraPitch.toFixed(1)}°</b>
+    </div>`;
+
+ document.getElementById("pointNameInput").value=p.name||p.code;
+ document.getElementById("deletePoint").hidden=!!(
+   (typeof BASE_POINTS!=="undefined" && BASE_POINTS[p.code]) ||
+   (typeof LOGISTICS_FIXED!=="undefined" && LOGISTICS_FIXED[p.code])
+ );
+
+ const out=document.getElementById("cameraOutput");
+ if(out){
+   out.value=
+     `${p.name||p.code} | LAT:${Number(p.lat)} | LON:${Number(p.lon)} | `+
+     `CAM_LAT:${Number.isFinite(Number(p.cameraLat))?Number(p.cameraLat):""} | `+
+     `CAM_LON:${Number.isFinite(Number(p.cameraLon))?Number(p.cameraLon):""} | `+
+     `ALT:${cameraAlt} | HDG:${cameraHdg} | PITCH:${cameraPitch}`;
+ }
+
+ const adb3d=document.getElementById("adb3dBtn");
+ if(adb3d)adb3d.hidden=(p.code!=="ADB");
+}
+function renderDock(){
+ const airportOrder=["AYT","ESB","IST","SAW","DLM","GZP"];
+ const airport=document.getElementById("airportStrip");
+ const storage=document.getElementById("storageStrip");
+ const aliaga=document.getElementById("aliagaStrip");
+
+ // Built-ins keep their intended order; user-created records append automatically.
+ const airportCodes=[
+   ...airportOrder.filter(c=>points[c]),
+   ...Object.keys(points).filter(c=>points[c].category==="airports"&&!["ADB","BJV",...airportOrder].includes(c))
+ ];
+ const storageCodes=Object.keys(points).filter(c=>points[c].category==="storage"||c==="STAD");
+ const aliagaCodes=Object.keys(points).filter(c=>points[c].category==="aliaga"&&c!=="STAD");
+
+ airport.innerHTML=airportCodes.map(c=>`<button data-code="${c}"><svg><use href="#i-plane"/></svg><b>${c.startsWith("USR_")?points[c].name:c}</b><span>${c.startsWith("USR_")?"HAVALİMANI":points[c].name}</span></button>`).join("");
+ storage.innerHTML=storageCodes.map(c=>`<button data-code="${c}" class="${c==="STAD"?"stad-storage":""}"><svg><use href="#${c==="STAD"?"i-tank":"i-truck"}"/></svg><b>${points[c].name}</b></button>`).join("");
+ aliaga.innerHTML=aliagaCodes.map(c=>`<button data-code="${c}"><svg><use href="#i-refinery"/></svg><b>${points[c].name}</b></button>`).join("");
+
+ document.querySelectorAll('#operationDock [data-code]').forEach(b=>b.onclick=()=>fly(b.dataset.code))
+}
+function renderPrivate(){
+ const dock=document.getElementById("privateDock"),groups={};
+ for(const [code,p] of Object.entries(points))if(p.category==="private"){const g=(p.group||"ÖZEL").toUpperCase();(groups[g]??=[]).push([code,p])}
+ dock.innerHTML="";
+ const names=Object.keys(groups);
+ if(!names.length){dock.innerHTML='<div class="private-empty"><b>ŞAHSİ MOD</b><span>Henüz kayıtlı özel nokta yok.</span></div>';return}
+ for(const g of names){const sec=document.createElement("section");sec.className="private-group";sec.innerHTML=`<div class="private-title">${g}</div><div class="private-cards">${groups[g].map(([c,p])=>`<button data-code="${c}"><b>${p.name}</b><small>${Number(p.lat).toFixed(4)}° N<br>${Number(p.lon).toFixed(4)}° E</small></button>`).join("")}</div>`;dock.appendChild(sec)}
+ dock.querySelectorAll("[data-code]").forEach(b=>b.onclick=()=>fly(b.dataset.code))
+}
+function renderPrivateLayers(){
+ const host=document.getElementById("privateLayers"),groups={};
+ for(const p of Object.values(points))if(p.category==="private")groups[(p.group||"ÖZEL").toUpperCase()]=(groups[(p.group||"ÖZEL").toUpperCase()]||0)+1;
+ host.innerHTML=Object.keys(groups).length?Object.entries(groups).map(([g,n])=>`<label class="layer-row"><span class="layer-icon white"><svg><use href="#i-home"/></svg></span><span><b>${g}</b><small>${n} kayıt</small></span><input type="checkbox" checked></label>`).join(""):'<div style="padding:18px 6px;color:#839090;font-size:10px">Henüz özel kayıt yok.</div>'
+}
+function clearModeSelection(){
+ selectedCode="";
+ const panel=document.getElementById("selectedPanel");if(panel)panel.hidden=true;
+ const info=document.getElementById("selectedInfo");if(info)info.innerHTML="";
+ const name=document.getElementById("pointNameInput");if(name)name.value="";
+ const out=document.getElementById("cameraOutput");if(out)out.value="";
+}
+function setMode(m){
+ const previousMode=mode;
+ clearModeSelection();
+ mode=m;
+ document.querySelectorAll("#modeSwitch button").forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
+ document.getElementById("operationLayers").hidden=m!=="operation";
+ document.querySelector(".master-actions").hidden=m!=="operation";
+ document.getElementById("logisticsLayers").hidden=m!=="logistics";
+ document.getElementById("privateLayers").hidden=m!=="private";
+ document.getElementById("operationDock").hidden=m!=="operation";
+ document.getElementById("logisticsDock").hidden=m!=="logistics";
+ document.getElementById("privateDock").hidden=m!=="private";
+ if(m==="private"){renderPrivateLayers();renderPrivate();}
+ if(m==="logistics"){renderLogisticsDock();drawLogisticsRoutes();} else clearLogisticsSimulation(false);
+ applyVisibility();
+ if(previousMode==="private" && m==="operation") setTimeout(worldView,100);
+}
+
+let logEntities=[],logTimers=[],logRunning=false;
+function routePoint(code){return points[code]}
+function bezierGeo(a,b,t,type){
+ const mx=(a.lon+b.lon)/2,my=(a.lat+b.lat)/2;
+ const bend=type==="sea"?Math.min(3.2,Math.max(.8,Math.abs(a.lon-b.lon)*.12+Math.abs(a.lat-b.lat)*.08)):Math.min(1.0,Math.max(.22,Math.abs(a.lon-b.lon)*.04));
+ const sign=a.lon<b.lon?1:-1,cx=mx+(type==="sea"?bend*sign:bend*.35*sign),cy=my+(type==="sea"?-bend*.22:bend*.45),u=1-t;
+ return {lon:u*u*a.lon+2*u*t*cx+t*t*b.lon,lat:u*u*a.lat+2*u*t*cy+t*t*b.lat};
+}
+const ROAD_WAYPOINTS={
+ "CEKISAN>AYT":[
+   [30.55,36.72],[30.62,36.81],[30.70,36.88],[30.78,36.91]
+ ],
+ "SHELL_ANTALYA>AYT":[
+   [30.62,36.74],[30.67,36.82],[30.73,36.88],[30.78,36.91]
+ ],
+ "CEKISAN>GZP":[
+   [30.55,36.72],[30.78,36.90],[31.05,37.00],[31.35,37.06],
+   [31.65,37.04],[31.92,36.96],[32.12,36.82],[32.25,36.62],[32.29,36.30]
+ ],
+ "SHELL_ANTALYA>GZP":[
+   [30.62,36.74],[30.82,36.91],[31.08,37.00],[31.38,37.06],
+   [31.68,37.03],[31.95,36.94],[32.15,36.80],[32.27,36.60],[32.29,36.30]
+ ]
+};
+const SEA_WAYPOINTS={
+ "STAD>SHELL_DERINCE":[
+   [26.9350,38.7733],
+   [26.70,39.05],[26.40,39.35],[26.10,39.70],[25.95,40.02],
+   [26.02,40.28],[26.22,40.46],[26.52,40.58],
+   [26.95,40.68],[27.45,40.76],[28.00,40.82],
+   [28.55,40.80],[29.05,40.76],[29.45,40.75],[29.84,40.75]
+ ],
+ "STAD>CEKISAN":[
+   [26.9350,38.7733],
+   [26.55,38.62],[26.18,38.35],[25.92,37.95],[25.78,37.48],
+   [25.82,37.02],[26.12,36.62],[26.70,36.28],
+   [27.45,36.02],[28.25,35.90],[29.05,35.92],
+   [29.72,36.08],[30.20,36.34],[30.48,36.58],[30.6083,36.8339]
+ ],
+ "STAD>SHELL_ANTALYA":[
+   [26.9350,38.7733],
+   [26.55,38.62],[26.18,38.35],[25.92,37.95],[25.78,37.48],
+   [25.82,37.02],[26.12,36.62],[26.70,36.28],
+   [27.45,36.02],[28.25,35.90],[29.05,35.92],
+   [29.72,36.08],[30.22,36.34],[30.50,36.58],[30.6010,36.8401]
+ ]
+};
+function densifyWaypoints(list,totalPoints=120,height=150){
+ if(!Array.isArray(list)||list.length<2)return[];
+ const out=[];
+ const segments=list.length-1;
+ const perSegment=Math.max(2,Math.ceil(totalPoints/segments));
+
+ const xy=p=>{
+   if(Array.isArray(p))return {lon:Number(p[0]),lat:Number(p[1])};
+   return {lon:Number(p.lon),lat:Number(p.lat)};
+ };
+
+ for(let i=0;i<segments;i++){
+   const a=xy(list[i]),b=xy(list[i+1]);
+   if(!Number.isFinite(a.lon)||!Number.isFinite(a.lat)||!Number.isFinite(b.lon)||!Number.isFinite(b.lat))continue;
+   for(let n=0;n<perSegment;n++){
+     const t=n/perSegment;
+     const lon=a.lon+(b.lon-a.lon)*t;
+     const lat=a.lat+(b.lat-a.lat)*t;
+     out.push(Cesium.Cartesian3.fromDegrees(lon,lat,height));
+   }
+ }
+ const z=xy(list[list.length-1]);
+ if(Number.isFinite(z.lon)&&Number.isFinite(z.lat)){
+   out.push(Cesium.Cartesian3.fromDegrees(z.lon,z.lat,height));
+ }
+ return out;
+}
+
+function routePositions(r,count=120){
+ const a=routePoint(r.from),b=routePoint(r.to);
+ if(!a||!b)return[];
+
+ const key=`${r.from}>${r.to}`;
+
+ if(r.type==="sea" && SEA_WAYPOINTS[key]){
+   return densifyWaypoints(SEA_WAYPOINTS[key],count,80);
+ }
+
+ if(r.type==="road" && ROAD_WAYPOINTS[key]){
+   return densifyWaypoints(ROAD_WAYPOINTS[key],count,120);
+ }
+
+ // Routes without manually defined corridors remain a simple source-target line.
+ const out=[];
+ const steps=Math.max(2,count);
+ for(let i=0;i<steps;i++){
+   const t=i/(steps-1);
+   const lon=a.lon+(b.lon-a.lon)*t;
+   const lat=a.lat+(b.lat-a.lat)*t;
+   out.push(Cesium.Cartesian3.fromDegrees(lon,lat,r.type==="sea"?80:120));
+ }
+ return out;
+}
+function clearLogisticsSimulation(removeLines=true){
+ logRunning=false;document.body.classList.remove("all-logistics-running");logTimers.forEach(x=>{clearInterval(x);clearTimeout(x)});logTimers=[];
+ if(!viewer)return;
+ logEntities.forEach(id=>{if(removeLines||!id.startsWith("LOG_LINE_"))viewer.entities.removeById(id)});
+ logEntities=removeLines?[]:logEntities.filter(id=>id.startsWith("LOG_LINE_"));
+}
+function drawLogisticsRoutes(){
+ if(!viewer)return;
+ clearLogisticsSimulation(true);
+ const seaOn=document.getElementById("seaRoutes")?.checked!==false;
+ const roadOn=document.getElementById("roadRoutes")?.checked!==false;
+
+ LOG_ROUTES.forEach(r=>{
+   if((r.type==="sea"&&!seaOn)||(r.type==="road"&&!roadOn))return;
+   try{
+     const positions=routePositions(r);
+     if(!positions||positions.length<2)return;
+     const id="LOG_LINE_"+r.id;
+     const color=r.type==="sea"?Cesium.Color.TRANSPARENT:Cesium.Color.fromCssColorString("#ff8b24");
+     viewer.entities.add({
+       id,
+       polyline:{
+         positions,
+         width:r.type==="sea"?0.1:1.4,
+         material:r.type==="sea"
+           ?color
+           :new Cesium.PolylineDashMaterialProperty({color,dashLength:14})
+       }
+     });
+     logEntities.push(id);
+   }catch(err){
+     console.error("Rota çizilemedi:",r.id,err);
+   }
+ });
+}
+function vehicleImage(type){
+ const c=type==="sea"?"#28bfff":"#ff8b24";
+ const svg=type==="sea"
+ ? `<svg xmlns="http://www.w3.org/2000/svg" width="92" height="46" viewBox="0 0 92 46">
+      <defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".65"/></filter></defs>
+      <g filter="url(#s)">
+       <path d="M5 29 L76 29 L88 24 L82 35 L17 39 Z" fill="#d9e2e6" stroke="${c}" stroke-width="1.8"/>
+       <path d="M18 26h42v-9h15v12H18z" fill="#27343a" stroke="#dce8eb" stroke-width="1.2"/>
+       <rect x="28" y="12" width="28" height="8" rx="2" fill="#eceff1"/>
+       <rect x="59" y="19" width="9" height="7" rx="1" fill="${c}"/>
+       <path d="M12 36h67" stroke="${c}" stroke-width="2.3"/>
+      </g></svg>`
+ : `<svg xmlns="http://www.w3.org/2000/svg" width="92" height="46" viewBox="0 0 92 46">
+      <defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".65"/></filter></defs>
+      <g filter="url(#s)">
+       <rect x="5" y="17" width="52" height="17" rx="8.5" fill="#e7ecee" stroke="${c}" stroke-width="1.7"/>
+       <path d="M57 20h17l10 9v5H57z" fill="#e7ecee" stroke="${c}" stroke-width="1.7"/>
+       <rect x="63" y="23" width="9" height="7" fill="#29363b"/>
+       <rect x="10" y="20" width="41" height="4" rx="2" fill="${c}" opacity=".78"/>
+       <circle cx="22" cy="36" r="5" fill="#151b1e" stroke="#dfe7e9" stroke-width="1.5"/>
+       <circle cx="68" cy="36" r="5" fill="#151b1e" stroke="#dfe7e9" stroke-width="1.5"/>
+      </g></svg>`;
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+function pulseTarget(code,p){const id="LOG_PULSE_"+code;viewer.entities.removeById(id);viewer.entities.add({id,position:Cesium.Cartesian3.fromDegrees(p.lon,p.lat,0),ellipse:{semiMajorAxis:900,semiMinorAxis:900,material:Cesium.Color.fromCssColorString("#aaff24").withAlpha(.18),outline:true,outlineColor:Cesium.Color.fromCssColorString("#aaff24")}});logEntities.push(id);setTimeout(()=>viewer?.entities.removeById(id),1800)}
+function simulateOneVehicle(r,delay=0,shipmentNo=1){
+ const launch=setTimeout(()=>{
+   if(!logRunning||mode!=="logistics")return;
+
+   const path=routePositions(r,150);
+   const id=`LOG_VEH_${r.id}_${shipmentNo}`;
+   if(!path||path.length<2){
+     console.error("Araç rotası oluşturulamadı:",r.id);
+     return;
+   }
+
+   viewer.entities.removeById(id);
+   viewer.entities.add({
+     id,
+     position:path[0],
+     billboard:{
+       image:vehicleImage(r.type),
+       width:r.type==="sea"?68:64,
+       height:r.type==="sea"?34:32,
+       verticalOrigin:Cesium.VerticalOrigin.CENTER,
+       disableDepthTestDistance:Number.POSITIVE_INFINITY
+     },
+     label:{
+       text:`JET A1 • ${shipmentNo}/2`,
+       font:"800 11px Segoe UI",
+       fillColor:r.type==="sea"
+         ?Cesium.Color.fromCssColorString("#5ed2ff")
+         :Cesium.Color.fromCssColorString("#ffad57"),
+       outlineColor:Cesium.Color.BLACK,
+       outlineWidth:3,
+       style:Cesium.LabelStyle.FILL_AND_OUTLINE,
+       pixelOffset:new Cesium.Cartesian2(0,-26),
+       disableDepthTestDistance:Number.POSITIVE_INFINITY
+     }
+   });
+   logEntities.push(id);
+
+   let idx=0;
+   const baseMs=r.type==="sea"?125:82; // ships deliberately slower
+
+   const step=()=>{
+     if(!logRunning||mode!=="logistics"){
+       viewer.entities.removeById(id);
+       return;
+     }
+
+     idx++;
+     if(idx>=path.length){
+       const entity=viewer.entities.getById(id);
+       if(entity) entity.position=path[path.length-1];
+
+       if(r.type==="sea"){
+         // Vessel remains at berth for unloading instead of vanishing immediately.
+         if(entity?.label) entity.label.text="BOŞALTMA • 3 sn";
+         const unload=setTimeout(()=>{
+           if(!logRunning)return;
+           viewer.entities.removeById(id);
+           pulseTarget(r.to,routePoint(r.to));
+         },3000);
+         logTimers.push(unload);
+       }else{
+         const done=setTimeout(()=>{
+           if(!logRunning)return;
+           viewer.entities.removeById(id);
+           pulseTarget(r.to,routePoint(r.to));
+         },650);
+         logTimers.push(done);
+       }
+       return;
+     }
+
+     const entity=viewer.entities.getById(id);
+     if(entity)entity.position=path[idx];
+
+     const progress=idx/(path.length-1);
+     let multiplier=1;
+     if(progress>0.78){
+       const near=(progress-0.78)/0.22;       // 0 -> 1
+       multiplier=1+(near*1.55);             // progressively slower, max 2.55x
+     }
+     const next=setTimeout(step,Math.round(baseMs*multiplier));
+     logTimers.push(next);
+   };
+
+   const first=setTimeout(step,baseMs);
+   logTimers.push(first);
+ },delay);
+
+ logTimers.push(launch);
+}
+function simulateRoute(r,delay=0){
+ simulateOneVehicle(r,delay,1);
+ simulateOneVehicle(r,delay+3000,2);
+}
+function showShipmentAlert(routeLabel){
+ const box=document.getElementById("shipmentAlert");if(!box)return;
+ box.hidden=false;
+ let left=3;
+ box.innerHTML=`<b>YENİ SEVKİYAT BAŞLADI</b><span>1. sevkiyat hareket etti.</span><em>${left.toString().padStart(2,"0")}</em>`;
+ const iv=setInterval(()=>{
+  left--;
+  if(left>0){
+   box.innerHTML=`<b>YENİ SEVKİYAT BAŞLADI</b><span>2. sevkiyat ${left} saniye sonra çıkacak…</span><em>00:0${left}</em>`;
+  }else{
+   clearInterval(iv);
+   box.innerHTML=`<b>2. SEVKİYAT HAREKET ETTİ</b><span>${routeLabel}</span><em>GO</em>`;
+   setTimeout(()=>{box.hidden=true},1800);
+  }
+ },1000);
+ logTimers.push(iv);
+}
+function fitLogRoute(r){
+ if(!viewer)return;
+ const path=routePositions(r,140);
+ const a=routePoint(r.from),b=routePoint(r.to);
+ if(!a||!b)return;
+
+ let west=Math.min(a.lon,b.lon),east=Math.max(a.lon,b.lon);
+ let south=Math.min(a.lat,b.lat),north=Math.max(a.lat,b.lat);
+
+ // Include every waypoint in the route frame.
+ if(path&&path.length){
+   path.forEach(pos=>{
+     try{
+       const c=Cesium.Cartographic.fromCartesian(pos);
+       const lon=Cesium.Math.toDegrees(c.longitude);
+       const lat=Cesium.Math.toDegrees(c.latitude);
+       west=Math.min(west,lon);east=Math.max(east,lon);
+       south=Math.min(south,lat);north=Math.max(north,lat);
+     }catch(e){}
+   });
+ }
+
+ // Large visual margins: bottom HUD must never cover BJV/DLM/target.
+ const lonSpan=Math.max(.8,east-west);
+ const latSpan=Math.max(.65,north-south);
+ west-=Math.max(.55,lonSpan*.22);
+ east+=Math.max(.55,lonSpan*.22);
+ south-=Math.max(.85,latSpan*.42);
+ north+=Math.max(.55,latSpan*.24);
+
+ viewer.camera.flyTo({
+   destination:Cesium.Rectangle.fromDegrees(west,south,east,north),
+   orientation:{heading:0,pitch:Cesium.Math.toRadians(-90),roll:0},
+   duration:1.9
+ });
+}
+function fitAllLogRoutes(){
+ if(!viewer)return;
+ const active=LOG_ROUTES.filter(r=>r.type==="sea"
+   ?document.getElementById("seaRoutes").checked
+   :document.getElementById("roadRoutes").checked);
+
+ let west=180,east=-180,south=90,north=-90;
+ let found=false;
+
+ active.forEach(r=>{
+   const path=routePositions(r,90);
+   (path||[]).forEach(pos=>{
+     try{
+       const c=Cesium.Cartographic.fromCartesian(pos);
+       const lon=Cesium.Math.toDegrees(c.longitude);
+       const lat=Cesium.Math.toDegrees(c.latitude);
+       west=Math.min(west,lon);east=Math.max(east,lon);
+       south=Math.min(south,lat);north=Math.max(north,lat);
+       found=true;
+     }catch(e){}
+   });
+ });
+
+ if(!found)return;
+ const lonSpan=Math.max(2,east-west),latSpan=Math.max(2,north-south);
+ west-=Math.max(.8,lonSpan*.10);
+ east+=Math.max(.8,lonSpan*.10);
+ south-=Math.max(1.00,latSpan*.16);
+ north+=Math.max(.75,latSpan*.10);
+
+ viewer.camera.flyTo({
+   destination:Cesium.Rectangle.fromDegrees(west,south,east,north),
+   orientation:{heading:0,pitch:Cesium.Math.toRadians(-90),roll:0},
+   duration:2.1
+ });
+}
+function simulateAll(){
+ if(!viewer)return;
+ setMode("logistics");
+ document.body.classList.add("all-logistics-running");
+ drawLogisticsRoutes();logRunning=true;showShipmentAlert("TÜM AKTİF AĞ");
+ LOG_ROUTES.filter(r=>r.type==="sea"?document.getElementById("seaRoutes").checked:document.getElementById("roadRoutes").checked).forEach((r,i)=>simulateRoute(r,i*420));
+ fitAllLogRoutes();
+}
+function renderLogisticsDock(){
+ const host=document.getElementById("logRouteList");
+ host.innerHTML=LOG_ROUTES.map(r=>`<button data-route="${r.id}" class="${r.type}"><span>${r.type==="sea"?"⚓":"▰"}</span><b>${r.label}</b><small>JET A1 · ${r.type==="sea"?"DENİZ":"KARA"}</small></button>`).join("");
+ layoutLogisticsDock();
+ host.querySelectorAll("[data-route]").forEach(b=>b.onclick=()=>{
+   document.body.classList.remove("all-logistics-running");
+   const r=LOG_ROUTES.find(x=>x.id===b.dataset.route);
+   drawLogisticsRoutes();logRunning=true;showShipmentAlert(r.label);simulateRoute(r);fitLogRoute(r);
+ });
+}
+function layoutLogisticsDock(){
+ const host=document.getElementById("logRouteList");
+ const dock=document.getElementById("logisticsDock");
+ if(!host||!dock)return;
+ const n=host.querySelectorAll("button").length;if(!n)return;
+ const w=Math.max(720,host.clientWidth||window.innerWidth-240);
+ // Prefer one row only if cards stay comfortably readable.
+ let cols=Math.max(4,Math.floor(w/178));
+ let rows=Math.ceil(n/cols);
+ if(rows>2){rows=2;cols=Math.ceil(n/2)}
+ if(rows===1 && n>8){rows=2;cols=Math.ceil(n/2)}
+ host.style.setProperty("--log-cols",String(cols));
+ host.dataset.rows=String(rows);
+ dock.dataset.rows=String(rows);
+ dock.style.setProperty("--log-rows",String(rows));
+}
+function updateTelemetry(){
+ if(!viewer)return;const s=cameraSnap();if(!s)return;document.getElementById("telemetry").textContent=`LAT ${s.lat.toFixed(5)}° · LON ${s.lon.toFixed(5)}° · ALT ${Math.round(s.height)} m · HDG ${s.heading.toFixed(1)}° · PITCH ${s.pitch.toFixed(1)}°`
+}
+async function boot(token){
+ document.getElementById("tokenGate").hidden=true;Cesium.Ion.defaultAccessToken=token;
+ viewer=new Cesium.Viewer("cesiumContainer",{animation:false,timeline:false,baseLayerPicker:false,sceneModePicker:false,homeButton:false,navigationHelpButton:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,geocoder:false,terrain:Cesium.Terrain.fromWorldTerrain()});
+ viewer.scene.globe.enableLighting=true;viewer.scene.skyAtmosphere.show=true;viewer.scene.fog.enabled=true;viewer.scene.highDynamicRange=true;
+ rebuildEntities();renderDock();balanceOperationDock();balanceOperationDock();renderPrivate();worldView();setMode("operation");
+ viewer.camera.changed.addEventListener(updateTelemetry);viewer.camera.percentageChanged=.002;setInterval(updateTelemetry,600);
+ const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);handler.setInputAction(m=>{const picked=viewer.scene.pick(m.position);if(Cesium.defined(picked)&&picked.id&&points[picked.id.id])fly(picked.id.id)},Cesium.ScreenSpaceEventType.LEFT_CLICK);
+ try{if(Cesium.createGooglePhotorealistic3DTileset){const t=await Cesium.createGooglePhotorealistic3DTileset({onlyUsingWithGoogleGeocoder:true});viewer.scene.primitives.add(t)}}catch(e){}
+}
+const saved=localStorage.getItem("cesiumIonToken")||((window.APP_CONFIG||{}).CESIUM_TOKEN||"");
+if(saved&&saved!=="PASTE_TOKEN_HERE"){
+ boot(saved).catch(err=>{
+   console.error("KS BOOT ERROR:",err);
+   const tg=document.getElementById("tokenGate");
+   if(tg){tg.hidden=false;tg.querySelector("p")&&(tg.querySelector("p").textContent="Dünya başlatılamadı. F12 Console hatasını kontrol edin.");}
+ });
+}else document.getElementById("tokenGate").hidden=false;
+document.getElementById("tokenStart").onclick=()=>{const t=document.getElementById("tokenInput").value.trim();if(t){localStorage.setItem("cesiumIonToken",t);boot(t)}};
+document.querySelectorAll("#modeSwitch button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll("[data-layer]").forEach(cb=>cb.onchange=()=>{layerState[cb.dataset.layer]=cb.checked;applyVisibility()});
+document.getElementById("showAll").onclick=()=>{for(const k of Object.keys(layerState))layerState[k]=true;document.querySelectorAll("[data-layer]").forEach(c=>c.checked=true);applyVisibility()};
+document.getElementById("hideAll").onclick=()=>{for(const k of Object.keys(layerState))layerState[k]=false;document.querySelectorAll("[data-layer]").forEach(c=>c.checked=false);applyVisibility()};
+document.getElementById("worldBtn").onclick=worldView;
+document.getElementById("closeSelected").onclick=()=>document.getElementById("selectedPanel").hidden=true;
+document.getElementById("helpBtn").onclick=()=>document.getElementById("helpModal").hidden=false;document.getElementById("helpClose").onclick=()=>document.getElementById("helpModal").hidden=true;
+document.getElementById("saveName").onclick=()=>{if(!selectedCode)return;const name=document.getElementById("pointNameInput").value.trim();if(!name)return;persistPoint(selectedCode,{name});rebuildEntities();renderDock();balanceOperationDock();balanceOperationDock();renderPrivate();showSelected(points[selectedCode])};
+document.getElementById("saveView").onclick=()=>{
+ if(!selectedCode)return;
+
+ const s=cameraSnap();
+ if(!s)return;
+
+ const name=document.getElementById("pointNameInput").value.trim()||points[selectedCode].name;
+
+ // IMPORTANT: no rounding here. Full JS double precision is stored.
+ persistPoint(selectedCode,{
+   name,
+   lat:s.lat,
+   lon:s.lon,
+   cameraLat:s.cameraLat,
+   cameraLon:s.cameraLon,
+   cameraAlt:s.cameraAlt,
+   cameraHeading:s.cameraHeading,
+   cameraPitch:s.cameraPitch,
+   cameraRoll:s.cameraRoll,
+
+   // legacy aliases kept full precision for compatibility/display
+   height:s.cameraAlt,
+   heading:s.cameraHeading,
+   pitch:s.cameraPitch
+ });
+
+ rebuildEntities();
+ renderDock();
+ if(typeof balanceOperationDock==="function")balanceOperationDock();
+ renderPrivate();
+ showSelected(points[selectedCode]);
+ if(typeof updateAimCrosshair==="function")updateAimCrosshair();
+
+ const btn=document.getElementById("saveView");
+ const old=btn.textContent;
+ btn.disabled=true;
+ btn.textContent="KAYDEDİLDİ ✓";
+ btn.classList.add("saved-flash");
+ setTimeout(()=>{
+   btn.disabled=false;
+   btn.textContent=old;
+   btn.classList.remove("saved-flash");
+ },900);
+};
+document.getElementById("deletePoint").onclick=()=>{if(!selectedCode||BASE_POINTS[selectedCode])return;if(confirm("Bu nokta silinsin mi?")){viewer.entities.removeById(selectedCode);delete points[selectedCode];delete userPoints[selectedCode];saveUsers();renderPrivate();document.getElementById("selectedPanel").hidden=true}};
+document.getElementById("addPlaceBtn").onclick=()=>{document.getElementById("addModal").hidden=false;document.getElementById("newType").value=mode==="private"?"private":"airports";document.getElementById("groupField").hidden=mode!=="private"};
+document.getElementById("addClose").onclick=()=>document.getElementById("addModal").hidden=true;
+document.getElementById("newType").onchange=e=>document.getElementById("groupField").hidden=e.target.value!=="private";
+document.getElementById("captureBtn").onclick=()=>{captured=cameraSnap();if(captured)document.getElementById("captureInfo").textContent=`LAT ${captured.lat.toFixed(6)}° · LON ${captured.lon.toFixed(6)}° · ALT ${Math.round(captured.height)} m`};
+document.getElementById("createBtn").onclick=()=>{const name=document.getElementById("newName").value.trim(),cat=document.getElementById("newType").value;if(!name||!captured)return;const code="USR_"+Date.now().toString(36).toUpperCase();persistPoint(code,{name,category:cat,group:cat==="private"?(document.getElementById("newGroup").value.trim()||"ÖZEL"):"",...captured});buildEntity(code);renderDock();balanceOperationDock();renderPrivate();renderPrivateLayers();document.getElementById("addModal").hidden=true;renderPrivate();renderPrivateLayers();if(cat==="private")setMode("private");else renderDock();fly(code)};
+document.getElementById("saveCurrent").onclick=()=>{if(!selectedCode){alert("Önce bir nokta seç.");return}document.getElementById("saveView").click()};
+
+document.getElementById("seaRoutes").onchange=drawLogisticsRoutes;
+document.getElementById("roadRoutes").onchange=drawLogisticsRoutes;
+document.getElementById("simulateAll").onclick=simulateAll;
+document.getElementById("stopSimulation").onclick=()=>clearLogisticsSimulation(true);
+document.getElementById("logWorldBtn").onclick=worldView;
+function normalizedSecret(v){return (v||"").toLocaleLowerCase("tr-TR").replace(/\s+/g,"")}
+document.getElementById("brandSecret").onclick=()=>{if(mode==="private"){setMode("operation");return}document.getElementById("secretPassword").value="";document.getElementById("secretError").textContent="";document.getElementById("secretModal").hidden=false;setTimeout(()=>document.getElementById("secretPassword").focus(),20)};
+document.getElementById("secretClose").onclick=()=>document.getElementById("secretModal").hidden=true;
+function enterSecret(){if(normalizedSecret(document.getElementById("secretPassword").value)==="kenanseyhan"){document.getElementById("secretModal").hidden=true;setMode("private")}else document.getElementById("secretError").textContent="Parola eşleşmedi."}
+document.getElementById("secretEnter").onclick=enterSecret;
+document.getElementById("secretPassword").addEventListener("keydown",e=>{if(e.key==="Enter")enterSecret()});
+
+setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("tr-TR"),1000);
+
+/* ================= V25 BACKUP / RESTORE ================= */
+const KS_BACKUP_VERSION="V25";
+const KS_OVERRIDE_KEY="ksPointOverridesV24Fresh";
+const KS_USER_KEY="ksUserPointsV24Fresh";
+
+function ksNowStamp(){
+  const d=new Date(),p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+function ksBackupPayload(){
+  let savedOverrides={},savedUsers={};
+  try{savedOverrides=JSON.parse(localStorage.getItem(KS_OVERRIDE_KEY)||"{}")}catch(e){}
+  try{savedUsers=JSON.parse(localStorage.getItem(KS_USER_KEY)||"{}")}catch(e){}
+
+  // Token may exist under either key depending on the working version.
+  const token =
+    localStorage.getItem("cesiumIonToken") ||
+    localStorage.getItem("cesiumIonTokenV24Fresh") ||
+    ((window.APP_CONFIG||{}).CESIUM_TOKEN && (window.APP_CONFIG||{}).CESIUM_TOKEN!=="PASTE_TOKEN_HERE"
+      ? (window.APP_CONFIG||{}).CESIUM_TOKEN
+      : "");
+
+  for(const [id,p] of Object.entries(savedUsers)){
+    const n=(p?.name||"").trim().toLocaleUpperCase("tr-TR");
+    if(id==="ANTALYA_TERMINAL"||n==="ANTALYA ORTAK TERMİNALİ"||n==="KIRIKKALE") delete savedUsers[id];
+  }
+  return {
+    format:"KS_OPERATIONS_CENTER_BACKUP",
+    version:"V25-TOKEN",
+    exportedAt:new Date().toISOString(),
+    storageKeys:{overrides:KS_OVERRIDE_KEY,userPoints:KS_USER_KEY},
+    overrides:savedOverrides,
+    userPoints:savedUsers,
+    cesiumToken:token
+  };
+}
+function ksSetBackupStatus(text,ok=true){
+  const el=document.getElementById("backupStatus");
+  if(!el)return;
+  el.textContent=text;
+  el.classList.toggle("ok",ok);
+  el.classList.toggle("bad",!ok);
+  setTimeout(()=>{if(el.textContent===text)el.textContent="";},3500);
+}
+function ksExportData(){
+  const payload=ksBackupPayload();
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`KS-KAYITLAR-${ksNowStamp()}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  ksSetBackupStatus("KAYITLAR + TOKEN YEDEKLENDİ ✓",true);
+  const b=document.getElementById("exportDataBtn");
+  if(b){const old=b.innerHTML;b.classList.add("saved");setTimeout(()=>b.classList.remove("saved"),1300);}
+}
+function ksValidateBackup(data){
+  return data && data.format==="KS_OPERATIONS_CENTER_BACKUP" &&
+         typeof data.overrides==="object" && typeof data.userPoints==="object";
+}
+function ksImportDataFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!ksValidateBackup(data))throw new Error("Geçersiz KS yedek dosyası");
+      localStorage.setItem(KS_OVERRIDE_KEY,JSON.stringify(data.overrides||{}));
+      localStorage.setItem(KS_USER_KEY,JSON.stringify(data.userPoints||{}));
+      if(data.cesiumToken){
+        localStorage.setItem("cesiumIonToken",data.cesiumToken);
+        localStorage.setItem("cesiumIonTokenV24Fresh",data.cesiumToken);
+      }
+
+      ksSetBackupStatus("YEDEK YÜKLENDİ — SAYFA YENİLENİYOR ✓",true);
+      setTimeout(()=>location.reload(),700);
+    }catch(err){
+      console.error(err);
+      ksSetBackupStatus("YEDEK OKUNAMADI",false);
+      alert("Bu dosya geçerli bir KS Operations Center kayıt yedeği değil.");
+    }
+  };
+  reader.onerror=()=>ksSetBackupStatus("DOSYA OKUNAMADI",false);
+  reader.readAsText(file);
+}
+document.getElementById("exportDataBtn")?.addEventListener("click",ksExportData);
+document.getElementById("importDataBtn")?.addEventListener("click",()=>document.getElementById("importDataFile")?.click());
+document.getElementById("importDataFile")?.addEventListener("change",e=>{
+  const f=e.target.files?.[0];
+  if(f)ksImportDataFile(f);
+  e.target.value="";
+});
+
+window.addEventListener("resize",()=>setTimeout(updateAimCrosshair,20));
+setInterval(()=>{if(viewer)updateAimCrosshair()},500);
+
+function balanceOperationDock(){
+ const dock=document.getElementById("operationDock");
+ const air=document.getElementById("airportStrip");
+ const sto=document.getElementById("storageStrip");
+ const ali=document.getElementById("aliagaStrip");
+ if(!dock||!air||!sto||!ali)return;
+ const ac=air.querySelectorAll("button").length,sc=sto.querySelectorAll("button").length,lc=ali.querySelectorAll("button").length;
+ const total=Math.max(1,ac+sc*1.35+lc*1.35);
+ const avail=Math.max(900,dock.clientWidth-236);
+ const aw=Math.max(330,avail*(ac/total));
+ const sw=Math.max(250,avail*((sc*1.35)/total));
+ const lw=Math.max(210,avail*((lc*1.35)/total));
+ dock.style.gridTemplateColumns=`190px ${aw}px ${sw}px ${lw}px 46px`;
+ [[air,ac,aw,66],[sto,sc,sw,105],[ali,lc,lw,105]].forEach(([el,n,w,min])=>{
+   const per=n?w/n:w;
+   el.classList.toggle("compact",per<min*1.18);
+   el.classList.toggle("two-row",n>=5 && per<min);
+ });
+ dock.classList.toggle("tall-dock",air.classList.contains("two-row")||sto.classList.contains("two-row")||ali.classList.contains("two-row"));
+}
+
+window.addEventListener("resize",()=>setTimeout(balanceOperationDock,50));
+
+window.addEventListener("resize",()=>setTimeout(layoutLogisticsDock,50));
+
+function normalizeBottomNav(){
+ const bar=document.querySelector(".bottom-nav");
+ if(!bar)return;
+ bar.classList.add("v29-bottom-nav");
+ [...bar.children].forEach(el=>{
+   const txt=(el.textContent||"").toLocaleUpperCase("tr-TR");
+   if(txt.includes("DEPOLAMA")||txt.includes("ÇEKİŞ")) el.classList.add("v29-storage-group");
+   if(txt.includes("ALİAĞA SOCAR")) el.classList.add("v29-aliaga-group");
+ });
+}
+window.addEventListener("load",()=>setTimeout(normalizeBottomNav,250));
+
+/* ================= V116 ADB 3D — V95 PROVEN CORE =================
+   Fresh store. No migration from V112-V115.
+   Proven V95 contract:
+   - LEFT_CLICK places/selects.
+   - globe.pick first, pickPosition second.
+   - tank = CylinderGeometry + ENU + ground + h/2.
+   - wall = exact endpoint WallGeometry.
+   One store / one handler / one renderer / one selection set.
+================================================================ */
+window.KSADB3D=(()=>{
+"use strict";
+const STORE="KS_AIRPORT_ADB_3D_V2";
+const CAMERA_STORE="KS_AIRPORT_ADB_3D_CAMERA_V1";
+const CAM_TUNE_STORE="KS_ADB_CAMERA_APPROACH_V1";
+function loadCameraTune(){
+ try{
+   const d=JSON.parse(localStorage.getItem(CAM_TUNE_STORE)||"null");if(!d)return;
+   if(Number.isFinite(+d.total))window.KS_ADB_APPROACH_TOTAL=+d.total;
+   if(Number.isFinite(+d.turn))window.KS_ADB_APPROACH_TURN=+d.turn;
+   if(Number.isFinite(+d.range))window.KS_ADB_APPROACH_RANGE=+d.range;
+ }catch(e){}
+}
+function tuneCamera(){
+ loadCameraTune();
+ const total=parseFloat(prompt("ADB YAKLAŞIM TOPLAM SÜRESİ (sn):",String(window.KS_ADB_APPROACH_TOTAL||10)));
+ if(!Number.isFinite(total)||total<3)return;
+ const turn=parseFloat(prompt("DAİRESEL DÖNÜŞ AÇISI (derece):",String(window.KS_ADB_APPROACH_TURN||105)));
+ if(!Number.isFinite(turn))return;
+ const range=parseFloat(prompt("İLK ADB GÖRÜŞ MESAFESİ (km):",String(window.KS_ADB_APPROACH_RANGE||52)));
+ if(!Number.isFinite(range)||range<3)return;
+ window.KS_ADB_APPROACH_TOTAL=total;window.KS_ADB_APPROACH_TURN=turn;window.KS_ADB_APPROACH_RANGE=range;
+ localStorage.setItem(CAM_TUNE_STORE,JSON.stringify({total,turn,range}));
+ msg("KAMERA YAKLAŞIM AYARI KAYDEDİLDİ ✓");
+}
+loadCameraTune();
+function save3DCamera(){
+ try{
+   const c=viewer.camera.positionCartographic;
+   const d={
+     lon:Cesium.Math.toDegrees(c.longitude),
+     lat:Cesium.Math.toDegrees(c.latitude),
+     alt:c.height,
+     heading:viewer.camera.heading,
+     pitch:viewer.camera.pitch,
+     roll:viewer.camera.roll||0
+   };
+   localStorage.setItem(CAMERA_STORE,JSON.stringify(d));
+   msg("ADB 3D KAMERA KAYDEDİLDİ ✓");
+ }catch(e){msg("KAMERA KAYDEDİLEMEDİ")}
+}
+function load3DCamera(){
+ try{
+   const d=JSON.parse(localStorage.getItem(CAMERA_STORE)||"null");
+   if(d&&Number.isFinite(+d.lon)&&Number.isFinite(+d.lat)&&Number.isFinite(+d.alt))return d;
+ }catch(e){}
+ return null;
+}
+function enter3DCamera(){
+ const saved=load3DCamera();
+ const adb=window.points?.ADB || (typeof points!=="undefined"?points.ADB:null);
+ if(saved&&adb){
+   ksCinematicApproach(adb,saved,true);
+   return;
+ }
+ // Until the user saves a dedicated 3D view, use ADB's normal saved camera as fallback.
+ if(adb)ksCinematicApproach(adb,ksExactCameraOf(adb),true);
+}
+const CREAM="#f2e7c9";
+const DEF={
+ TANK:{type:"tank",label:"TANK",color:"#d9d7cf",radius:4.4,height:11},
+ WALL:{type:"wall",label:"DUVAR",color:"#ddd8ce",height:2.2,thickness:.25},
+ GROUND:{type:"ground",label:"ZEMİN",color:"#9b8060",opacity:.62},
+ CYPRESS:{type:"tree",tree:"CYPRESS",label:"SELVİ",color:"#315f32",height:11,width:2.8},
+ PALM:{type:"tree",tree:"PALM",label:"PALMİYE",color:"#46783b",height:10,width:6.5},
+ PLANE:{type:"tree",tree:"PLANE",label:"ÇINAR",color:"#4a783d",height:11,width:7},
+ B737:{type:"aircraft",label:"B737",color:"#eeeeee",length:39.5,width:35.8,height:12.5},
+ B777:{type:"aircraft",label:"B777",color:"#eeeeee",length:73.9,width:64.8,height:18.5},
+ A320:{type:"aircraft",label:"A320",color:"#eeeeee",length:37.6,width:35.8,height:11.8},
+ A330:{type:"aircraft",label:"A330",color:"#eeeeee",length:63.7,width:60.3,height:16.8},
+ GULFSTREAM:{type:"aircraft",label:"GULFSTREAM",color:"#f4f4f4",length:30.4,width:28.5,height:7.8},
+ CITATION:{type:"aircraft",label:"CITATION",color:"#f4f4f4",length:22,width:21,height:6.5},
+ TURBOPROP:{type:"aircraft",label:"TURBOPROP",color:"#f4f4f4",length:27.2,width:27.1,height:7.7},
+ GA:{type:"aircraft",label:"PERVANELİ",color:"#f4f4f4",length:8.3,width:11,height:2.7},
+ REF20:{type:"vehicle",label:"REFUELLER 20K",color:"#d9e3e7",length:9,width:2.5,height:3.2},
+ REF45:{type:"vehicle",label:"REFUELLER 45K",color:"#d9e3e7",length:13.5,width:2.55,height:3.6},
+ HYDRANT:{type:"vehicle",label:"HİDRANT",color:"#d9e3e7",length:7,width:2.4,height:2.8},
+ BUILDING:{type:"structure",label:"BİNA",color:"#d0cbc0",length:12,width:8,height:4},
+ CANOPY:{type:"structure",label:"SUNDURMA",color:"#c9c9c9",length:10,width:6,height:4},
+ PUMP:{type:"structure",label:"FİLTRE",color:"#d6d6d6",length:3.4,width:1.1,height:1.65},
+ MANIFOLD:{type:"structure",label:"VANA / MANİFOLD",color:"#c7c7c7",length:2,width:1.2,height:1.3}
+};
+const CATEGORIES={
+ AIRCRAFT:{label:"UÇAK",items:["B737","B777","A320","A330","GULFSTREAM","CITATION","TURBOPROP","GA"]},
+ VEHICLE:{label:"ARAÇ",items:["REF20","REF45","HYDRANT"]},
+ TREE:{label:"AĞAÇ",items:["CYPRESS","PALM","PLANE"]},
+ FACILITY:{label:"TESİS",items:["TANK","WALL","GROUND","BUILDING","CANOPY","PUMP","MANIFOLD"]}
+};
+const PALETTE=["#d9d7cf","#f2e7c9","#ffffff","#c8b79a","#9b8060","#6f6253","#596b5d","#3f6388","#477d52","#d19b42","#9e3f35","#343b3e","#151515","#e8ecec","#aeb8ba"];
+const S={active:false,scene:null,tool:null,draft:[],sel:new Set(),clipboard:[],paste:false,handler:null,prims:new Map(),labels:new Map(),history:[],future:[],savedCamera:null,hidden:[],drag:null,marquee:null,marqueeStart:null,suppressClick:false,tempEntities:[],selectionEntities:[]};
+const deep=x=>JSON.parse(JSON.stringify(x));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const color=(x,a=1)=>Cesium.Color.fromCssColorString(x).withAlpha(a);
+function blank(){return {schema:"KS_AIRPORT_3D_V2",airport:"ADB",version:2,objects:[],groups:[]}}
+function load(){
+ try{
+  const d=JSON.parse(localStorage.getItem(STORE)||"null");
+  if(d&&d.schema==="KS_AIRPORT_3D_V2"&&Array.isArray(d.objects)){
+   let changed=false;
+   for(const o of d.objects){
+    if(o?.type==="tank"){
+     if(Object.prototype.hasOwnProperty.call(o,"capacity")){delete o.capacity;changed=true}
+     const n=String(o.name||"").trim();
+     const clean=n.replace(/\s*[·•-]\s*\d+(?:[.,]\d+)?\s*m[³3]\s*$/i,"").trim();
+     if(clean&&clean!==n){o.name=clean;changed=true}
+    }
+   }
+   if(changed)localStorage.setItem(STORE,JSON.stringify(d));
+   return d
+  }
+ }catch(e){}
+ return blank()
+}
+function save(){
+ localStorage.setItem(STORE,JSON.stringify(S.scene));
+ const e=document.getElementById("ks121SaveState");if(e){e.textContent="✓ OTOMATİK KAYIT";e.classList.add("saved");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("saved"),800)}
+}
+function byId(id){return S.scene.objects.find(o=>o.id===id)}
+function snapshot(){return JSON.stringify(S.scene)}
+function before(){S.history.push(snapshot());if(S.history.length>60)S.history.shift();S.future=[]}
+function msg(t){const e=document.getElementById("ks116Status");if(e)e.textContent=t}
+/* V126 WORLD-PICK LOCK + FAST WALL
+   Placement must resolve ONE real world Cartesian point from the visible scene.
+   That lon/lat/height is stored once and NEVER recomputed from camera angle during render. */
+function surfaceHeight(lon,lat,fallback){
+ const c=Cesium.Cartographic.fromDegrees(+lon,+lat);
+ /* V142 SINGLE GROUND RULE:
+    Never sample our own editor objects as terrain. An old floating vehicle/tank
+    must not become the height source for itself or another moved object. */
+ try{
+   if(viewer.scene.sampleHeightSupported){
+     const h=viewer.scene.sampleHeight(c,editorPickExclusions(),0.25);
+     if(Number.isFinite(h))return h;
+   }
+ }catch(e){}
+ try{const h=viewer.scene.globe.getHeight(c);if(Number.isFinite(h))return h}catch(e){}
+ return Number.isFinite(+fallback)?+fallback:0;
+}
+function editorPickExclusions(){
+ const a=[];
+ for(const p of S.prims.values())if(p)a.push(p);
+ return a;
+}
+function pickGround(screen){
+ /* The screen ray is intersected with the ACTUAL visible 3D scene first.
+    Our own editor primitives are excluded so adding another object at the same
+    place cannot cause the old object to become the new placement surface. */
+ let cart=null;
+ try{
+   const ray=viewer.camera.getPickRay(screen);
+   if(Cesium.defined(ray)&&typeof viewer.scene.pickFromRay==='function'){
+     const hit=viewer.scene.pickFromRay(ray,editorPickExclusions());
+     if(hit&&Cesium.defined(hit.position))cart=hit.position;
+   }
+ }catch(e){}
+ /* Some Cesium builds may not expose pickFromRay. In that case pickPosition is
+    allowed, but only after temporarily hiding OUR editor geometry for one render. */
+ if(!Cesium.defined(cart)){
+   const hidden=[];
+   try{
+     for(const p of S.prims.values()){if(p&&p.show!==false){hidden.push(p);p.show=false}}
+     for(const e of S.labels.values()){if(e&&e.show!==false){hidden.push(e);e.show=false}}
+     for(const e of S.selectionEntities||[]){if(e&&e.show!==false){hidden.push(e);e.show=false}}
+     try{viewer.scene.render(viewer.clock.currentTime)}catch(x){}
+     if(viewer.scene.pickPositionSupported)cart=viewer.scene.pickPosition(screen);
+   }catch(e){}
+   finally{for(const x of hidden)try{x.show=true}catch(e){};try{viewer.scene.requestRender()}catch(e){}}
+ }
+ /* Final fallback: terrain/globe. This is only used when no visible 3D surface
+    was resolved. */
+ if(!Cesium.defined(cart)){
+   try{const ray=viewer.camera.getPickRay(screen);if(Cesium.defined(ray))cart=viewer.scene.globe.pick(ray,viewer.scene)}catch(e){}
+ }
+ if(!Cesium.defined(cart))return null;
+ const c=Cesium.Cartographic.fromCartesian(cart);
+ return {lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),ground:Number(c.height)||0};
+}
+function groundAt(lon,lat){return surfaceHeight(lon,lat,0)}
+/* V142: resolve a fresh terrain anchor whenever an object changes world location.
+   Old ground heights must never travel with copy/paste. */
+function reanchorPoint(p){p.ground=surfaceHeight(+p.lon,+p.lat,0);return p}
+function settleObjectToGround(o){
+ if(!o)return;
+ if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){
+   o.ground=surfaceHeight(+o.lon,+o.lat,0);
+   delete o.foundationTop;delete o.foundationBottom;
+   if(o.type==="tank")settleTank(o);
+   return;
+ }
+ if(o.type==="wall"){
+   const ps=(o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean);
+   for(const p of ps)reanchorPoint(p);
+   o.points=ps;o.surfacePoints=buildWallSurfacePath(ps);delete o.a;delete o.b;
+   return;
+ }
+ if(o.points)for(const p of o.points)reanchorPoint(p);
+}
+function settleSelectionToGround(showMessage=true){
+ if(!S.sel.size)return;
+ for(const id of S.sel){const o=byId(id);if(o)settleObjectToGround(o)}
+ save();renderAll();sync();
+ if(showMessage)msg(S.sel.size+" NESNE ZEMİNE OTURDU ✓");
+}
+function tankFoundationProfile(o){
+ const sc=+o.scale||1,r=Math.max(1,(+o.radius||4.4)*sc),lat=+o.lat,lon=+o.lon;
+ const hs=[surfaceHeight(lon,lat,+o.ground||0)];
+ const mLon=111320*Math.cos(lat*Math.PI/180)||1;
+ for(let i=0;i<16;i++){
+  const q=i*Math.PI*2/16,rr=r*1.06;
+  hs.push(surfaceHeight(lon+Math.cos(q)*rr/mLon,lat+Math.sin(q)*rr/111320,+o.ground||0));
+ }
+ const top=Math.max(...hs)+.08,bottom=Math.min(...hs)-.10;
+ return {top,bottom,depth:Math.max(.18,top-bottom),r:r*1.08};
+}
+function settleTank(o){
+ if(!o||o.type!=="tank")return;
+ const f=tankFoundationProfile(o);o.ground=f.top;o.foundationTop=f.top;o.foundationBottom=f.bottom;
+}
+
+/* V126 FAST WALL ENGINE
+   Terrain sampling is done ONCE when the wall is completed (or once for an old wall).
+   Rendering never samples terrain and never creates hundreds of BoxGeometry objects.
+   One wall = one WallGeometry = one GeometryInstance = one Primitive. */
+function wallPathLength(ps){
+ let total=0;if(!ps||ps.length<2)return 0;
+ for(let i=0;i<ps.length-1;i++){
+  const a=ps[i],b=ps[i+1],lat=(+a.lat+ +b.lat)/2,mLon=111320*Math.cos(lat*Math.PI/180);
+  total+=Math.hypot((+b.lon-+a.lon)*mLon,(+b.lat-+a.lat)*111320);
+ }
+ return total;
+}
+function buildWallSurfacePath(ps){
+ if(!ps||ps.length<2)return ps||[];
+ const total=wallPathLength(ps);
+ /* Short walls stay detailed; kilometre-scale walls are capped so they cannot freeze the UI. */
+ const step=Math.max(8,total/140),out=[];
+ for(let i=0;i<ps.length-1;i++){
+   const a=ps[i],b=ps[i+1],lat=(+a.lat+ +b.lat)/2,mLon=111320*Math.cos(lat*Math.PI/180);
+   const dist=Math.hypot((+b.lon-+a.lon)*mLon,(+b.lat-+a.lat)*111320),n=Math.max(1,Math.ceil(dist/step));
+   for(let j=0;j<n;j++){
+    const t=j/n,lon=+a.lon+(+b.lon-+a.lon)*t,la=+a.lat+(+b.lat-+a.lat)*t;
+    const fallback=(+a.ground||0)*(1-t)+(+b.ground||0)*t;
+    out.push({lon,lat:la,ground:(j===0?Number(a.ground)||fallback:surfaceHeight(lon,la,fallback))});
+   }
+ }
+ const z=ps[ps.length-1];out.push({lon:+z.lon,lat:+z.lat,ground:Number(z.ground)||0});
+ return out;
+}
+function ensureWallSurfacePath(o){
+ if(Array.isArray(o.surfacePoints)&&o.surfacePoints.length>=2)return o.surfacePoints;
+ const raw=(o.points&&o.points.length>=2)?o.points:[o.a,o.b].filter(Boolean);
+ o.surfacePoints=buildWallSurfacePath(raw);
+ /* Old V126 walls pay the terrain cost once, then the sampled path is persisted. */
+ try{save()}catch(e){}
+ return o.surfacePoints;
+}
+function clearDraftVisuals(){
+ for(const e of S.tempEntities)try{viewer.entities.remove(e)}catch(x){}
+ S.tempEntities=[];
+}
+function draftPoint(p,i){
+ const first=i===0;
+ const e=viewer.entities.add({
+   position:Cesium.Cartesian3.fromDegrees(+p.lon,+p.lat,(+p.ground||0)+.22),
+   point:{pixelSize:first?13:10,color:color(first?"#fff36b":"#ff5447"),outlineColor:Cesium.Color.BLACK,outlineWidth:2,disableDepthTestDistance:Number.POSITIVE_INFINITY},
+   label:{text:first?"BAŞLANGIÇ":String(i+1),font:"900 10px Segoe UI",fillColor:color(first?"#fff36b":"#ff766d"),outlineColor:Cesium.Color.BLACK,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-18),disableDepthTestDistance:Number.POSITIVE_INFINITY}
+ });
+ S.tempEntities.push(e);
+}
+function refreshDraftVisuals(){
+ clearDraftVisuals();
+ if(!S.draft.length)return;
+ S.draft.forEach(draftPoint);
+ if(S.draft.length>1){
+   const positions=S.draft.map(p=>Cesium.Cartesian3.fromDegrees(+p.lon,+p.lat,(+p.ground||0)+.25));
+   const line=viewer.entities.add({polyline:{positions,width:4,material:color("#fff36b"),clampToGround:false}});
+   S.tempEntities.push(line);
+ }
+}
+
+function prefix(type){return {tank:"T",wall:"D",ground:"Z",tree:"AĞAÇ ",aircraft:"UÇAK ",vehicle:"ARAÇ "}[type]||"N"}
+function nextName(type){let n=1,p=prefix(type),u=new Set(S.scene.objects.filter(o=>o.type===type).map(o=>o.name));while(u.has(p+n))n++;return p+n}
+function key(o){return "KS116:"+o.id}
+function remove(o){
+ if(!o)return;
+ const p=S.prims.get(o.id);if(p){try{viewer.scene.primitives.remove(p)}catch(e){}S.prims.delete(o.id)}
+ const l=S.labels.get(o.id);if(l){try{viewer.entities.remove(l)}catch(e){}S.labels.delete(o.id)}
+}
+function clearRender(){
+ for(const p of S.prims.values())try{viewer.scene.primitives.remove(p)}catch(e){}
+ for(const l of S.labels.values())try{viewer.entities.remove(l)}catch(e){}
+ S.prims.clear();S.labels.clear();
+}
+function addLabel(o,lon,lat,h){
+ if(o.groupId&&groupOfObject(o.id))return;
+ const e=viewer.entities.add({id:"KS116_LABEL_"+o.id,position:Cesium.Cartesian3.fromDegrees(+lon,+lat,+h),
+ label:{show:false,text:o.name,font:"800 13px Segoe UI",fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.BLACK,outlineWidth:3,
+ style:Cesium.LabelStyle.FILL_AND_OUTLINE,showBackground:true,backgroundColor:Cesium.Color.BLACK.withAlpha(.72),
+ backgroundPadding:new Cesium.Cartesian2(7,4),pixelOffset:new Cesium.Cartesian2(0,-8),
+ disableDepthTestDistance:Number.POSITIVE_INFINITY}});
+ e.ks116=o.id;S.labels.set(o.id,e);
+}
+function addPrim(o,instances,closed=true,translucent=false){
+ const p=viewer.scene.primitives.add(new Cesium.Primitive({geometryInstances:instances,appearance:new Cesium.PerInstanceColorAppearance({closed,translucent,flat:!closed}),asynchronous:false,shadows:Cesium.ShadowMode.ENABLED}));
+ /* V130: every rendered object owns ONE pick identity at primitive level.
+    Multi-part aircraft/vehicles must be selectable from any visible part, not only labels. */
+ p.id=key(o);
+ p.ks116=o.id;
+ S.prims.set(o.id,p);return p;
+}
+function attr(c){return {color:Cesium.ColorGeometryInstanceAttribute.fromColor(c)}}
+
+/* ================= V128 V96+ PROVEN LIBRARY =================
+   V96 proven aircraft/vehicle geometry, adapted to the V125/V126 locked-world core.
+   One renderer lifecycle; no legacy handlers, no legacy storage, no overrides.
+================================================================ */
+function ks128GIBox(dim,off,cc,mm,rx=0,rz=0){
+ let local=Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(...off));
+ if(rx){const r=Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationX(Cesium.Math.toRadians(rx)));local=Cesium.Matrix4.multiply(local,r,new Cesium.Matrix4())}
+ if(rz){const r=Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationZ(Cesium.Math.toRadians(rz)));local=Cesium.Matrix4.multiply(local,r,new Cesium.Matrix4())}
+ return new Cesium.GeometryInstance({geometry:Cesium.BoxGeometry.fromDimensions({dimensions:new Cesium.Cartesian3(...dim),vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:Cesium.Matrix4.multiply(mm,local,new Cesium.Matrix4()),attributes:attr(color(cc))});
+}
+function ks128GICyl(r,len,off,cc,mm,rx=0){
+ let local=Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(...off));
+ if(rx){const R=Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationX(Cesium.Math.toRadians(rx)));local=Cesium.Matrix4.multiply(local,R,new Cesium.Matrix4())}
+ return new Cesium.GeometryInstance({geometry:new Cesium.CylinderGeometry({length:len,topRadius:r*.94,bottomRadius:r,slices:32,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:Cesium.Matrix4.multiply(mm,local,new Cesium.Matrix4()),attributes:attr(color(cc))});
+}
+function ks128GIEllipsoid(rad,off,cc,mm){
+ const local=Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(...off));
+ return new Cesium.GeometryInstance({geometry:new Cesium.EllipsoidGeometry({radii:new Cesium.Cartesian3(...rad),stackPartitions:14,slicePartitions:28,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:Cesium.Matrix4.multiply(mm,local,new Cesium.Matrix4()),attributes:attr(color(cc))});
+}
+function ks128Wheel(x,y,z,r,w,mm){
+ let local=Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(x,y,z));
+ const rot=Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationY(Cesium.Math.toRadians(90)));
+ local=Cesium.Matrix4.multiply(local,rot,new Cesium.Matrix4());
+ return new Cesium.GeometryInstance({geometry:new Cesium.CylinderGeometry({length:w,topRadius:r,bottomRadius:r,slices:24,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:Cesium.Matrix4.multiply(mm,local,new Cesium.Matrix4()),attributes:attr(color('#15191a'))});
+}
+function ks128Prism(points2d,z0,z1,cc,mm){
+ const pos=[];for(const z of [z0,z1])for(const p of points2d)pos.push(p[0],p[1],z);
+ const ix=[0,1,2,0,2,3,4,6,5,4,7,6,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0];
+ let g=new Cesium.Geometry({attributes:{position:new Cesium.GeometryAttribute({componentDatatype:Cesium.ComponentDatatype.DOUBLE,componentsPerAttribute:3,values:new Float64Array(pos)})},indices:new Uint16Array(ix),primitiveType:Cesium.PrimitiveType.TRIANGLES,boundingSphere:Cesium.BoundingSphere.fromVertices(pos)});
+ g=Cesium.GeometryPipeline.computeNormal(g);
+ return new Cesium.GeometryInstance({geometry:g,modelMatrix:mm,attributes:attr(color(cc))});
+}
+function ks128Frustum(radiusA,radiusB,length,off,cc,mm){
+ let local=Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(...off));
+ const rot=Cesium.Matrix4.fromRotationTranslation(Cesium.Matrix3.fromRotationX(Cesium.Math.toRadians(90)));
+ local=Cesium.Matrix4.multiply(local,rot,new Cesium.Matrix4());
+ return new Cesium.GeometryInstance({geometry:new Cesium.CylinderGeometry({length,topRadius:radiusB,bottomRadius:radiusA,slices:36,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:Cesium.Matrix4.multiply(mm,local,new Cesium.Matrix4()),attributes:attr(color(cc))});
+}
+function ks128MM(o,z){
+ const g=Number.isFinite(+o.ground)?+o.ground:groundAt(o.lon,o.lat);
+ const pos=Cesium.Cartesian3.fromDegrees(+o.lon,+o.lat,g+(+z||0));
+ return Cesium.Transforms.headingPitchRollToFixedFrame(pos,new Cesium.HeadingPitchRoll(Cesium.Math.toRadians(+o.heading||0),0,0));
+}
+function ks128Loft(sections,cc,mm,slices=28){
+ const pos=[],ix=[];
+ for(const [y,rx,rz,zc] of sections)for(let k=0;k<slices;k++){const a=2*Math.PI*k/slices;pos.push(Math.cos(a)*rx,y,zc+Math.sin(a)*rz)}
+ for(let i=0;i<sections.length-1;i++)for(let k=0;k<slices;k++){const n=(k+1)%slices,a=i*slices+k,b=i*slices+n,c=(i+1)*slices+n,d=(i+1)*slices+k;ix.push(a,b,c,a,c,d)}
+ const base=pos.length/3,s0=sections[0],s1=sections[sections.length-1];pos.push(0,s0[0],s0[3],0,s1[0],s1[3]);
+ for(let k=0;k<slices;k++){const n=(k+1)%slices;ix.push(base,k,n);const a=(sections.length-1)*slices;ix.push(base+1,a+n,a+k)}
+ let g=new Cesium.Geometry({attributes:{position:new Cesium.GeometryAttribute({componentDatatype:Cesium.ComponentDatatype.DOUBLE,componentsPerAttribute:3,values:new Float64Array(pos)})},indices:new Uint32Array(ix),primitiveType:Cesium.PrimitiveType.TRIANGLES,boundingSphere:Cesium.BoundingSphere.fromVertices(pos)});
+ g=Cesium.GeometryPipeline.computeNormal(g);
+ return new Cesium.GeometryInstance({geometry:g,modelMatrix:mm,attributes:attr(color(cc))});
+}
+function ks128Aircraft(o){
+ const type=o.preset||'B737',scl=+o.scale||1;
+ const C={B737:{L:39.5,S:35.8,D:3.8,G:1.05,winglet:1.45},B777:{L:73.9,S:64.8,D:6.2,G:1.75,winglet:.65},A320:{L:37.6,S:35.8,D:4.0,G:1.05,winglet:1.25},A330:{L:63.7,S:60.3,D:5.6,G:1.55,winglet:.65},GULFSTREAM:{L:30.4,S:28.5,D:3.2,G:.88,winglet:.35,rear:true},CITATION:{L:16.9,S:16.7,D:2.0,G:.62,winglet:.25,rear:true},TURBOPROP:{L:27.2,S:27.1,D:2.7,G:.70,winglet:.22,prop:true},GA:{L:8.3,S:11.0,D:1.35,G:.38,winglet:0,noseProp:true}}[type];
+ if(!C)return null;
+ const L=C.L*scl,S=C.S*scl,D=C.D*scl,G=C.G*scl,mm=ks128MM(o,G),a=[];
+ const body=o.color||'#e9eded',dark='#20292d',glass='#b9c5c9',metal='#aab4b5',z=D*.58;
+ const sec=[[L*.500,D*.035,D*.035,z],[L*.485,D*.23,D*.20,z+.01*D],[L*.455,D*.43,D*.39,z+.02*D],[L*.405,D*.50,D*.48,z],[L*.250,D*.50,D*.50,z],[0,D*.50,D*.50,z],[-L*.260,D*.50,D*.50,z],[-L*.355,D*.47,D*.46,z+.02*D],[-L*.410,D*.38,D*.37,z+.09*D],[-L*.455,D*.25,D*.24,z+.18*D],[-L*.490,D*.10,D*.10,z+.25*D],[-L*.500,D*.035,D*.035,z+.27*D]];
+ a.push(ks128Loft(sec,body,mm,30));
+ // V96 placement, but lighter gray cockpit glass per current requirement.
+ /* V130: cockpit glazing is inset into the nose envelope; no floating gray slab outside fuselage. */
+ a.push(ks128GIBox([D*.50,L*.010,D*.105],[0,L*.437,z+D*.16],glass,mm,0,0));
+ const half=S/2,root=D*.46,tip=half*.965,t=Math.max(.10,D*.035),wz=z-D*.04;
+ for(const side of [-1,1]){
+   const p=[[side*root,L*.075],[side*tip,-L*.115],[side*tip,-L*.155],[side*root,-L*.105]];a.push(ks128Prism(p,wz-t/2,wz+t/2,body,mm));
+   if(C.winglet)a.push(ks128GIBox([Math.max(.10,D*.035),L*.055,C.winglet*scl],[side*tip,-L*.135,wz+C.winglet*scl*.46],body,mm,0,side*-12));
+ }
+ const th=S*.19,tz=z+D*.22;
+ for(const side of [-1,1]){const p=[[side*D*.25,-L*.405],[side*th,-L*.455],[side*th,-L*.475],[side*D*.25,-L*.445]];a.push(ks128Prism(p,tz-t*.35,tz+t*.35,body,mm))}
+ a.push(ks128GIBox([Math.max(.13,D*.055),L*.105,D*1.48],[0,-L*.415,z+D*.78],body,mm,0,13));
+ if(C.noseProp){a.push(ks128GIBox([D*.045,D*1.8,D*.045],[0,L*.493,z],dark,mm));a.push(ks128GIBox([D*1.8,D*.045,D*.045],[0,L*.494,z],dark,mm))}
+ else {
+   const ex=C.rear?D*.62:S*.215,er=D*(C.D>5?.235:.215),ey=C.rear?-L*.30:-L*.015,ez=C.rear?z+D*.15:Math.max(er+.18,D*.25);
+   for(const side of [-1,1]){
+     a.push(ks128Frustum(er*.92,er,L*(C.rear?.055:.035),[side*ex,ey+L*.020,ez],metal,mm));
+     a.push(ks128Frustum(er,er*.70,L*(C.rear?.080:.060),[side*ex,ey-L*.025,ez],metal,mm));
+     a.push(ks128GICyl(er*.68,L*.012,[side*ex,ey+L*(C.rear?.042:.041),ez],dark,mm,90));
+     a.push(ks128GIBox([D*.10,L*.060,D*.28],[side*ex,ey-L*.015,ez+er*.65],metal,mm,-10,0));
+     if(C.prop){a.push(ks128GIBox([D*.045,D*1.55,D*.045],[side*ex,ey+L*.045,ez],dark,mm));a.push(ks128GIBox([D*1.55,D*.045,D*.045],[side*ex,ey+L*.046,ez],dark,mm))}
+   }
+ }
+ const wr=Math.max(.23,D*(C.D>5?.075:.065)),ww=wr*.55,wzheel=-G+wr;
+ for(const x of [-D*.62,D*.62])a.push(ks128Wheel(x,-L*.075,wzheel,wr,ww,mm));
+ if(C.D>5)for(const x of [-D*.62,D*.62])a.push(ks128Wheel(x,-L*.145,wzheel,wr,ww,mm));
+ const nr=wr*.72;a.push(ks128Wheel(0,L*.31,-G+nr,nr,nr*.52,mm));
+ return {instances:a,labelH:G+D*2.35};
+}
+function ks128Cab(a,mm,W,s,cabY){
+ const white='#e2e6e4',dark='#20282b',glass='#9ba8a9',metal='#899493';
+ a.push(ks128GIBox([W*.94,.34*s,.30*s],[0,cabY+1.18*s,.34*s],dark,mm));
+ a.push(ks128GIBox([W*.82,.16*s,.18*s],[0,cabY+1.38*s,.48*s],metal,mm));
+ a.push(ks128GIBox([W*.88,2.30*s,1.05*s],[0,cabY,.96*s],white,mm));
+ a.push(ks128GIBox([W*.82,1.82*s,1.20*s],[0,cabY-.08*s,1.94*s],white,mm));
+ a.push(ks128GIBox([W*.70,.10*s,.70*s],[0,cabY+0.88*s,2.02*s],glass,mm,-7,0));
+ a.push(ks128GIBox([.07*s,.78*s,.62*s],[-W*.425,cabY+.10*s,2.00*s],glass,mm));
+ a.push(ks128GIBox([.07*s,.78*s,.62*s],[W*.425,cabY+.10*s,2.00*s],glass,mm));
+ a.push(ks128GIBox([W*.48,.07*s,.28*s],[0,cabY+1.20*s,.83*s],dark,mm));
+ a.push(ks128GIBox([W*.15,.08*s,.18*s],[-W*.30,cabY+1.22*s,.72*s],'#eef3d2',mm));
+ a.push(ks128GIBox([W*.15,.08*s,.18*s],[W*.30,cabY+1.22*s,.72*s],'#eef3d2',mm));
+ a.push(ks128GIBox([.08*s,.18*s,.24*s],[-W*.52,cabY+.66*s,2.15*s],dark,mm));
+ a.push(ks128GIBox([.08*s,.18*s,.24*s],[W*.52,cabY+.66*s,2.15*s],dark,mm));
+ a.push(ks128GICyl(.09*s,.18*s,[0,cabY-.18*s,2.66*s],'#ff9b1c',mm));
+}
+
+
+
+function ks134Reel(a,mm,x,y,z,s,R=.38,w=.20){
+ const frame='#b7bfbd',hose='#15191a',hub='#606a6b';
+ // reel frame
+ a.push(ks128GIBox([R*2.35,.07*s,R*2.35],[x,y-w*.75,z],frame,mm));
+ // cheeks / hub
+ a.push(ks128GICyl(R,w,[x,y,z],frame,mm,90));
+ a.push(ks128GICyl(R*.88,w*1.06,[x,y,z],hose,mm,90));
+ a.push(ks128GICyl(R*.17,w*1.18,[x,y,z],hub,mm,90));
+ // multiple wound hose rings
+ for(const rr of [R*.76,R*.62,R*.48,R*.34]){
+  const n=16,seg=2*Math.PI*rr/n;
+  for(let i=0;i<n;i++){
+   const q=i*360/n,r=q*Math.PI/180;
+   a.push(ks128GIBox([.055*s,seg,.055*s],[x+Math.cos(r)*rr,y+w*.60,z+Math.sin(r)*rr],hose,mm,0,q));
+  }
+ }
+ // lower cradle
+ a.push(ks128GIBox([R*2.15,.30*s,.09*s],[x,y,z-R*1.08],frame,mm));
+}
+function ks134Bonding(a,mm,x,y,z,s){
+ const R=.15*s,metal='#727d7d',wire='#15191a',clamp='#d3aa42';
+ a.push(ks128GICyl(R,.09*s,[x,y,z],metal,mm,90));
+ a.push(ks128GICyl(R*.72,.11*s,[x,y,z],wire,mm,90));
+ a.push(ks128GIBox([.025*s,.30*s,.025*s],[x,y+.18*s,z-.04*s],wire,mm));
+ a.push(ks128GIBox([.11*s,.12*s,.03*s],[x,y+.35*s,z-.04*s],clamp,mm,0,18));
+}
+function ks134Platform(a,mm,y,W,s,is45){
+ const steel='#b9c0bd',dark='#50595a',deck='#d5d9d6',haz='#d4ad25';
+ const bw=W*.84,bl=(is45?1.35:1.15)*s,z0=.58*s,h=(is45?.78:.70)*s;
+ // base + deck
+ a.push(ks128GIBox([bw,bl,.13*s],[0,y,z0],dark,mm));
+ a.push(ks128GIBox([bw,bl,.14*s],[0,y,z0+h],deck,mm));
+ // twin side X scissors
+ for(const x of [-bw*.34,bw*.34]){
+   a.push(ks128GIBox([.09*s,bl*.82,.09*s],[x,y,z0+h*.50],steel,mm,43,0));
+   a.push(ks128GIBox([.09*s,bl*.82,.09*s],[x,y,z0+h*.50],steel,mm,-43,0));
+   a.push(ks128GICyl(.055*s,.14*s,[x,y,z0+h*.50],dark,mm,90));
+ }
+ // guard rail posts and rails
+ const rz=z0+h+.68*s;
+ for(const x of [-bw*.46,bw*.46])for(const yy of [y-bl*.43,y+bl*.43])
+   a.push(ks128GIBox([.045*s,.045*s,.68*s],[x,yy,z0+h+.34*s],steel,mm));
+ a.push(ks128GIBox([bw*.92,.045*s,.045*s],[0,y-bl*.43,rz],steel,mm));
+ a.push(ks128GIBox([bw*.92,.045*s,.045*s],[0,y+bl*.43,rz],steel,mm));
+ a.push(ks128GIBox([.045*s,bl*.86,.045*s],[-bw*.46,y,rz],steel,mm));
+ a.push(ks128GIBox([.045*s,bl*.86,.045*s],[ bw*.46,y,rz],steel,mm));
+ // black/yellow visual edge cue
+ for(let i=-3;i<=3;i++) a.push(ks128GIBox([bw/8,.055*s,.055*s],[i*bw/7.5,y+bl*.47,z0+h+.03*s],i%2?'#1d2324':haz,mm));
+}
+function ks134ControlSkid(a,mm,x,y,z,W,s){
+ const metal='#c4cac7',panel='#353d3f',gauge='#dbe4df',red='#c73b32',green='#3c8b58',amber='#d19b42';
+ a.push(ks128GIBox([W*.34,.36*s,.78*s],[x,y,z],metal,mm));
+ a.push(ks128GIBox([W*.30,.045*s,.55*s],[x,y+.20*s,z+.06*s],panel,mm,-7,0));
+ // four readable gauge faces
+ for(const gx of [-.09,-.03,.03,.09]) a.push(ks128GICyl(.035*s,.024*s,[x+gx*s,y+.225*s,z+.18*s],gauge,mm,90));
+ // control lamps
+ a.push(ks128GICyl(.025*s,.025*s,[x-.06*s,y+.226*s,z-.03*s],red,mm,90));
+ a.push(ks128GICyl(.025*s,.025*s,[x,y+.226*s,z-.03*s],green,mm,90));
+ a.push(ks128GICyl(.025*s,.025*s,[x+.06*s,y+.226*s,z-.03*s],amber,mm,90));
+}
+
+function ks135FuelModule(a,mm,is45,L,W,H,s,tankFront,cabRear){
+ /* User/reference-locked longitudinal order:
+    CAB -> LIFT -> HOSE REEL / CONTROL -> TANK.
+    The reel must never sit inside the lift envelope. */
+ const metal='#c4cac7',dark='#353d3f',pipe='#d8ddda',gauge='#dbe4df';
+ const liftY=cabRear-.52*s;
+ const liftHalf=(is45?1.35:1.15)*s*.50;
+ const liftRear=liftY-liftHalf;
+
+ // 1) Lift immediately behind cab.
+ ks134Platform(a,mm,liftY,W,s,is45);
+
+ // 2) Dedicated equipment bay BEHIND the lift and BEFORE the tank.
+ // Keep reel close to tank front so it visually reads as a separate bay.
+ const reelY=tankFront+.48*s;
+ const bayMid=(liftRear+reelY)*.50;
+
+ // Main underwing hose reel, large vertical drum with visible wound hose.
+ ks134Reel(a,mm,W*.23,reelY,1.18*s,s,is45?.41*s:.36*s,.21*s);
+
+ // Control / meter cabinet beside and slightly forward of reel, not inside lift.
+ ks134ControlSkid(a,mm,-W*.22,bayMid,1.10*s,W,s);
+
+ // Vertical filter vessel and compact manifold below.
+ a.push(ks128GICyl(.14*s,.78*s,[W*.08,bayMid,1.03*s],'#343d3f',mm));
+ a.push(ks128GICyl(.17*s,.08*s,[W*.08,bayMid,1.45*s],'#aeb7b5',mm));
+ a.push(ks128GIBox([W*.56,.08*s,.08*s],[0,bayMid-.18*s,.68*s],pipe,mm));
+ a.push(ks128GIBox([.08*s,Math.max(.30*s,Math.abs(reelY-bayMid)),.08*s],
+   [W*.12,(reelY+bayMid)*.50,.68*s],pipe,mm));
+
+ // Underwing nozzle/coupling cradle at reel.
+ a.push(ks128GICyl(.075*s,.25*s,[W*.40,reelY+.30*s,.72*s],'#50595a',mm,90));
+ a.push(ks128GIBox([.15*s,.30*s,.10*s],[W*.40,reelY+.17*s,.72*s],'#727c7c',mm,0,-12));
+
+ // Small bonding reel + clamp, clearly subordinate to main fuel reel.
+ ks134Bonding(a,mm,-W*.42,bayMid-.14*s,.70*s,s);
+
+ // Low access step between lift and equipment bay.
+ a.push(ks128GIBox([W*.34,.20*s,.06*s],[0,liftRear-.10*s,.34*s],'#aab2b0',mm));
+}
+
+
+function ks135Hydrant(o){
+ const s=+o.scale||1,a=[],L=7.4*s,W=2.45*s,wheelR=.42*s,mm=ks128MM(o,wheelR);
+ const dark='#252d30',metal='#b8c0bd',red='#d63d2f',filter='#d9dedb',pipe='#d6dcda';
+ a.push(ks128GIBox([W*.88,L*.92,.24*s],[0,0,.38*s],dark,mm));
+ const cabY=L*.30;
+ ks128Cab(a,mm,W,s,cabY);
+
+ // Lift directly behind cab, same architecture as refuellers.
+ const liftY=L*.055;
+ ks134Platform(a,mm,liftY,W,s,false);
+
+ // Reel is behind the lift, not inside it.
+ const reelY=-L*.27;
+ ks134Reel(a,mm,W*.23,reelY,1.15*s,s,.36*s,.20*s);
+
+ // Meter/control + filtration occupy the separate bay between lift and reel.
+ const controlY=-L*.12;
+ ks134ControlSkid(a,mm,-W*.22,controlY,1.10*s,W,s);
+ a.push(ks128GICyl(.17*s,.88*s,[W*.10,controlY,1.05*s],filter,mm));
+ // two horizontal filter/coalescer cues lower in chassis
+ a.push(ks128GICyl(.23*s,1.35*s,[-.30*s,-L*.36,.86*s],filter,mm,90));
+ a.push(ks128GICyl(.23*s,1.35*s,[ .30*s,-L*.36,.86*s],filter,mm,90));
+
+ // pipe/manifold network
+ a.push(ks128GIBox([W*.60,.08*s,.08*s],[0,-L*.24,.66*s],pipe,mm));
+ a.push(ks128GIBox([.08*s,1.45*s,.08*s],[W*.10,-L*.30,.66*s],pipe,mm));
+
+ // hydrant pit coupler/inlet low on chassis, plus nozzle cradle.
+ a.push(ks128GICyl(.14*s,.30*s,[-W*.30,-L*.44,.52*s],'#d2ad2c',mm));
+ a.push(ks128GIBox([.12*s,.95*s,.12*s],[-W*.28,-L*.39,.46*s],'#171b1c',mm));
+ a.push(ks128GICyl(.075*s,.24*s,[W*.40,reelY+.30*s,.69*s],'#50595a',mm,90));
+ ks134Bonding(a,mm,-W*.42,controlY-.12*s,.68*s,s);
+
+ a.push(ks128GIBox([W*.84,.28*s,.30*s],[0,-L*.49,.54*s],red,mm));
+ for(const y of [L*.27,-L*.31]){
+  a.push(ks128Wheel(-W*.45,y,0,wheelR,wheelR*.52,mm));
+  a.push(ks128Wheel(W*.45,y,0,wheelR,wheelR*.52,mm));
+ }
+ return {instances:a,labelH:3.7*s};
+}
+
+function ks128Vehicle(o){
+ const type=o.preset||'REF20',s=+o.scale||1,a=[];
+ if(type==='HYDRANT')return ks135Hydrant(o);
+ const is45=type==='REF45',L=(is45?15.5:9.2)*s,W=(is45?2.55:2.45)*s,H=(is45?3.45:3.15)*s,wheelR=(is45?.48:.43)*s,mm=ks128MM(o,wheelR);
+ const tank=o.color||'#d7dcda',dark='#283033',red='#d83e2e',metal='#aab4b2';a.push(ks128GIBox([W*.86,L*.91,.26*s],[0,0,.40*s],dark,mm));
+ const cabY=L*.355;
+ ks128Cab(a,mm,W,s,cabY);
+ /* V132: 45K tank remains exactly where it was. 20K tank moves modestly toward
+    the cab so its front equipment bay is slightly tighter, not a dead empty gap. */
+ const tankL=(is45?10.7:5.15)*s,tankR=(is45?1.02:.86)*s,
+       tankY=is45?-L*.205:-L*.225,
+       tankZ=tankR+.39*s;
+ a.push(ks128GICyl(tankR,tankL,[0,tankY,tankZ],tank,mm,90));
+ a.push(ks128GIEllipsoid([tankR,tankR*.34,tankR],[0,tankY-tankL*.50,tankZ],tank,mm));
+ a.push(ks128GIEllipsoid([tankR,tankR*.34,tankR],[0,tankY+tankL*.50,tankZ],tank,mm));
+ const supportY=is45?L*.10:(tankY+tankL*.16);
+ const supportL=is45?1.10*s:.62*s;
+ a.push(ks128GIBox([W*.74,supportL,1.42*s],[0,supportY,H*.35],metal,mm));
+ a.push(ks128GIBox([W*.58,.08*s,.62*s],[0,is45?L*.155:(supportY+.15*s),H*.38],'#3b494a',mm));
+ /* Aircraft-refuelling module: same equipment family on both capacities. */
+ const tankFront=tankY+tankL*.50+tankR*.22;
+ const cabRear=cabY-1.18*s;
+ ks135FuelModule(a,mm,is45,L,W,H,s,tankFront,cabRear);
+ a.push(ks128GIBox([W*.80,.34*s,.30*s],[0,-L*.47,.32*s],red,mm));
+ const axleYs=is45?[L*.34,-L*.20,-L*.38]:[L*.30,-L*.34];for(const y of axleYs){a.push(ks128Wheel(-W*.45,y,0,wheelR,wheelR*.52,mm));a.push(ks128Wheel(W*.45,y,0,wheelR,wheelR*.52,mm))}
+ return {instances:a,labelH:H+wheelR+.7};
+}
+
+function ks131Filter(o){
+ const s=+o.scale||1,a=[],mm=ks128MM(o,0);
+ const body=o.color||'#d6d6d6',metal='#9fa8a7',dark='#485052',bolt='#707878';
+ /* Real-scale target: ~3.4 m long, 1.1 m body diameter, ~1.65 m overall high. */
+ const L=3.40*s,R=.55*s,zc=1.02*s;
+ // main horizontal pressure vessel
+ a.push(ks128GICyl(R,L,[0,0,zc],body,mm,90));
+ // rounded rear head
+ a.push(ks128GIEllipsoid([R,R*.30,R],[0,-L*.50,zc],body,mm));
+ // large front quick-opening cover + outer collar
+ a.push(ks128GICyl(R*1.10,.16*s,[0,L*.505,zc],metal,mm,90));
+ a.push(ks128GICyl(R*.96,.08*s,[0,L*.565,zc],body,mm,90));
+ // central boss on cover
+ a.push(ks128GICyl(.12*s,.10*s,[0,L*.62,zc],dark,mm,90));
+ // cover bolts / clamps around the face
+ for(let i=0;i<10;i++){
+   const q=i*Math.PI*2/10,x=Math.cos(q)*R*.93,z=zc+Math.sin(q)*R*.93;
+   a.push(ks128GICyl(.035*s,.09*s,[x,L*.62,z],bolt,mm,90));
+ }
+ // hinge / quick-opening mechanism on one side
+ a.push(ks128GIBox([.16*s,.30*s,.22*s],[-R*1.13,L*.49,zc+.12*s],dark,mm));
+ a.push(ks128GIBox([.10*s,.42*s,.10*s],[-R*1.23,L*.48,zc+.12*s],metal,mm));
+ // two steel saddle legs, not blocky full-body supports
+ for(const y of [-L*.28,L*.23]){
+   a.push(ks128GIBox([.16*s,.30*s,.72*s],[-R*.62,y,.38*s],metal,mm));
+   a.push(ks128GIBox([.16*s,.30*s,.72*s],[ R*.62,y,.38*s],metal,mm));
+   a.push(ks128GIBox([1.55*s,.30*s,.12*s],[0,y,.08*s],dark,mm));
+ }
+ // top vent / gauge necks
+ a.push(ks128GICyl(.065*s,.26*s,[-.16*s,-.48*s,1.66*s],metal,mm));
+ a.push(ks128GICyl(.055*s,.22*s,[ .18*s,.18*s,1.63*s],metal,mm));
+ // inlet / outlet nozzle blocks/flange hints
+ a.push(ks128GIBox([.42*s,.18*s,.28*s],[-R*.92,-.55*s,zc-.08*s],metal,mm));
+ a.push(ks128GIBox([.42*s,.18*s,.28*s],[ R*.92,.35*s,zc-.08*s],metal,mm));
+ return {instances:a,labelH:1.78*s};
+}
+
+function render(o){
+ remove(o);
+ const c=color(o.color||"#d9d7cf");
+ if(o.type==="tank"){
+   const sc=+o.scale||1,r=Math.max(1,(+o.radius||4.4)*sc),h=Math.max(1,(+o.height||11)*sc);
+   const f=tankFoundationProfile(o),g=f.top;
+   /* A storage tank stays vertical and sits on a level foundation/plinth. The plinth
+      reaches down to the lowest terrain point under the footprint, so one edge cannot float. */
+   const padCenter=Cesium.Cartesian3.fromDegrees(+o.lon,+o.lat,f.bottom+f.depth/2);
+   const padMM=Cesium.Transforms.eastNorthUpToFixedFrame(padCenter);
+   const pad=new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.CylinderGeometry({length:f.depth,topRadius:f.r,bottomRadius:f.r,slices:96,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:padMM,attributes:attr(color("#b8b4aa"))});
+   const center=Cesium.Cartesian3.fromDegrees(+o.lon,+o.lat,g+h/2+.04);
+   const mm=Cesium.Transforms.eastNorthUpToFixedFrame(center);
+   const gi=new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.CylinderGeometry({length:h,topRadius:r,bottomRadius:r,slices:96,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:mm,attributes:attr(c)});
+   addPrim(o,[pad,gi],true,false);addLabel(o,o.lon,o.lat,g+h+1.4);return;
+ }
+ if(o.type==="wall"){
+   const raw=(o.points&&o.points.length>=2)?o.points:[o.a,o.b].filter(Boolean);
+   if(raw.length<2)return;
+   const pts=ensureWallSurfacePath(o);
+   if(pts.length<2)return;
+   const H=Math.max(.15,(+o.height||2.2)*(+o.scale||1));
+   const positions=pts.map(p=>Cesium.Cartesian3.fromDegrees(+p.lon,+p.lat,0));
+   const mins=pts.map(p=>(+p.ground||0)+.06);
+   const maxs=mins.map(h=>h+H);
+   const gi=new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.WallGeometry({positions,minimumHeights:mins,maximumHeights:maxs,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),attributes:attr(c)});
+   addPrim(o,gi,true,false);
+   const mid=pts[Math.floor(pts.length/2)]||pts[0];addLabel(o,mid.lon,mid.lat,(+mid.ground||0)+H+.8);return;
+ }
+ if(o.type==="ground"){
+   if(!o.points||o.points.length<3)return;
+   const positions=o.points.map(p=>Cesium.Cartesian3.fromDegrees(+p.lon,+p.lat,surfaceHeight(p.lon,p.lat,p.ground)+.10));
+   const gi=new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.PolygonGeometry({polygonHierarchy:new Cesium.PolygonHierarchy(positions),perPositionHeight:true,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),attributes:attr(c.withAlpha(o.opacity??.62))});
+   addPrim(o,gi,false,true);return;
+ }
+ const g=Number.isFinite(+o.ground)?+o.ground:groundAt(o.lon,o.lat);
+ if(o.type==="tree"){
+   const sc=+o.scale||1,H=(+o.height||10)*sc,W=(+o.width||5)*sc,base=Cesium.Cartesian3.fromDegrees(+o.lon,+o.lat,g),enu=Cesium.Transforms.eastNorthUpToFixedFrame(base);
+   const local=(z)=>Cesium.Matrix4.multiply(enu,Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(0,0,z)),new Cesium.Matrix4());
+   const parts=[new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.CylinderGeometry({length:H*.45,topRadius:W*.06,bottomRadius:W*.09,slices:24,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:local(H*.225),attributes:attr(color("#765133"))})];
+   if(o.tree==="CYPRESS")parts.push(new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.CylinderGeometry({length:H*.82,topRadius:.08,bottomRadius:W*.42,slices:32,vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:local(H*.58),attributes:attr(c)}));
+   else parts.push(new Cesium.GeometryInstance({id:key(o),geometry:new Cesium.EllipsoidGeometry({radii:new Cesium.Cartesian3(W*.55,W*.5,H*.32),vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:local(H*.72),attributes:attr(c)}));
+   addPrim(o,parts,true,false);addLabel(o,o.lon,o.lat,g+H+1);return;
+ }
+ if(o.type==="structure"){
+   if(o.preset==="PUMP"){
+     const pack=ks131Filter(o);
+     addPrim(o,pack.instances,true,false);
+     addLabel(o,o.lon,o.lat,g+(pack.labelH||1.8)+.55);
+     return;
+   }
+   const sc=+o.scale||1,L=(+o.length||8)*sc,W=(+o.width||6)*sc,H=(+o.height||4)*sc;
+   const pos=Cesium.Cartesian3.fromDegrees(+o.lon,+o.lat,g+H/2+.08);
+   const mm=Cesium.Transforms.headingPitchRollToFixedFrame(pos,new Cesium.HeadingPitchRoll(Cesium.Math.toRadians(+o.heading||0),0,0));
+   const local=(x,y,z)=>Cesium.Matrix4.multiply(mm,Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(x,y,z)),new Cesium.Matrix4());
+   const box=(dx,dy,dz,x=0,y=0,z=0,cc=c)=>new Cesium.GeometryInstance({id:key(o),geometry:Cesium.BoxGeometry.fromDimensions({dimensions:new Cesium.Cartesian3(dx,dy,dz),vertexFormat:Cesium.PerInstanceColorAppearance.VERTEX_FORMAT}),modelMatrix:local(x,y,z),attributes:attr(cc)});
+   let parts=[];
+   if(o.preset==="CANOPY")parts=[box(W,L,.18,0,0,H*.42),box(.14,.14,H*.82,-W*.42,-L*.42,-H*.08),box(.14,.14,H*.82,W*.42,-L*.42,-H*.08),box(.14,.14,H*.82,-W*.42,L*.42,-H*.08),box(.14,.14,H*.82,W*.42,L*.42,-H*.08)];
+   else if(o.preset==="MANIFOLD")parts=[box(W,L,H*.35,0,0,-H*.20),box(W*.16,L*.82,H*.12,0,0,H*.10,color("#9b8060"))];
+   else parts=[box(W,L,H)];
+   addPrim(o,parts,true,false);addLabel(o,o.lon,o.lat,g+H+1);return;
+ }
+ if(o.type==="aircraft"||o.type==="vehicle"){
+   const pack=o.type==="aircraft"?ks128Aircraft(o):ks128Vehicle(o);
+   if(!pack||!pack.instances||!pack.instances.length)return;
+   addPrim(o,pack.instances,true,false);
+   addLabel(o,o.lon,o.lat,g+(pack.labelH||(+o.height||4)*(+o.scale||1))+1.0);
+   return;
+ }
+}
+
+function clearSelectionVisuals(){
+ for(const e of S.selectionEntities)try{viewer.entities.remove(e)}catch(x){}
+ S.selectionEntities=[];
+}
+function renderSelectionVisuals(){
+ clearSelectionVisuals();
+ for(const id of S.sel){
+   const o=byId(id);if(!o)continue;const a=center(o);
+   const e=viewer.entities.add({position:Cesium.Cartesian3.fromDegrees(a.lon,a.lat,a.ground+.35),point:{pixelSize:18,color:Cesium.Color.TRANSPARENT,outlineColor:color(CREAM),outlineWidth:4,disableDepthTestDistance:Number.POSITIVE_INFINITY}});
+   S.selectionEntities.push(e);
+ }
+}
+
+function groupOfObject(id){
+ const o=byId(id);if(!o||!o.groupId)return null;
+ return (S.scene.groups||[]).find(g=>g.id===o.groupId)||null;
+}
+function validGroupIds(g){return (g?.objectIds||[]).filter(id=>!!byId(id))}
+function selectionUnitIds(id){
+ const g=groupOfObject(id);
+ return g?validGroupIds(g):[id];
+}
+function selectUnit(id,add=false){
+ if(id&&(S.tool||S.paste)){clearDraftVisuals();S.tool=null;S.draft=[];S.paste=false;closeCategory()}
+ const ids=selectionUnitIds(id);
+ if(!add)S.sel.clear();
+ if(add){
+   const all=ids.length&&ids.every(x=>S.sel.has(x));
+   ids.forEach(x=>all?S.sel.delete(x):S.sel.add(x));
+ }else ids.forEach(x=>S.sel.add(x));
+ if(!S.sel.size){const p=document.getElementById("ks120Palette");if(p)p.hidden=true}
+ renderAll();sync();
+ const g=groupOfObject(id);
+ msg(g?(g.name+" GRUBU SEÇİLDİ • "+ids.length+" NESNE"):(byId(id)?.name+" SEÇİLDİ"));
+}
+function groupCenter(g){
+ const arr=validGroupIds(g).map(byId).filter(Boolean),cc=arr.map(center).filter(Boolean);
+ if(!cc.length)return null;
+ return cc.reduce((q,p)=>({lat:q.lat+p.lat/cc.length,lon:q.lon+p.lon/cc.length,ground:q.ground+p.ground/cc.length}),{lat:0,lon:0,ground:0});
+}
+function groupLabelHeight(g){
+ const arr=validGroupIds(g).map(byId).filter(Boolean);
+ let extra=3;
+ for(const o of arr){
+   if(o.type==="tank")extra=Math.max(extra,(+o.height||11)*(+o.scale||1)+2);
+   else if(o.type==="tree")extra=Math.max(extra,(+o.height||9)*(+o.scale||1)+2);
+   else if(o.type==="aircraft"||o.type==="vehicle"||o.type==="structure")extra=Math.max(extra,(+o.height||4)*(+o.scale||1)+2);
+ }
+ return extra;
+}
+function addGroupLabel(g){
+ const c=groupCenter(g);if(!c)return;
+ const id="KS140_GROUP_"+g.id;
+ const e=viewer.entities.add({id,position:Cesium.Cartesian3.fromDegrees(+c.lon,+c.lat,(+c.ground||0)+groupLabelHeight(g)),
+   label:{show:false,text:g.name,font:"800 13px Segoe UI",fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.BLACK,outlineWidth:3,
+   style:Cesium.LabelStyle.FILL_AND_OUTLINE,showBackground:true,backgroundColor:Cesium.Color.BLACK.withAlpha(.72),
+   backgroundPadding:new Cesium.Cartesian2(7,4),pixelOffset:new Cesium.Cartesian2(0,-8),
+   disableDepthTestDistance:Number.POSITIVE_INFINITY}});
+ e.ks140Group=g.id;
+ S.labels.set("GROUP:"+g.id,e);
+}
+function renderGroupLabels(){
+ for(const g of S.scene.groups||[])if(validGroupIds(g).length)addGroupLabel(g);
+}
+
+function selectedUnits(){
+ const units=[],seenG=new Set(),seenO=new Set();
+ for(const id of S.sel){
+   const g=groupOfObject(id);
+   if(g){if(!seenG.has(g.id)){seenG.add(g.id);units.push({kind:"group",g})}}
+   else if(!seenO.has(id)){seenO.add(id);const o=byId(id);if(o)units.push({kind:"object",o})}
+ }
+ return units;
+}
+function updateNameVisibility(){
+ // Rule: zero labels normally. Only ONE selected logical unit gets ONE label.
+ for(const e of S.labels.values())if(e?.label)e.label.show=false;
+ const units=selectedUnits();
+ if(units.length!==1)return;
+ const u=units[0];
+ const e=u.kind==="group"?S.labels.get("GROUP:"+u.g.id):S.labels.get(u.o.id);
+ if(e?.label)e.label.show=true;
+}
+
+
+function renderAll(){clearRender();for(const o of S.scene.objects)render(o);renderGroupLabels();renderSelectionVisuals();updateNameVisibility();try{viewer.scene.requestRender()}catch(e){}}
+function pickObject(screen){
+ try{
+   const picks=viewer.scene.drillPick(screen,20,7,7)||[];
+   for(const p of picks){
+     if(p?.id?.ks140Group){const g=(S.scene.groups||[]).find(x=>x.id===p.id.ks140Group);const ids=validGroupIds(g);if(ids.length)return ids[0]}
+     if(p?.id?.ks116)return p.id.ks116;
+     const id=p?.id;
+     if(typeof id==="string"&&id.startsWith("KS116:"))return id.slice(6);
+     const pid=p?.primitive?.id;
+     if(typeof pid==="string"&&pid.startsWith("KS116:"))return pid.slice(6);
+   }
+ }catch(e){}
+ return null;
+}
+function select(id,add=false){
+ if(!id){
+   if(!add)S.sel.clear();
+   if(!S.sel.size){const p=document.getElementById("ks120Palette");if(p)p.hidden=true}
+   renderAll();sync();msg("SEÇİM TEMİZ");return;
+ }
+ selectUnit(id,add);
+}
+function setTool(t){
+ clearDraftVisuals();S.tool=t;S.draft=[];S.paste=false;sync();
+ msg(t?DEF[t].label+(t==="WALL"?" • NOKTALARI SOL TIKLA • ENTER İLE BİTİR":t==="GROUND"?" • KÖŞELERİ SOL TIKLA • ENTER İLE BİTİR":" • ZEMİNE SOL TIKLA"):"HAZIR");
+}
+function addPoint(t,h,keep){
+ before();const d=DEF[t],o={id:uid(),preset:t,type:d.type,name:nextName(d.type),lat:h.lat,lon:h.lon,ground:h.ground,color:d.color,heading:0,scale:1};
+ for(const k of ["radius","height","width","length","tree","thickness"])if(d[k]!=null)o[k]=d[k];
+ if(o.type==="tank")settleTank(o);
+ S.scene.objects.push(o);S.sel=new Set([o.id]);save();renderAll();sync();msg(o.name+" EKLENDİ ✓");if(!keep)setTool(null);
+}
+function addWall(h){
+ S.draft.push(deep(h));refreshDraftVisuals();
+ msg("DUVAR • "+S.draft.length+" NOKTA • DEVAM ET VEYA ENTER İLE BİTİR");
+}
+function finishWall(){
+ if(S.tool!=="WALL"||S.draft.length<2)return msg("DUVAR İÇİN EN AZ 2 NOKTA");
+ before();const o={id:uid(),type:"wall",name:nextName("wall"),points:deep(S.draft),height:DEF.WALL.height,thickness:DEF.WALL.thickness,scale:1,color:DEF.WALL.color};
+ /* Terrain-following path is calculated once here; camera movement/render never recalculates it. */
+ o.surfacePoints=buildWallSurfacePath(o.points);
+ S.scene.objects.push(o);S.sel=new Set([o.id]);S.draft=[];clearDraftVisuals();save();renderAll();setTool(null);sync();msg(o.name+" OLUŞTU ✓");
+}
+function addGround(h){S.draft.push(deep(h));refreshDraftVisuals();msg("ZEMİN • "+S.draft.length+" NOKTA • ENTER İLE BİTİR")}
+function finishGround(){if(S.tool!=="GROUND"||S.draft.length<3)return msg("ZEMİN İÇİN EN AZ 3 NOKTA");before();const o={id:uid(),type:"ground",name:nextName("ground"),points:deep(S.draft),color:DEF.GROUND.color,opacity:DEF.GROUND.opacity};S.scene.objects.push(o);S.sel=new Set([o.id]);S.draft=[];clearDraftVisuals();save();renderAll();setTool(null);sync();msg(o.name+" OLUŞTU ✓")}
+function onClick(m,ctrl=false){
+ if(!S.active)return;
+ const id=pickObject(m.position);
+ if(id){
+   if(S.tool||S.paste){clearDraftVisuals();S.tool=null;S.draft=[];S.paste=false;closeCategory()}
+   select(id,ctrl);return;
+ }
+ if(S.paste){const h=pickGround(m.position);if(h)pasteAt(h);else msg("ZEMİN BULUNAMADI");return}
+ if(S.tool){
+   const h=pickGround(m.position);if(!h)return msg("ZEMİN BULUNAMADI");
+   if(S.tool==="WALL")return addWall(h);
+   if(S.tool==="GROUND")return addGround(h);
+   return addPoint(S.tool,h,ctrl);
+ }
+ select(null,ctrl);
+}
+function copy(){const a=[...S.sel].map(byId).filter(Boolean);if(!a.length)return msg("ÖNCE NESNE SEÇ");S.clipboard=a.map(deep);msg(a.length+" NESNE KOPYALANDI")}
+function beginPaste(){if(!S.clipboard.length)return msg("PANODA NESNE YOK");S.tool=null;S.draft=[];S.paste=true;sync();msg("YAPIŞTIRMAK İÇİN ZEMİNE SOL TIKLA")}
+function center(o){if(["tank","tree","aircraft","vehicle","structure"].includes(o.type))return {lat:+o.lat,lon:+o.lon,ground:+o.ground||0};const ps=o.type==="wall"?((o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean)):(o.points||[]);return ps.reduce((q,p)=>({lat:q.lat+(+p.lat)/ps.length,lon:q.lon+(+p.lon)/ps.length,ground:q.ground+(+p.ground||0)/ps.length}),{lat:0,lon:0,ground:0})}
+function pasteAt(h){
+ const cc=S.clipboard.map(center),c=cc.reduce((q,p)=>({lat:q.lat+p.lat/cc.length,lon:q.lon+p.lon/cc.length,ground:q.ground+p.ground/cc.length}),{lat:0,lon:0,ground:0});
+ before();S.sel.clear();
+ for(const src of S.clipboard){const o=deep(src),dl=h.lon-c.lon,da=h.lat-c.lat;o.id=uid();o.name=nextName(o.type);
+  if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){
+    o.lon+=dl;o.lat+=da;
+    /* V142: discard source elevation and lock once to the NEW terrain. */
+    o.ground=0;
+    settleObjectToGround(o);
+  }
+  else if(o.type==="wall"){
+    const ps=(o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean);
+    for(const p of ps){p.lon+=dl;p.lat+=da;reanchorPoint(p)}
+    o.points=ps;o.surfacePoints=buildWallSurfacePath(ps);delete o.a;delete o.b;
+  }
+  else for(const p of o.points){p.lon+=dl;p.lat+=da;reanchorPoint(p)}
+  S.scene.objects.push(o);S.sel.add(o.id)
+ }S.paste=false;save();renderAll();sync();msg(S.sel.size+" NESNE YAPIŞTIRILDI ✓");
+}
+function offset(lat,lon,e,n){return {lat:+lat+n/111320,lon:+lon+e/(111320*Math.cos(+lat*Math.PI/180)||1)}}
+function move(e,n){if(!S.sel.size)return;before();for(const id of S.sel){const o=byId(id);if(!o)continue;if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){const q=offset(o.lat,o.lon,e,n);o.lat=q.lat;o.lon=q.lon}else if(o.type==="wall"){
+    const ps=(o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean);
+    for(const p of ps){const q=offset(p.lat,p.lon,e,n);p.lat=q.lat;p.lon=q.lon}
+    o.points=ps;delete o.a;delete o.b;
+  }else for(const p of o.points){const q=offset(p.lat,p.lon,e,n);p.lat=q.lat;p.lon=q.lon}}for(const id of S.sel){const o=byId(id);if(o)settleObjectToGround(o)}save();renderAll();sync()}
+function rotatePoints(ps,d){
+ if(!ps||!ps.length)return ps;
+ const c=ps.reduce((q,p)=>({lat:q.lat+(+p.lat)/ps.length,lon:q.lon+(+p.lon)/ps.length}),{lat:0,lon:0});
+ const sx=111320*Math.cos(c.lat*Math.PI/180),sy=111320,a=d*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+ return ps.map(p=>{const x=(+p.lon-c.lon)*sx,y=(+p.lat-c.lat)*sy;return {...p,lon:c.lon+(x*ca-y*sa)/sx,lat:c.lat+(x*sa+y*ca)/sy}});
+}
+function rotate(d){
+ if(!S.sel.size)return;
+ before();
+ for(const id of S.sel){
+   const o=byId(id);if(!o)continue;
+   if(["tank","tree","aircraft","vehicle","structure"].includes(o.type))o.heading=((+o.heading||0)+d+360)%360;
+   else if(o.type==="wall"){o.points=rotatePoints((o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean),d);delete o.a;delete o.b}
+   else if(o.type==="ground")o.points=rotatePoints(o.points,d);
+ }
+ save();renderAll();sync();
+}
+function del(){
+ if(!S.sel.size)return;
+ before();
+ const ids=new Set(S.sel);
+ for(const id of ids){const o=byId(id);if(o)remove(o)}
+ S.scene.objects=S.scene.objects.filter(o=>!ids.has(o.id));
+ for(const g of S.scene.groups||[])g.objectIds=(g.objectIds||[]).filter(id=>!ids.has(id));
+ S.scene.groups=(S.scene.groups||[]).filter(g=>(g.objectIds||[]).length);
+ S.sel.clear();S.tool=null;S.draft=[];S.paste=false;clearDraftVisuals();closeCategory();
+ const pal=document.getElementById("ks120Palette");if(pal)pal.hidden=true;
+ const prop=document.getElementById("ks121Props");if(prop){prop.hidden=true;prop.innerHTML=""}
+ save();renderAll();sync();msg(ids.size+" NESNE SİLİNDİ ✓");
+}
+function undo(){if(!S.history.length)return;S.future.push(snapshot());S.scene=JSON.parse(S.history.pop());S.sel.clear();save();renderAll();sync();msg("GERİ ALINDI ✓")}
+function redo(){if(!S.future.length)return;S.history.push(snapshot());S.scene=JSON.parse(S.future.pop());S.sel.clear();save();renderAll();sync();msg("İLERİ ALINDI ✓")}
+function scalePoints(ps,f){
+ if(!ps||!ps.length)return ps;
+ const c=ps.reduce((q,p)=>({lat:q.lat+(+p.lat)/ps.length,lon:q.lon+(+p.lon)/ps.length}),{lat:0,lon:0});
+ return ps.map(p=>({...p,lat:c.lat+(+p.lat-c.lat)*f,lon:c.lon+(+p.lon-c.lon)*f}));
+}
+function scaleSelected(delta){
+ if(!S.sel.size)return msg("ÖNCE NESNE SEÇ");
+ before();const f=1+delta;
+ for(const id of S.sel){
+   const o=byId(id);if(!o)continue;
+   if(o.type==="wall"){o.points=scalePoints((o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean),f);delete o.a;delete o.b}
+   else if(o.type==="ground")o.points=scalePoints(o.points,f);
+   else o.scale=Math.max(.1,Math.min(5,(+o.scale||1)+delta));
+ }
+ save();renderAll();sync();msg(delta>0?"BOYUT BÜYÜTÜLDÜ ✓":"BOYUT KÜÇÜLTÜLDÜ ✓");
+}
+function renameSelected(){
+ if(!S.sel.size)return msg("ÖNCE NESNE SEÇ");
+ const arr=[...S.sel].map(byId).filter(Boolean);
+ const def=arr.length===1?arr[0].name:"NESNE";
+ const name=prompt(arr.length===1?"YENİ AD:":"ORTAK AD (NUMARA EKLENECEK):",def);if(name===null||!name.trim())return;
+ before();
+ arr.forEach((o,i)=>o.name=arr.length===1?name.trim():name.trim()+" "+(i+1));
+ save();renderAll();sync();msg(arr.length+" NESNE YENİDEN ADLANDIRILDI ✓");
+}
+function renameGroup(){
+ if(!S.sel.size)return msg("ÖNCE GRUPTAN NESNE SEÇ");
+ const gids=[...new Set([...S.sel].map(id=>byId(id)?.groupId).filter(Boolean))];
+ if(gids.length!==1)return msg("TEK BİR GRUP SEÇ");
+ const g=S.scene.groups.find(x=>x.id===gids[0]);if(!g)return msg("GRUP BULUNAMADI");
+ const name=prompt("YENİ GRUP ADI:",g.name);if(name===null||!name.trim())return;
+ before();g.name=name.trim();save();sync();msg("GRUP ADI DEĞİŞTİ ✓");
+}
+function groupNamed(){
+ const expanded=new Set();
+ for(const id of S.sel)selectionUnitIds(id).forEach(x=>expanded.add(x));
+ S.sel=expanded;
+ if(S.sel.size<2)return msg("GRUP İÇİN EN AZ 2 NESNE SEÇ");
+ const name=prompt("GRUP ADI:","GRUP "+(S.scene.groups.length+1));if(name===null||!name.trim())return;
+ before();const id=uid(),g={id,name:name.trim(),objectIds:[...S.sel]};S.scene.groups.push(g);
+ for(const oid of S.sel){const o=byId(oid);if(o)o.groupId=id}
+ save();renderAll();sync();msg(g.name+" OLUŞTURULDU ✓");
+}
+function addToGroup(){
+ if(!S.sel.size)return msg("ÖNCE NESNE SEÇ");
+ if(!S.scene.groups.length)return msg("ÖNCE BİR GRUP OLUŞTUR");
+ const menu=S.scene.groups.map((g,i)=>(i+1)+" • "+g.name).join("\n");
+ const ans=prompt("HANGİ GRUBA EKLENECEK?\n"+menu,"1");if(ans===null)return;
+ const g=S.scene.groups[parseInt(ans,10)-1];if(!g)return msg("GRUP BULUNAMADI");
+ before();
+ const expanded=new Set();for(const id of S.sel)selectionUnitIds(id).forEach(x=>expanded.add(x));
+ for(const oid of expanded){
+   const o=byId(oid);if(!o)continue;
+   if(o.groupId&&o.groupId!==g.id){const old=S.scene.groups.find(x=>x.id===o.groupId);if(old)old.objectIds=(old.objectIds||[]).filter(x=>x!==oid)}
+   o.groupId=g.id;
+ }
+ S.scene.groups=S.scene.groups.filter(x=>x.id===g.id||validGroupIds(x).length);
+ g.objectIds=[...new Set([...(g.objectIds||[]),...expanded])];S.sel=new Set(validGroupIds(g));
+ save();renderAll();sync();msg(g.name+" • NESNE EKLENDİ ✓");
+}
+function ungroup(){
+ const gids=new Set([...S.sel].map(id=>byId(id)?.groupId).filter(Boolean));if(!gids.size)return msg("GRUPTA NESNE SEÇ");
+ before();for(const gid of gids){const g=S.scene.groups.find(x=>x.id===gid);if(g)for(const oid of g.objectIds||[]){const o=byId(oid);if(o)delete o.groupId}}
+ S.scene.groups=S.scene.groups.filter(g=>!gids.has(g.id));save();renderAll();sync();msg("GRUP ÇÖZÜLDÜ ✓");
+}
+function applyColor(v){
+ if(!S.sel.size)return msg("ÖNCE NESNE SEÇ");
+ before();for(const id of S.sel){const o=byId(id);if(o)o.color=v}save();renderAll();sync();msg("RENK UYGULANDI ✓");
+}
+function togglePalette(){
+ const p=document.getElementById("ks120Palette");if(!p)return;
+ if(!S.sel.size){p.hidden=true;return msg("ÖNCE NESNE SEÇ")}
+ p.hidden=!p.hidden;
+}
+function selectedOfType(type){return [...S.sel].map(byId).filter(o=>o&&o.type===type)}
+function setNumeric(type,field,value,transform=null){
+ const arr=selectedOfType(type);if(!arr.length)return;
+ const v=parseFloat(value);if(!Number.isFinite(v))return;
+ before();for(const o of arr)o[field]=transform?transform(v):v;
+ save();renderAll();sync();
+}
+function updatePropertiesPanel(){
+ const p=document.getElementById("ks121Props");if(!p)return;
+ const arr=[...S.sel].map(byId).filter(Boolean);
+ if(!arr.length){p.hidden=true;p.innerHTML="";return}
+ const types=[...new Set(arr.map(o=>o.type))];
+ if(types.length!==1){p.hidden=false;p.innerHTML='<div class="ks121propTitle">'+arr.length+' NESNE SEÇİLİ</div><div class="ks121hint">Ortak işlemler: renk, adlandır, grup, taşıma, döndürme.</div>';return}
+ const type=types[0],o=arr[0];p.hidden=false;
+ if(type==="tank"){
+   const dia=(+o.radius||4.4)*2,h=+o.height||11;
+   p.innerHTML=`<div class="ks121propTitle">TANK ÖZELLİKLERİ ${arr.length>1?"("+arr.length+")":""}</div>
+   <label>AD<input id="pTankName" type="text" value="${String(o.name||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}" ${arr.length>1?"disabled":""}></label>
+   <label>ÇAP (m)<input id="pTankDia" type="number" step=".1" min=".5" value="${dia.toFixed(2)}"></label>
+   <label>YÜKSEKLİK (m)<input id="pTankH" type="number" step=".1" min=".5" value="${h.toFixed(2)}"></label>`;
+   const ni=p.querySelector("#pTankName");if(ni&&!ni.disabled)ni.onchange=e=>{const v=e.target.value.trim();if(!v){e.target.value=o.name;return}before();o.name=v;save();renderAll();sync();msg("TANK ADI DEĞİŞTİ ✓")};
+   p.querySelector("#pTankDia").onchange=e=>setNumeric("tank","radius",e.target.value,v=>v/2);
+   p.querySelector("#pTankH").onchange=e=>setNumeric("tank","height",e.target.value);
+ }else if(type==="wall"){
+   const h=+o.height||2.2,t=+o.thickness||.25;
+   p.innerHTML=`<div class="ks121propTitle">DUVAR ÖZELLİKLERİ ${arr.length>1?"("+arr.length+")":""}</div>
+   <label>YÜKSEKLİK (m)<input id="pWallH" type="number" step=".1" min=".1" value="${h.toFixed(2)}"></label>
+   <label>KALINLIK (m)<input id="pWallT" type="number" step=".05" min=".05" value="${t.toFixed(2)}"></label>
+   <div class="ks121hint">↺ 5° / 5° ↻ duvarı orta noktası etrafında döndürür.</div>`;
+   p.querySelector("#pWallH").onchange=e=>setNumeric("wall","height",e.target.value);
+   p.querySelector("#pWallT").onchange=e=>setNumeric("wall","thickness",e.target.value);
+ }else{
+   p.innerHTML=`<div class="ks121propTitle">${type.toLocaleUpperCase("tr-TR")} • ${arr.length} SEÇİLİ</div><div class="ks121hint">Renk, boyut, adlandırma, grup ve sağ-alt transform paneli kullanılabilir.</div>`;
+ }
+}
+function focus(id){const o=byId(id);if(!o)return;const c=center(o);try{viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(c.lon,c.lat,c.ground),5),{duration:.5,offset:new Cesium.HeadingPitchRange(viewer.camera.heading,Cesium.Math.toRadians(-40),90)})}catch(e){}}
+function sync(){
+ const list=document.getElementById("ks116List");if(list){
+   list.innerHTML="";const grouped=new Set();
+   for(const g of S.scene.groups||[]){const ids=(g.objectIds||[]).filter(id=>byId(id));if(!ids.length)continue;ids.forEach(id=>grouped.add(id));const b=document.createElement("button");b.className=ids.every(id=>S.sel.has(id))?"sel":"";b.textContent="▣ "+g.name+" ["+ids.length+"]";b.onclick=e=>{const add=e.ctrlKey||e.metaKey;if(!add)S.sel.clear();const all=ids.every(id=>S.sel.has(id));ids.forEach(id=>add&&all?S.sel.delete(id):S.sel.add(id));renderAll();sync();msg(g.name+" • GRUP "+(add&&all?"SEÇİMDEN ÇIKARILDI":"SEÇİLDİ"))};list.appendChild(b)}
+   for(const o of S.scene.objects){if(grouped.has(o.id))continue;const b=document.createElement("button");b.className=S.sel.has(o.id)?"sel":"";b.textContent=o.name+" · "+o.type.toLocaleUpperCase("tr-TR");b.onclick=e=>{select(o.id,e.ctrlKey||e.metaKey);if(!(e.ctrlKey||e.metaKey))focus(o.id)};list.appendChild(b)}
+ }
+ document.querySelectorAll("#ks116 [data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===S.tool));
+ const n=document.getElementById("ks116Count");if(n)n.textContent=S.sel.size+" SEÇİLİ";updatePropertiesPanel();updateNameVisibility();
+}
+
+function planeHit(screen,plane){
+ try{const ray=viewer.camera.getPickRay(screen);if(!ray)return null;return Cesium.IntersectionTests.rayPlane(ray,plane,new Cesium.Cartesian3())}catch(e){return null}
+}
+
+function ks130SmallFootprint(o){
+  if(!o)return false;
+  if(o.type==="vehicle"||o.type==="tree")return true;
+  if(o.type==="aircraft"){
+    const p=(o.preset||"").toUpperCase();
+    return ["CITATION","GULFSTREAM","TURBOPROP","GA","PERVANELI"].includes(p);
+  }
+  if(o.type==="structure"){
+    const p=(o.preset||"").toUpperCase();
+    return ["PUMP","MANIFOLD","CANOPY"].includes(p);
+  }
+  if(o.type==="tank")return ((+o.radius||4.4)*(+o.scale||1))<=7;
+  return false;
+}
+function ks130NearSmallObject(screen){
+  if(!screen)return false;
+  let best=1e9;
+  for(const o of S.scene.objects){
+    if(!ks130SmallFootprint(o))continue;
+    const c=center(o);if(!c)continue;
+    try{
+      const wp=Cesium.Cartesian3.fromDegrees(+c.lon,+c.lat,+c.ground||0);
+      const sp=Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene,wp);
+      if(!sp)continue;
+      best=Math.min(best,Math.hypot(sp.x-screen.x,sp.y-screen.y));
+    }catch(e){}
+  }
+  return best<=110;
+}
+
+function beginObjectDrag(screen,ctrl){
+ if(S.tool||S.paste)return;
+ const id=pickObject(screen);
+ if(!id){if(!ctrl)select(null,false);return}
+ const unit=selectionUnitIds(id);
+ if(ctrl){
+   if(!unit.every(x=>S.sel.has(x)))return;
+ }else if(!unit.every(x=>S.sel.has(x)))selectUnit(id,false);
+ const g=groupOfObject(id),o=byId(id),c=g?groupCenter(g):center(o);if(!c)return;
+ const origin=Cesium.Cartesian3.fromDegrees(c.lon,c.lat,c.ground);
+ const normal=Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(origin,new Cesium.Cartesian3());
+ const plane=Cesium.Plane.fromPointNormal(origin,normal);
+ const hit=planeHit(screen,plane);if(!hit)return;
+ const enu=Cesium.Transforms.eastNorthUpToFixedFrame(origin),inv=Cesium.Matrix4.inverseTransformation(enu,new Cesium.Matrix4());
+ const start=Cesium.Matrix4.multiplyByPoint(inv,hit,new Cesium.Cartesian3());
+ S.drag={plane,inv,start,last:start,accEast:0,accNorth:0,before:snapshot(),moved:false,base:[...S.sel].map(id=>({id,raw:deep(byId(id))}))};
+ viewer.scene.screenSpaceCameraController.enableInputs=false;
+}
+function dragObject(screen){
+ if(!S.drag)return;
+ const hit=planeHit(screen,S.drag.plane);if(!hit)return;
+ const cur=Cesium.Matrix4.multiplyByPoint(S.drag.inv,hit,new Cesium.Cartesian3());
+ const dx=cur.x-S.drag.last.x,dy=cur.y-S.drag.last.y;
+ S.drag.last=cur;
+
+ /* V130 adaptive precision:
+    small-object work area = 24% movement;
+    outside that area = normal 100% movement.
+    Incremental movement avoids a jump when the gain changes. */
+ const gain=ks130NearSmallObject(screen)?0.24:1.0;
+ S.drag.accEast+=dx*gain;S.drag.accNorth+=dy*gain;
+ const east=S.drag.accEast,north=S.drag.accNorth;
+
+ if(Math.hypot(east,north)>.12)S.drag.moved=true;
+ for(const b of S.drag.base){
+   const o=byId(b.id),r=b.raw;if(!o)continue;
+   const q=(p)=>{const z=offset(p.lat,p.lon,east,north);return {...p,lat:z.lat,lon:z.lon}};
+   if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){const z=offset(r.lat,r.lon,east,north);o.lat=z.lat;o.lon=z.lon}
+   else if(o.type==="wall"){
+    const ps=(r.points&&r.points.length)?r.points:[r.a,r.b].filter(Boolean);
+    o.points=ps.map(q);delete o.a;delete o.b;
+   }
+   else o.points=r.points.map(q);
+   render(o);
+ }
+ try{viewer.scene.requestRender()}catch(e){}
+}
+function endObjectDrag(){
+ if(!S.drag)return;
+ if(S.drag.moved){
+   S.history.push(S.drag.before);if(S.history.length>60)S.history.shift();S.future=[];
+   /* V142: mouse drag commits the NEW world location, then grounds ONCE.
+      No terrain sampling during mouse-move, so V125/V130 stability remains. */
+   for(const id of S.sel){const o=byId(id);if(o)settleObjectToGround(o)}
+   save();renderAll();S.suppressClick=true;setTimeout(()=>S.suppressClick=false,0);
+   msg(S.sel.size+" NESNE TAŞINDI • ZEMİNE OTURDU ✓");
+ }
+ S.drag=null;viewer.scene.screenSpaceCameraController.enableInputs=true;sync();
+}
+function boundsFor(o){
+ const pts=[];
+ const add=(lat,lon,h=0)=>{try{const p=Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene,Cesium.Cartesian3.fromDegrees(+lon,+lat,+h));if(p)pts.push(p)}catch(e){}};
+ if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){const g=+o.ground||0,sz=Math.max(+o.radius||0,+o.width||0,+o.length||0,5);add(o.lat,o.lon,g);const n=offset(o.lat,o.lon,sz,sz),s=offset(o.lat,o.lon,-sz,-sz);add(n.lat,n.lon,g);add(s.lat,s.lon,g)}
+ else if(o.type==="wall"){
+   const ps=(o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean);ps.forEach(p=>add(p.lat,p.lon,p.ground))
+ }
+ else for(const p of o.points||[])add(p.lat,p.lon,p.ground);
+ if(!pts.length)return null;return {l:Math.min(...pts.map(p=>p.x)),r:Math.max(...pts.map(p=>p.x)),t:Math.min(...pts.map(p=>p.y)),b:Math.max(...pts.map(p=>p.y))}
+}
+function overlap(a,b){return !(a.r<b.l||a.l>b.r||a.b<b.t||a.t>b.b)}
+function marqueeDown(e){
+ if(!S.active||S.tool||S.paste||!e.shiftKey||e.button!==0)return;
+ if(e.target.closest?.("#ks116,button,input,textarea,select"))return;
+ const r=viewer.scene.canvas.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+ e.preventDefault();e.stopPropagation();S.marqueeStart={x:e.clientX-r.left,y:e.clientY-r.top,cx:e.clientX,cy:e.clientY,add:e.ctrlKey||e.metaKey};
+ const m=document.createElement("div");m.id="ks116Marquee";document.body.appendChild(m);S.marquee=m;viewer.scene.screenSpaceCameraController.enableInputs=false;
+}
+function marqueeMove(e){if(!S.marqueeStart)return;const s=S.marqueeStart,l=Math.min(s.cx,e.clientX),t=Math.min(s.cy,e.clientY);Object.assign(S.marquee.style,{left:l+"px",top:t+"px",width:Math.abs(e.clientX-s.cx)+"px",height:Math.abs(e.clientY-s.cy)+"px"})}
+function marqueeUp(e){
+ if(!S.marqueeStart)return;
+ const r=viewer.scene.canvas.getBoundingClientRect(),s=S.marqueeStart,end={x:e.clientX-r.left,y:e.clientY-r.top},box={l:Math.min(s.x,end.x),r:Math.max(s.x,end.x),t:Math.min(s.y,end.y),b:Math.max(s.y,end.y)};
+ if(!s.add)S.sel.clear();let n=0;for(const o of S.scene.objects){const q=boundsFor(o);if(q&&overlap(q,box)){S.sel.add(o.id);n++}}
+ S.marquee?.remove();S.marquee=null;S.marqueeStart=null;viewer.scene.screenSpaceCameraController.enableInputs=true;renderAll();sync();msg("SHIFT • "+n+" NESNE SEÇİLDİ");
+}
+function installHandler(){
+ if(S.handler)try{S.handler.destroy()}catch(e){}
+ S.handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+ S.handler.setInputAction(m=>{if(!S.suppressClick)onClick(m,false)},Cesium.ScreenSpaceEventType.LEFT_CLICK);
+ S.handler.setInputAction(m=>{if(!S.suppressClick)onClick(m,true)},Cesium.ScreenSpaceEventType.LEFT_CLICK,Cesium.KeyboardEventModifier.CTRL);
+ S.handler.setInputAction(m=>beginObjectDrag(m.position,false),Cesium.ScreenSpaceEventType.LEFT_DOWN);
+ S.handler.setInputAction(m=>beginObjectDrag(m.position,true),Cesium.ScreenSpaceEventType.LEFT_DOWN,Cesium.KeyboardEventModifier.CTRL);
+ S.handler.setInputAction(m=>dragObject(m.endPosition),Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+ S.handler.setInputAction(()=>endObjectDrag(),Cesium.ScreenSpaceEventType.LEFT_UP);
+ S.handler.setInputAction(()=>endObjectDrag(),Cesium.ScreenSpaceEventType.LEFT_UP,Cesium.KeyboardEventModifier.CTRL);
+}
+function keydown(e){
+ if(!S.active)return;const tag=(e.target?.tagName||"").toLowerCase();if(["input","textarea"].includes(tag))return;const k=e.key.toLowerCase();
+ if((e.ctrlKey||e.metaKey)&&k==="c"){e.preventDefault();copy();return}if((e.ctrlKey||e.metaKey)&&k==="v"){e.preventDefault();beginPaste();return}
+ if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();redo();return}
+ if(e.key==="Escape"){clearDraftVisuals();S.tool=null;S.draft=[];S.paste=false;closeCategory();sync();msg("İPTAL • HAZIR");return}
+ if(e.key==="Delete"){del();return}
+ if(e.key==="Enter"){if(S.tool==="WALL")finishWall();else if(S.tool==="GROUND")finishGround();return}
+ const d=e.shiftKey?2:.5;if(e.key==="ArrowLeft"){e.preventDefault();move(-d,0)}if(e.key==="ArrowRight"){e.preventDefault();move(d,0)}if(e.key==="ArrowUp"){e.preventDefault();move(0,d)}if(e.key==="ArrowDown"){e.preventDefault();move(0,-d)}
+}
+function closeCategory(){
+ const host=document.getElementById("ks120SubLibrary");if(host)host.innerHTML="";
+ document.querySelectorAll("#ks120Cats [data-cat]").forEach(b=>b.classList.remove("active"));
+}
+function showCategory(cat){
+ const host=document.getElementById("ks120SubLibrary");if(!host)return;
+ const c=CATEGORIES[cat];
+ const same=host.dataset.cat===cat&&host.childElementCount>0;
+ closeCategory();host.dataset.cat="";
+ if(!c||same)return;
+ host.dataset.cat=cat;
+ const title=document.createElement("div");title.className="ks120subTitle";title.textContent=c.label+" KÜTÜPHANESİ";host.appendChild(title);
+ const grid=document.createElement("div");grid.className="ks120subgrid";host.appendChild(grid);
+ for(const k of c.items){const d=DEF[k];if(!d)continue;const b=document.createElement("button");b.dataset.tool=k;b.textContent=d.label;b.onclick=()=>{setTool(k);closeCategory()};grid.appendChild(b)}
+}
+function shell(){
+ let r=document.getElementById("ks116");if(r)return r;
+ r=document.createElement("div");r.id="ks116";r.innerHTML=`
+ <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V142 • TERRAIN RE-ANCHOR + TANK FOUNDATION FLEET</small></div><div><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <aside class="ks116panel">
+   <h4>ÇİZİM / NESNE</h4>
+   <div class="ks120main"><div id="ks120Cats">
+     <button class="ks131iconCat aircraft" data-cat="AIRCRAFT"><svg viewBox="0 0 24 24"><use href="#i-plane"/></svg><span>UÇAK</span></button><button class="ks131iconCat vehicle" data-cat="VEHICLE"><svg viewBox="0 0 24 24"><use href="#i-truck"/></svg><span>ARAÇ</span></button>
+     <button data-cat="TREE">AĞAÇ</button><button data-cat="FACILITY">TESİS</button>
+   </div></div>
+   <div id="ks120SubLibrary"></div>
+   <h4>DÜZENLE</h4><div class="ks116grid">
+     <button id="ks116Copy">KOPYALA</button><button id="ks116Paste">YAPIŞTIR</button>
+     <button id="ks116Delete">SİL</button><button id="ks137Ground">ZEMİNE OTURT</button><button id="ks116Undo">GERİ AL</button>
+     <button id="ks116Small">− BOYUT</button><button id="ks116Large">+ BOYUT</button>
+     <button id="ks116Color">RENK</button><button id="ks121Rename">AD DEĞİŞTİR</button><button id="ks116Group">GRUPLA</button><button id="ks121RenameGroup">GRUP ADI</button>
+     <button id="ks116AddGroup">GRUBA EKLE</button><button id="ks116Ungroup">GRUBU ÇÖZ</button>
+   </div>
+   <div id="ks120Palette" hidden></div><div id="ks121Props" hidden></div>
+   <h4>ADB SAHNE NESNELERİ / GRUPLAR</h4><div id="ks116List"></div>
+ </aside>
+ <div id="ks116Status">HAZIR</div>
+ <div class="ks116pad">
+   <button data-a="undo">↶ <small>GERİ</small></button><button class="arrow" data-a="up">↑</button><button data-a="redo">↷ <small>İLERİ</small></button>
+   <button class="arrow" data-a="left">←</button><button data-a="delete" class="danger">SİL</button><button class="arrow" data-a="right">→</button>
+   <button data-a="rotl">↺ 5°</button><button class="arrow" data-a="down">↓</button><button data-a="rotr">5° ↻</button>
+ </div>`;
+ document.body.appendChild(r);
+ r.querySelectorAll("#ks120Cats [data-cat]").forEach(b=>b.onclick=()=>showCategory(b.dataset.cat));
+ r.querySelector("#ks116Copy").onclick=copy;r.querySelector("#ks116Paste").onclick=beginPaste;r.querySelector("#ks116Delete").onclick=del;r.querySelector("#ks116Undo").onclick=undo;const g137=r.querySelector("#ks137Ground");if(g137)g137.onclick=()=>{if(!S.sel.size)return msg("ÖNCE NESNE SEÇ");before();settleSelectionToGround(true)};
+ r.querySelector("#ks116Small").onclick=()=>scaleSelected(-.05);r.querySelector("#ks116Large").onclick=()=>scaleSelected(.05);
+ r.querySelector("#ks116Color").onclick=togglePalette;r.querySelector("#ks121Rename").onclick=renameSelected;r.querySelector("#ks116Group").onclick=groupNamed;r.querySelector("#ks121RenameGroup").onclick=renameGroup;r.querySelector("#ks116AddGroup").onclick=addToGroup;r.querySelector("#ks116Ungroup").onclick=ungroup;
+ const pal=r.querySelector("#ks120Palette");
+ PALETTE.forEach(c=>{const b=document.createElement("button");b.className="ks120swatch";b.style.background=c;b.title=c;b.onclick=()=>applyColor(c);pal.appendChild(b)});
+ const custom=document.createElement("input");custom.type="color";custom.value="#d9d7cf";custom.title="ÖZEL RENK";custom.oninput=()=>applyColor(custom.value);pal.appendChild(custom);
+ r.querySelector("#ks138CamSave").onclick=save3DCamera;r.querySelector("#ks139CamTune").onclick=tuneCamera;r.querySelector("#ks116Exit").onclick=close;
+ const A={undo,redo,delete:del,left:()=>move(-.5,0),right:()=>move(.5,0),up:()=>move(0,.5),down:()=>move(0,-.5),rotl:()=>rotate(-5),rotr:()=>rotate(5)};
+ r.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>A[b.dataset.a]?.());
+ closeCategory();
+ return r;
+}
+function hideNormal(){S.hidden=[];for(const e of viewer.entities.values){S.hidden.push([e,e.show]);e.show=false}}
+function restoreNormal(){for(const [e,v] of S.hidden)try{e.show=v}catch(x){}S.hidden=[]}
+function open(){
+ let code="";try{code=String(selectedCode||"").toUpperCase()}catch(e){}if(code!=="ADB")return;
+ S.scene=load();S.active=true;S.tool=null;S.draft=[];S.sel.clear();S.clipboard=[];S.paste=false;S.history=[];S.future=[];
+ try{S.savedCamera={destination:Cesium.Cartesian3.clone(viewer.camera.positionWC),orientation:{heading:viewer.camera.heading,pitch:viewer.camera.pitch,roll:viewer.camera.roll}}}catch(e){}
+ hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");installHandler();window.addEventListener("keydown",keydown,true);document.addEventListener("pointerdown",marqueeDown,true);document.addEventListener("pointermove",marqueeMove,true);document.addEventListener("pointerup",marqueeUp,true);renderAll();sync();msg("3D YAKLAŞIM • HARİTA YÜKLENİYOR…");ksWait(250,enter3DCamera);
+}
+function close(){
+ if(!S.active)return;save();S.active=false;if(S.handler)try{S.handler=S.handler.destroy()}catch(e){}window.removeEventListener("keydown",keydown,true);document.removeEventListener("pointerdown",marqueeDown,true);document.removeEventListener("pointermove",marqueeMove,true);document.removeEventListener("pointerup",marqueeUp,true);S.marquee?.remove();S.marquee=null;S.marqueeStart=null;
+ clearDraftVisuals();clearSelectionVisuals();clearRender();restoreNormal();document.body.classList.remove("ks116active");document.getElementById("ks116")?.classList.remove("open");
+ if(S.savedCamera)try{viewer.camera.flyTo({destination:S.savedCamera.destination,orientation:S.savedCamera.orientation,duration:.5})}catch(e){}S.savedCamera=null;
+ try{if(selectedCode&&points[selectedCode])showSelected(points[selectedCode])}catch(e){}
+}
+return {open,close};
+})();
+document.getElementById("adb3dBtn")?.addEventListener("click",e=>{e.preventDefault();KSADB3D.open()});
+
+
+/* Independent NORMAL 2D place/coordinate search. */
+(function installNormalSearch(){
+ function parse(q){
+   q=(q||"").trim().replace(/;/g,",");
+   const m=q.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*$/);
+   return m?[+m[1],+m[2]]:null;
+ }
+ function go(lat,lon){
+   lat=+lat;lon=+lon;
+   if(!Number.isFinite(lat)||!Number.isFinite(lon))return;
+   let g=0;
+   try{
+     const c=Cesium.Cartographic.fromDegrees(lon,lat);
+     const h=viewer.scene.globe.getHeight(c);if(Number.isFinite(h))g=h;
+   }catch(e){}
+   const target=Cesium.Cartesian3.fromDegrees(lon,lat,g);
+   viewer.camera.flyToBoundingSphere(new Cesium.BoundingSphere(target,50),{
+     duration:1,offset:new Cesium.HeadingPitchRange(viewer.camera.heading,Cesium.Math.toRadians(-45),900)
+   });
+ }
+ async function search(){
+   const input=document.getElementById("v111Place"),stat=document.getElementById("v111Stat");
+   const q=input?.value.trim();if(!q)return;
+   const c=parse(q);if(c){stat.textContent="KOORDİNATA GİDİLİYOR";go(c[0],c[1]);return}
+   stat.textContent="ARANIYOR…";
+   try{
+     const r=await fetch("https://photon.komoot.io/api/?limit=1&q="+encodeURIComponent(q));
+     if(!r.ok)throw 0;
+     const d=await r.json(),f=d?.features?.[0];if(!f)throw 0;
+     const lon=f.geometry.coordinates[0],lat=f.geometry.coordinates[1],p=f.properties||{};
+     stat.textContent=[p.name,p.city,p.state,p.country].filter(Boolean).join(" / ").toUpperCase()||q.toUpperCase();
+     go(lat,lon);
+   }catch(e){stat.textContent="YER BULUNAMADI"}
+ }
+ function install(){
+   if(document.getElementById("v111MapSearch"))return;
+   const left=document.querySelector(".left-panel")||document.querySelector("#leftPanel")||document.querySelector(".sidebar");
+   if(!left)return;
+   const d=document.createElement("div");d.id="v111MapSearch";d.className="v111mapsearch";
+   d.innerHTML=`<div class="v111ttl">⌖ YER / KOORDİNAT ARA</div>
+    <div class="v111row"><input id="v111Place" placeholder="Ayrancılar İzmir veya 38.24, 27.28"><button id="v111Go">BUL</button></div>
+    <div id="v111Stat">2D OPERASYON HARİTASI</div>`;
+   left.appendChild(d);
+   d.querySelector("#v111Go").onclick=search;
+   d.querySelector("#v111Place").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+ }
+ setTimeout(install,500);
+})();
+
+</script>
+</body>
+</html>
