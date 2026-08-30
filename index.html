@@ -618,7 +618,7 @@ window.addEventListener("error",function(e){
   <div class="tools-title">ARAÇLAR</div>
   <button class="tool-row" id="saveCurrent"><svg><use href="#i-pin"/></svg><span><b>KOORDİNAT KAYDET</b><small>Bu noktayı kaydet</small></span><i>›</i></button>
   <button class="tool-row" id="addPlaceBtn"><span class="plus">＋</span><span><b>YENİ YER</b><small>Haritaya nokta ekle</small></span><i>›</i></button>
-  <button class="tool-row" id="exportDataBtn"><span class="backup-icon">⇩</span><span><b>KAYITLARI DIŞA AKTAR</b><small>Konum ve kamera yedeği</small></span><i>›</i></button>
+  <button class="tool-row" id="exportDataBtn"><span class="backup-icon">⇩</span><span><b>KAYITLARI DIŞA AKTAR</b><small>Konum + ADB 3D tam yedek</small></span><i>›</i></button>
   <button class="tool-row" id="importDataBtn"><span class="backup-icon">⇧</span><span><b>KAYITLARI İÇE AKTAR</b><small>Yedekten geri yükle</small></span><i>›</i></button>
   <input id="importDataFile" type="file" accept=".json,application/json" hidden>
   <button class="tool-row" id="helpBtn"><svg><use href="#i-help"/></svg><span><b>YARDIM</b><small>Kullanım ipuçları</small></span><i>›</i></button>
@@ -1676,6 +1676,9 @@ setInterval(()=>document.getElementById("clock").textContent=new Date().toLocale
 const KS_BACKUP_VERSION="V25";
 const KS_OVERRIDE_KEY="ksPointOverridesV24Fresh";
 const KS_USER_KEY="ksUserPointsV24Fresh";
+const KS_ADB3D_KEY="KS_AIRPORT_ADB_3D_V2";
+const KS_ADB3D_CAMERA_KEY="KS_AIRPORT_ADB_3D_CAMERA_V1";
+const KS_ADB3D_TUNE_KEY="KS_ADB_CAMERA_APPROACH_V1";
 
 function ksNowStamp(){
   const d=new Date(),p=n=>String(n).padStart(2,"0");
@@ -1685,6 +1688,10 @@ function ksBackupPayload(){
   let savedOverrides={},savedUsers={};
   try{savedOverrides=JSON.parse(localStorage.getItem(KS_OVERRIDE_KEY)||"{}")}catch(e){}
   try{savedUsers=JSON.parse(localStorage.getItem(KS_USER_KEY)||"{}")}catch(e){}
+  let adb3d=null,adb3dCamera=null,adb3dCameraTune=null;
+  try{adb3d=JSON.parse(localStorage.getItem(KS_ADB3D_KEY)||"null")}catch(e){}
+  try{adb3dCamera=JSON.parse(localStorage.getItem(KS_ADB3D_CAMERA_KEY)||"null")}catch(e){}
+  try{adb3dCameraTune=JSON.parse(localStorage.getItem(KS_ADB3D_TUNE_KEY)||"null")}catch(e){}
 
   // Token may exist under either key depending on the working version.
   const token =
@@ -1702,9 +1709,12 @@ function ksBackupPayload(){
     format:"KS_OPERATIONS_CENTER_BACKUP",
     version:"V25-TOKEN",
     exportedAt:new Date().toISOString(),
-    storageKeys:{overrides:KS_OVERRIDE_KEY,userPoints:KS_USER_KEY},
+    storageKeys:{overrides:KS_OVERRIDE_KEY,userPoints:KS_USER_KEY,adb3d:KS_ADB3D_KEY,adb3dCamera:KS_ADB3D_CAMERA_KEY,adb3dCameraTune:KS_ADB3D_TUNE_KEY},
     overrides:savedOverrides,
     userPoints:savedUsers,
+    adb3d:adb3d,
+    adb3dCamera:adb3dCamera,
+    adb3dCameraTune:adb3dCameraTune,
     cesiumToken:token
   };
 }
@@ -1725,7 +1735,8 @@ function ksExportData(){
   a.download=`KS-KAYITLAR-${ksNowStamp()}.json`;
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
-  ksSetBackupStatus("KAYITLAR + TOKEN YEDEKLENDİ ✓",true);
+  const n=payload.adb3d?.objects?.length||0, g=payload.adb3d?.groups?.length||0;
+  ksSetBackupStatus(`TAM YEDEK: ${n} 3D NESNE • ${g} GRUP ✓`,true);
   const b=document.getElementById("exportDataBtn");
   if(b){const old=b.innerHTML;b.classList.add("saved");setTimeout(()=>b.classList.remove("saved"),1300);}
 }
@@ -1741,6 +1752,9 @@ function ksImportDataFile(file){
       if(!ksValidateBackup(data))throw new Error("Geçersiz KS yedek dosyası");
       localStorage.setItem(KS_OVERRIDE_KEY,JSON.stringify(data.overrides||{}));
       localStorage.setItem(KS_USER_KEY,JSON.stringify(data.userPoints||{}));
+      if(data.adb3d && data.adb3d.schema==="KS_AIRPORT_3D_V2") localStorage.setItem(KS_ADB3D_KEY,JSON.stringify(data.adb3d));
+      if(data.adb3dCamera) localStorage.setItem(KS_ADB3D_CAMERA_KEY,JSON.stringify(data.adb3dCamera));
+      if(data.adb3dCameraTune) localStorage.setItem(KS_ADB3D_TUNE_KEY,JSON.stringify(data.adb3dCameraTune));
       if(data.cesiumToken){
         localStorage.setItem("cesiumIonToken",data.cesiumToken);
         localStorage.setItem("cesiumIonTokenV24Fresh",data.cesiumToken);
@@ -2997,7 +3011,7 @@ function showCategory(cat){
 function shell(){
  let r=document.getElementById("ks116");if(r)return r;
  r=document.createElement("div");r.id="ks116";r.innerHTML=`
- <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V142 • TERRAIN RE-ANCHOR + TANK FOUNDATION FLEET</small></div><div><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V143 • FULL 3D BACKUP / RESTORE</small></div><div><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
  <aside class="ks116panel">
    <h4>ÇİZİM / NESNE</h4>
    <div class="ks120main"><div id="ks120Cats">
