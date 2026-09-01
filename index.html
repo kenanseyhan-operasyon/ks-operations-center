@@ -1988,6 +1988,7 @@ window.addEventListener("load",()=>setTimeout(normalizeBottomNav,250));
    - wall = exact endpoint WallGeometry.
    One store / one handler / one renderer / one selection set.
 ================================================================ */
+/* V161: normal haritada salt-okunur 3D + mevcut ÖZEL parola doğrulamasıyla düzenleme kilidi */
 window.KSADB3D=(()=>{
 "use strict";
 const STORE="KS_AIRPORT_ADB_3D_V2";
@@ -2244,7 +2245,7 @@ const FACILITY_SECTIONS={
  CORE:{label:"TESİS EKİPMANI",items:["TANK","GROUND","CANOPY","PUMP","MANIFOLD","FIRE_EXT"]}
 };
 const PALETTE=["#d9d7cf","#f2e7c9","#ffffff","#c8b79a","#9b8060","#6f6253","#596b5d","#3f6388","#477d52","#d19b42","#9e3f35","#343b3e","#151515","#e8ecec","#aeb8ba"];
-const S={active:false,scene:null,tool:null,draft:[],sel:new Set(),clipboard:[],paste:false,handler:null,prims:new Map(),labels:new Map(),flagEntities:new Map(),history:[],future:[],savedCamera:null,hidden:[],drag:null,marquee:null,marqueeStart:null,suppressClick:false,tempEntities:[],selectionEntities:[]};
+const S={active:false,editUnlocked:false,scene:null,tool:null,draft:[],sel:new Set(),clipboard:[],paste:false,handler:null,prims:new Map(),labels:new Map(),flagEntities:new Map(),history:[],future:[],savedCamera:null,hidden:[],drag:null,marquee:null,marqueeStart:null,suppressClick:false,tempEntities:[],selectionEntities:[]};
 const deep=x=>JSON.parse(JSON.stringify(x));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const color=(x,a=1)=>Cesium.Color.fromCssColorString(x).withAlpha(a);
@@ -2275,7 +2276,8 @@ function save(){
 }
 function byId(id){return S.scene.objects.find(o=>o.id===id)}
 function snapshot(){return JSON.stringify(S.scene)}
-function before(){S.history.push(snapshot());if(S.history.length>60)S.history.shift();S.future=[]}
+function before(){
+ if(S.active&&!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}S.history.push(snapshot());if(S.history.length>60)S.history.shift();S.future=[]}
 function msg(t){const e=document.getElementById("ks116Status");if(e)e.textContent=t}
 /* V126 WORLD-PICK LOCK + FAST WALL
    Placement must resolve ONE real world Cartesian point from the visible scene.
@@ -3314,6 +3316,7 @@ function select(id,add=false){
  selectUnit(id,add);
 }
 function setTool(t){
+ if(S.active&&!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}
  clearDraftVisuals();S.tool=t;S.draft=[];S.paste=false;sync();
  msg(t?DEF[t].label+(DEF[t]?.type==="wall"?(DEF[t]?.wallStyle==="gate"?" • 1. VE 2. NOKTAYI SOL TIKLA":" • NOKTALARI SOL TIKLA • ENTER İLE BİTİR"):t==="GROUND"?" • KÖŞELERİ SOL TIKLA • ENTER İLE BİTİR":" • ZEMİNE SOL TIKLA"):"HAZIR");
 }
@@ -3349,6 +3352,7 @@ function addGround(h){S.draft.push(deep(h));refreshDraftVisuals();msg("ZEMİN �
 function finishGround(){if(S.tool!=="GROUND"||S.draft.length<3)return msg("ZEMİN İÇİN EN AZ 3 NOKTA");before();const o={id:uid(),type:"ground",name:nextName("ground"),points:deep(S.draft),color:DEF.GROUND.color,opacity:DEF.GROUND.opacity};S.scene.objects.push(o);S.sel=new Set([o.id]);S.draft=[];clearDraftVisuals();save();renderAll();setTool(null);sync();msg(o.name+" OLUŞTU ✓")}
 function onClick(m,ctrl=false){
  if(!S.active)return;
+ if(!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}
  // Duvar başlangıcına geri tıklama: kesin başlangıç koordinatına snap + EVET/HAYIR kapanış kararı.
  if(DEF[S.tool]?.type==="wall"&&ksNearWallStart(m.position)){
    const yes=window.confirm("BAŞLANGIÇ NOKTASINA DÖNDÜNÜZ.\n\nDUVAR BİRLEŞTİRİLSİN Mİ?\n\nEVET = KAPALI DUVAR\nHAYIR = AÇIK DUVAR");
@@ -3388,7 +3392,8 @@ function pasteAt(h){
 }
 
 function offset(lat,lon,e,n){return {lat:+lat+n/111320,lon:+lon+e/(111320*Math.cos(+lat*Math.PI/180)||1)}}
-function move(e,n){if(!S.sel.size)return;before();for(const id of S.sel){const o=byId(id);if(!o)continue;if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){const q=offset(o.lat,o.lon,e,n);o.lat=q.lat;o.lon=q.lon}else if(o.type==="wall"){
+function move(e,n){
+ if(S.active&&!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}if(!S.sel.size)return;before();for(const id of S.sel){const o=byId(id);if(!o)continue;if(["tank","tree","aircraft","vehicle","structure"].includes(o.type)){const q=offset(o.lat,o.lon,e,n);o.lat=q.lat;o.lon=q.lon}else if(o.type==="wall"){
     const ps=(o.points&&o.points.length)?o.points:[o.a,o.b].filter(Boolean);
     for(const p of ps){const q=offset(p.lat,p.lon,e,n);p.lat=q.lat;p.lon=q.lon}
     o.points=ps;delete o.a;delete o.b;
@@ -3400,6 +3405,7 @@ function rotatePoints(ps,d){
  return ps.map(p=>{const x=(+p.lon-c.lon)*sx,y=(+p.lat-c.lat)*sy;return {...p,lon:c.lon+(x*ca-y*sa)/sx,lat:c.lat+(x*sa+y*ca)/sy}});
 }
 function rotate(d){
+ if(S.active&&!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}
  if(!S.sel.size)return;
  before();
  for(const id of S.sel){
@@ -3411,6 +3417,7 @@ function rotate(d){
  save();renderAll();sync();
 }
 function del(){
+ if(S.active&&!S.editUnlocked){msg("🔒 DÜZENLEME KİLİTLİ");return;}
  if(!S.sel.size)return;
  before();
  const ids=new Set(S.sel);
@@ -3690,7 +3697,8 @@ function installHandler(){
  S.handler.setInputAction(()=>endObjectDrag(),Cesium.ScreenSpaceEventType.LEFT_UP,Cesium.KeyboardEventModifier.CTRL);
 }
 function keydown(e){
- if(!S.active)return;const tag=(e.target?.tagName||"").toLowerCase();if(["input","textarea"].includes(tag))return;const k=e.key.toLowerCase();
+ if(!S.active)return;
+ if(!S.editUnlocked)return;const tag=(e.target?.tagName||"").toLowerCase();if(["input","textarea"].includes(tag))return;const k=e.key.toLowerCase();
  if((e.ctrlKey||e.metaKey)&&k==="c"){e.preventDefault();copy();return}if((e.ctrlKey||e.metaKey)&&k==="v"){e.preventDefault();beginPaste();return}
  if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();e.shiftKey?redo():undo();return}if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();redo();return}
  if(e.key==="Escape"){clearDraftVisuals();S.tool=null;S.draft=[];S.paste=false;closeCategory();sync();msg("İPTAL • HAZIR");return}
@@ -3729,10 +3737,31 @@ function showCategory(cat){
  if(cat==="FACILITY"){showFacilityRoot();return}
  const c=CATEGORIES[cat];if(!c)return;host.dataset.cat=cat;ks146ToolGrid(host,c.items,c.label+" KÜTÜPHANESİ",null);
 }
+function ks161ApplyLockUI(){
+ const r=document.getElementById("ks116");if(!r)return;
+ const locked=!S.editUnlocked;
+ const panel=r.querySelector(".ks116panel"),pad=r.querySelector(".ks116pad");
+ if(panel)panel.style.display=locked?"none":"";
+ if(pad)pad.style.display=locked?"none":"";
+ for(const id of ["ks138CamSave","ks139CamTune","ks121SaveState","ks116Count"]){const e=r.querySelector("#"+id);if(e)e.style.display=locked?"none":""}
+ const st=r.querySelector("#ks161LockState");if(st){st.textContent=locked?"🔒 3D KİLİTLİ":"🔓 DÜZENLEME AÇIK";st.style.color=locked?"#ffd36a":"#aaff24"}
+ const b=r.querySelector("#ks161Unlock");if(b){b.textContent=locked?"🔒 DÜZENLE":"🔓 DÜZENLEME AÇIK";b.disabled=!locked}
+ const status=r.querySelector("#ks116Status");if(status&&locked)status.textContent="GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI";
+}
+function ks161UnlockEdit(){
+ if(S.editUnlocked)return;
+ const v=prompt("3D DÜZENLEME PAROLASI:","");if(v===null)return;
+ if(normalizedSecret(v)!=="kenanseyhan"){alert("Parola eşleşmedi.");return}
+ S.editUnlocked=true;installHandler();window.addEventListener("keydown",keydown,true);document.addEventListener("pointerdown",marqueeDown,true);document.addEventListener("pointermove",marqueeMove,true);document.addEventListener("pointerup",marqueeUp,true);ks161ApplyLockUI();sync();msg("🔓 3D DÜZENLEME AÇIK");
+}
+function showReadonly(){
+ if(S.active)return;
+ S.scene=load();S.sel.clear();S.tool=null;S.draft=[];S.paste=false;clearDraftVisuals();clearSelectionVisuals();renderAll();
+}
 function shell(){
  let r=document.getElementById("ks116");if(r)return r;
  r=document.createElement("div");r.id="ks116";r.innerHTML=`
- <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V159 • 3D TAM KAMERA POZU</small></div><div><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V161 • GÖRÜNTÜLEME + ŞİFRELİ DÜZENLEME</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
  <aside class="ks116panel">
    <h4>ÇİZİM / NESNE</h4>
    <div class="ks120main"><div id="ks120Cats">
@@ -3764,7 +3793,7 @@ function shell(){
  const pal=r.querySelector("#ks120Palette");
  PALETTE.forEach(c=>{const b=document.createElement("button");b.className="ks120swatch";b.style.background=c;b.title=c;b.onclick=()=>applyColor(c);pal.appendChild(b)});
  const custom=document.createElement("input");custom.type="color";custom.value="#d9d7cf";custom.title="ÖZEL RENK";custom.oninput=()=>applyColor(custom.value);pal.appendChild(custom);
- r.querySelector("#ks138CamSave").onclick=save3DCamera;r.querySelector("#ks139CamTune").onclick=tuneCamera;r.querySelector("#ks116Exit").onclick=close;
+ r.querySelector("#ks161Unlock").onclick=ks161UnlockEdit;r.querySelector("#ks138CamSave").onclick=save3DCamera;r.querySelector("#ks139CamTune").onclick=tuneCamera;r.querySelector("#ks116Exit").onclick=close;
  const A={undo,redo,delete:del,left:()=>move(-.5,0),right:()=>move(.5,0),up:()=>move(0,.5),down:()=>move(0,-.5),rotl:()=>rotate(-5),rotr:()=>rotate(5)};
  r.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>A[b.dataset.a]?.());
  closeCategory();
@@ -3777,18 +3806,19 @@ function open(){
  ksCancelCameraMotion();
  S.scene=load();S.active=true;S.tool=null;S.draft=[];S.sel.clear();S.clipboard=[];S.paste=false;S.history=[];S.future=[];
  try{S.savedCamera={destination:Cesium.Cartesian3.clone(viewer.camera.positionWC),orientation:{heading:viewer.camera.heading,pitch:viewer.camera.pitch,roll:viewer.camera.roll}}}catch(e){}
- hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");installHandler();window.addEventListener("keydown",keydown,true);document.addEventListener("pointerdown",marqueeDown,true);document.addEventListener("pointermove",marqueeMove,true);document.addEventListener("pointerup",marqueeUp,true);renderAll();sync();msg("3D");ks144HidePreview();enter3DCamera();
+ hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");S.editUnlocked=false;renderAll();sync();ks161ApplyLockUI();msg("GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI");ks144HidePreview();enter3DCamera();
 }
 function close(){
  if(!S.active)return;
  ksCancelCameraMotion();
  ks144CapturePreview();save();S.active=false;if(S.handler)try{S.handler=S.handler.destroy()}catch(e){}window.removeEventListener("keydown",keydown,true);document.removeEventListener("pointerdown",marqueeDown,true);document.removeEventListener("pointermove",marqueeMove,true);document.removeEventListener("pointerup",marqueeUp,true);S.marquee?.remove();S.marquee=null;S.marqueeStart=null;
- clearDraftVisuals();clearSelectionVisuals();clearRender();restoreNormal();document.body.classList.remove("ks116active");document.getElementById("ks116")?.classList.remove("open");
+ clearDraftVisuals();clearSelectionVisuals();S.editUnlocked=false;restoreNormal();document.body.classList.remove("ks116active");document.getElementById("ks116")?.classList.remove("open");renderAll();
  if(S.savedCamera)try{viewer.camera.flyTo({destination:S.savedCamera.destination,orientation:S.savedCamera.orientation,duration:.5})}catch(e){}S.savedCamera=null;
  try{if(selectedCode&&points[selectedCode])showSelected(points[selectedCode])}catch(e){}
 }
-return {open,close};
+return {open,close,showReadonly};
 })();
+setTimeout(()=>{try{KSADB3D.showReadonly()}catch(e){}},1200);
 document.getElementById("adb3dBtn")?.addEventListener("click",e=>{e.preventDefault();KSADB3D.open()});
 
 
