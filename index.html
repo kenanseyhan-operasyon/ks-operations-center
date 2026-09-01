@@ -609,7 +609,7 @@ window.addEventListener("error",function(e){
     <label class="layer-row"><span class="layer-icon green"><svg><use href="#i-plane"/></svg></span><span><b>BİZİM MEYDANLAR</b><small>ADB, BJV + Türkiye meydanları</small></span><input type="checkbox" data-layer="airports" checked></label>
     <label class="layer-row"><span class="layer-icon orange"><svg><use href="#i-tank"/></svg></span><span><b>DEPOLAMA / ÇEKİŞ</b><small>Akaryakıt depolama ve çekiş noktaları</small></span><input type="checkbox" data-layer="storage" checked></label>
     <label class="layer-row"><span class="layer-icon cyan"><svg><use href="#i-refinery"/></svg></span><span><b>ALİAĞA SOCAR TESİSLERİ</b><small>STAD, STAR, PETKİM</small></span><input type="checkbox" data-layer="aliaga" checked></label>
-    <label class="layer-row"><span class="layer-icon white"><svg><use href="#i-globe"/></svg></span><span><b>DÜNYA HAVALİMANLARI</b><small>Önemli uluslararası meydanlar</small></span><input type="checkbox" data-layer="world" checked></label>
+    <label class="layer-row"><span class="layer-icon white"><svg><use href="#i-globe"/></svg></span><span><b>DÜNYA HAVALİMANLARI</b><small>Önemli uluslararası meydanlar</small></span><input type="checkbox" data-layer="world"></label>
   </div>
   <div id="logisticsLayers" hidden>
     <div class="logistics-head">JET A1 LOJİSTİK AĞI</div>
@@ -779,7 +779,7 @@ for(const k of Object.keys(BASE_POINTS))points[k]={...BASE_POINTS[k],...(overrid
 for(const [k,p] of Object.entries(userPoints))points[k]={...p,code:k,category:p.category||"private"};
 for(const [k,p] of Object.entries(LOGISTICS_FIXED))points[k]={...p,...(overrides[k]||{}),category:p.category,systemNode:true,logisticsNode:true,code:k};
 let viewer=null,selectedCode="",mode="operation",captured=null;
-const layerState={airports:true,storage:true,aliaga:true,world:true};
+const layerState={airports:true,storage:true,aliaga:true,world:false};
 
 function saveOverrides(){localStorage.setItem(OVERRIDE_KEY,JSON.stringify(overrides))}
 function saveUsers(){localStorage.setItem(USER_KEY,JSON.stringify(userPoints))}
@@ -1231,6 +1231,8 @@ function fly(code){
 
  selectedCode=code;
  showSelected(p);
+ // V163: normal map always mirrors the selected airport's own 3D scene as read-only.
+ try{if(window.KSADB3D)window.KSADB3D.showReadonly(code)}catch(e){}
 
  const hasExactCamera=
    Number.isFinite(Number(p.cameraLat)) &&
@@ -3779,16 +3781,23 @@ function ks161UnlockEdit(){
  if(normalizedSecret(v)!=="kenanseyhan"){alert("Parola eşleşmedi.");return}
  S.editUnlocked=true;installHandler();window.addEventListener("keydown",keydown,true);document.addEventListener("pointerdown",marqueeDown,true);document.addEventListener("pointermove",marqueeMove,true);document.addEventListener("pointerup",marqueeUp,true);ks161ApplyLockUI();sync();msg("🔓 3D DÜZENLEME AÇIK");
 }
-function showReadonly(){
+function showReadonly(code){
  if(S.active)return;
- const prev=ACTIVE_AIRPORT;ACTIVE_AIRPORT="ADB";
- S.scene=load();S.sel.clear();S.tool=null;S.draft=[];S.paste=false;clearDraftVisuals();clearSelectionVisuals();renderAll();
+ const requested=String(code||selectedCode||"").toUpperCase();
+ clearDraftVisuals();clearSelectionVisuals();
+ S.sel.clear();S.tool=null;S.draft=[];S.paste=false;
+ // V163: ONE shared read-only renderer for every airport. No airport-specific renderer.
+ if(!AIRPORT_3D_CODES.includes(requested)){clearRender();try{viewer.scene.requestRender()}catch(e){}return}
+ const prev=ACTIVE_AIRPORT;
+ ACTIVE_AIRPORT=requested;
+ S.scene=load();
+ renderAll();
  ACTIVE_AIRPORT=prev;
 }
 function shell(){
  let r=document.getElementById("ks116");if(r)return r;
  r=document.createElement("div");r.id="ks116";r.innerHTML=`
- <div class="ks116top"><div><b id="ks162AirportTitle">3D OPERASYON</b><small>V162 • TÜM MEYDANLAR 3D + ŞİFRELİ DÜZENLEME</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <div class="ks116top"><div><b id="ks162AirportTitle">3D OPERASYON</b><small>V164 • TEK KATMAN DURUMU + ÇOKLU MEYDAN 3D</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
  <aside class="ks116panel">
    <h4>ÇİZİM / NESNE</h4>
    <div class="ks120main"><div id="ks120Cats">
@@ -3847,10 +3856,11 @@ function close(){
  clearDraftVisuals();clearSelectionVisuals();S.editUnlocked=false;restoreNormal();document.body.classList.remove("ks116active");document.getElementById("ks116")?.classList.remove("open");renderAll();
  if(S.savedCamera)try{viewer.camera.flyTo({destination:S.savedCamera.destination,orientation:S.savedCamera.orientation,duration:.5})}catch(e){}S.savedCamera=null;
  try{if(selectedCode&&points[selectedCode])showSelected(points[selectedCode])}catch(e){}
+ try{showReadonly(selectedCode)}catch(e){}
 }
 return {open,close,showReadonly};
 })();
-setTimeout(()=>{try{KSADB3D.showReadonly()}catch(e){}},1200);
+setTimeout(()=>{try{KSADB3D.showReadonly(selectedCode)}catch(e){}},1200);
 document.getElementById("adb3dBtn")?.addEventListener("click",e=>{e.preventDefault();KSADB3D.open()});
 
 
