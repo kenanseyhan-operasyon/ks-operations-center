@@ -623,7 +623,7 @@ window.addEventListener("error",function(e){
   <div class="tools-title">ARAÇLAR</div>
   <button class="tool-row" id="saveCurrent"><svg><use href="#i-pin"/></svg><span><b>KOORDİNAT KAYDET</b><small>Bu noktayı kaydet</small></span><i>›</i></button>
   <button class="tool-row" id="addPlaceBtn"><span class="plus">＋</span><span><b>YENİ YER</b><small>Haritaya nokta ekle</small></span><i>›</i></button>
-  <button class="tool-row" id="exportDataBtn"><span class="backup-icon">⇩</span><span><b>KAYITLARI DIŞA AKTAR</b><small>Konum + ADB 3D tam yedek</small></span><i>›</i></button>
+  <button class="tool-row" id="exportDataBtn"><span class="backup-icon">⇩</span><span><b>KAYITLARI DIŞA AKTAR</b><small>Konum + tüm meydanlar 3D tam yedek</small></span><i>›</i></button>
   <button class="tool-row" id="importDataBtn"><span class="backup-icon">⇧</span><span><b>KAYITLARI İÇE AKTAR</b><small>Yedekten geri yükle</small></span><i>›</i></button>
   <input id="importDataFile" type="file" accept=".json,application/json" hidden>
   <button class="tool-row" id="helpBtn"><svg><use href="#i-help"/></svg><span><b>YARDIM</b><small>Kullanım ipuçları</small></span><i>›</i></button>
@@ -1298,7 +1298,11 @@ function showSelected(p){
  }
 
  const adb3d=document.getElementById("adb3dBtn");
- if(adb3d)adb3d.hidden=(p.code!=="ADB");
+ if(adb3d){
+   const airport3d=!!(p && p.category==="airports");
+   adb3d.hidden=!airport3d;
+   if(airport3d)adb3d.textContent=`◈ ${p.code} 3D OPERASYON`;
+ }
 }
 function renderDock(){
  const airportOrder=["AYT","ESB","IST","SAW","DLM","GZP"];
@@ -1865,6 +1869,15 @@ function ksBackupPayload(){
     const n=(p?.name||"").trim().toLocaleUpperCase("tr-TR");
     if(id==="ANTALYA_TERMINAL"||n==="ANTALYA ORTAK TERMİNALİ"||n==="KIRIKKALE") delete savedUsers[id];
   }
+  const airport3d={};
+  for(const code of ["ADB","BJV","AYT","ESB","IST","SAW","DLM","GZP"]){
+    try{
+      const scene=JSON.parse(localStorage.getItem(`KS_AIRPORT_${code}_3D_V2`)||"null");
+      const camera=JSON.parse(localStorage.getItem(`KS_AIRPORT_${code}_3D_CAMERA_V1`)||"null");
+      const tune=JSON.parse(localStorage.getItem(`KS_${code}_CAMERA_APPROACH_V1`)||"null");
+      if(scene||camera||tune)airport3d[code]={scene,camera,tune};
+    }catch(e){}
+  }
   return {
     format:"KS_OPERATIONS_CENTER_BACKUP",
     version:"V25-TOKEN",
@@ -1875,6 +1888,7 @@ function ksBackupPayload(){
     adb3d:adb3d,
     adb3dCamera:adb3dCamera,
     adb3dCameraTune:adb3dCameraTune,
+    airport3d:airport3d,
     cesiumToken:token
   };
 }
@@ -1895,7 +1909,7 @@ function ksExportData(){
   a.download=`KS-KAYITLAR-${ksNowStamp()}.json`;
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
-  const n=payload.adb3d?.objects?.length||0, g=payload.adb3d?.groups?.length||0;
+  let n=0,g=0;for(const v of Object.values(payload.airport3d||{})){n+=v?.scene?.objects?.length||0;g+=v?.scene?.groups?.length||0}
   ksSetBackupStatus(`TAM YEDEK: ${n} 3D NESNE • ${g} GRUP ✓`,true);
   const b=document.getElementById("exportDataBtn");
   if(b){const old=b.innerHTML;b.classList.add("saved");setTimeout(()=>b.classList.remove("saved"),1300);}
@@ -1915,6 +1929,14 @@ function ksImportDataFile(file){
       if(data.adb3d && data.adb3d.schema==="KS_AIRPORT_3D_V2") localStorage.setItem(KS_ADB3D_KEY,JSON.stringify(data.adb3d));
       if(data.adb3dCamera) localStorage.setItem(KS_ADB3D_CAMERA_KEY,JSON.stringify(data.adb3dCamera));
       if(data.adb3dCameraTune) localStorage.setItem(KS_ADB3D_TUNE_KEY,JSON.stringify(data.adb3dCameraTune));
+      if(data.airport3d && typeof data.airport3d==="object"){
+        for(const [code,v] of Object.entries(data.airport3d)){
+          if(!["ADB","BJV","AYT","ESB","IST","SAW","DLM","GZP"].includes(code))continue;
+          if(v?.scene?.schema==="KS_AIRPORT_3D_V2")localStorage.setItem(`KS_AIRPORT_${code}_3D_V2`,JSON.stringify(v.scene));
+          if(v?.camera)localStorage.setItem(`KS_AIRPORT_${code}_3D_CAMERA_V1`,JSON.stringify(v.camera));
+          if(v?.tune)localStorage.setItem(`KS_${code}_CAMERA_APPROACH_V1`,JSON.stringify(v.tune));
+        }
+      }
       if(data.cesiumToken){
         localStorage.setItem("cesiumIonToken",data.cesiumToken);
         localStorage.setItem("cesiumIonTokenV24Fresh",data.cesiumToken);
@@ -1991,12 +2013,15 @@ window.addEventListener("load",()=>setTimeout(normalizeBottomNav,250));
 /* V161: normal haritada salt-okunur 3D + mevcut ÖZEL parola doğrulamasıyla düzenleme kilidi */
 window.KSADB3D=(()=>{
 "use strict";
-const STORE="KS_AIRPORT_ADB_3D_V2";
-const CAMERA_STORE="KS_AIRPORT_ADB_3D_CAMERA_V1";
-const CAM_TUNE_STORE="KS_ADB_CAMERA_APPROACH_V1";
+const AIRPORT_3D_CODES=["ADB","BJV","AYT","ESB","IST","SAW","DLM","GZP"];
+let ACTIVE_AIRPORT="ADB";
+const storeKey=()=>`KS_AIRPORT_${ACTIVE_AIRPORT}_3D_V2`;
+const cameraStoreKey=()=>`KS_AIRPORT_${ACTIVE_AIRPORT}_3D_CAMERA_V1`;
+const tuneStoreKey=()=>`KS_${ACTIVE_AIRPORT}_CAMERA_APPROACH_V1`;
+const previewStoreKey=()=>`KS_${ACTIVE_AIRPORT}_VISUAL_PREVIEW_V1`;
 function loadCameraTune(){
  try{
-   const d=JSON.parse(localStorage.getItem(CAM_TUNE_STORE)||"null");if(!d)return;
+   const d=JSON.parse(localStorage.getItem(tuneStoreKey())||"null");if(!d)return;
    if(Number.isFinite(+d.total))window.KS_ADB_APPROACH_TOTAL=+d.total;
    if(Number.isFinite(+d.turn))window.KS_ADB_APPROACH_TURN=+d.turn;
    if(Number.isFinite(+d.range))window.KS_ADB_APPROACH_RANGE=+d.range;
@@ -2011,7 +2036,7 @@ function tuneCamera(){
  const range=parseFloat(prompt("İLK ADB GÖRÜŞ MESAFESİ (km):",String(window.KS_ADB_APPROACH_RANGE||52)));
  if(!Number.isFinite(range)||range<3)return;
  window.KS_ADB_APPROACH_TOTAL=total;window.KS_ADB_APPROACH_TURN=turn;window.KS_ADB_APPROACH_RANGE=range;
- localStorage.setItem(CAM_TUNE_STORE,JSON.stringify({total,turn,range}));
+ localStorage.setItem(tuneStoreKey(),JSON.stringify({total,turn,range}));
  msg("KAMERA YAKLAŞIM AYARI KAYDEDİLDİ ✓");
 }
 loadCameraTune();
@@ -2028,13 +2053,13 @@ function save3DCamera(){
      pitch:Number(viewer.camera.pitch)||0,
      roll:Number(viewer.camera.roll)||0
    };
-   localStorage.setItem(CAMERA_STORE,JSON.stringify(d));
-   msg("ADB 3D KAMERA KAYDEDİLDİ ✓");
+   localStorage.setItem(cameraStoreKey(),JSON.stringify(d));
+   msg(`${ACTIVE_AIRPORT} 3D KAMERA KAYDEDİLDİ ✓`);
  }catch(e){msg("KAMERA KAYDEDİLEMEDİ")}
 }
 function load3DCamera(){
  try{
-   const d=JSON.parse(localStorage.getItem(CAMERA_STORE)||"null");
+   const d=JSON.parse(localStorage.getItem(cameraStoreKey())||"null");
    if(d&&Number.isFinite(+d.lon)&&Number.isFinite(+d.lat)&&Number.isFinite(+d.alt)){
      d.heading=Number.isFinite(+d.heading)?+d.heading:0;
      d.pitch=Number.isFinite(+d.pitch)?+d.pitch:Cesium.Math.toRadians(-45);
@@ -2044,10 +2069,10 @@ function load3DCamera(){
  }catch(e){}
  return null;
 }
-const KS_ADB_PREVIEW_STORE="KS_ADB_VISUAL_PREVIEW_V1";
+
 function ks144PreviewEl(){let e=document.getElementById("ks144Preview");if(!e){e=document.createElement("div");e.id="ks144Preview";e.innerHTML='<div class="ks144load">HARİTA HAZIRLANIYOR…</div>';document.body.appendChild(e)}return e}
 function ks144ShowPreview(){
- const e=ks144PreviewEl();let img="";try{img=localStorage.getItem(KS_ADB_PREVIEW_STORE)||""}catch(x){}
+ const e=ks144PreviewEl();let img="";try{img=localStorage.getItem(previewStoreKey())||""}catch(x){}
  e.style.backgroundImage=img?`url(${img})`:"linear-gradient(145deg,#07131b,#102733 55%,#07131b)";e.classList.add("show");
 }
 function ks144HidePreview(){const e=document.getElementById("ks144Preview");if(!e)return;e.classList.remove("show");setTimeout(()=>{if(!e.classList.contains("show"))e.style.backgroundImage=""},900)}
@@ -2055,7 +2080,7 @@ function ks144CapturePreview(){
  try{
    const src=viewer?.scene?.canvas;if(!src||src.width<10||src.height<10)return;
    const w=720,h=Math.max(360,Math.round(w*src.height/src.width)),c=document.createElement("canvas");c.width=w;c.height=h;
-   const x=c.getContext("2d");x.drawImage(src,0,0,w,h);const data=c.toDataURL("image/jpeg",.64);if(data&&data.length<900000)localStorage.setItem(KS_ADB_PREVIEW_STORE,data);
+   const x=c.getContext("2d");x.drawImage(src,0,0,w,h);const data=c.toDataURL("image/jpeg",.64);if(data&&data.length<900000)localStorage.setItem(previewStoreKey(),data);
  }catch(e){}
 }
 function ks144WaitTiles(done,maxMs=4200){
@@ -2186,8 +2211,8 @@ function ksV158Enter3D(adb,saved,done){
 }
 function enter3DCamera(){
  const saved=load3DCamera();
- const adb=window.points?.ADB || (typeof points!=="undefined"?points.ADB:null);
- if(adb)ksV158Enter3D(adb,saved||ksExactCameraOf(adb),()=>ksWait(500,ks144CapturePreview));
+ const ap=window.points?.[ACTIVE_AIRPORT] || (typeof points!=="undefined"?points[ACTIVE_AIRPORT]:null);
+ if(ap)ksV158Enter3D(ap,saved||ksExactCameraOf(ap),()=>ksWait(500,ks144CapturePreview));
 }
 const CREAM="#f2e7c9";
 const DEF={
@@ -2249,10 +2274,10 @@ const S={active:false,editUnlocked:false,scene:null,tool:null,draft:[],sel:new S
 const deep=x=>JSON.parse(JSON.stringify(x));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const color=(x,a=1)=>Cesium.Color.fromCssColorString(x).withAlpha(a);
-function blank(){return {schema:"KS_AIRPORT_3D_V2",airport:"ADB",version:2,objects:[],groups:[]}}
+function blank(){return {schema:"KS_AIRPORT_3D_V2",airport:ACTIVE_AIRPORT,version:2,objects:[],groups:[]}}
 function load(){
  try{
-  const d=JSON.parse(localStorage.getItem(STORE)||"null");
+  const d=JSON.parse(localStorage.getItem(storeKey())||"null");
   if(d&&d.schema==="KS_AIRPORT_3D_V2"&&Array.isArray(d.objects)){
    let changed=false;
    for(const o of d.objects){
@@ -2264,14 +2289,14 @@ function load(){
      if(clean&&clean!==n){o.name=clean;changed=true}
     }
    }
-   if(changed)localStorage.setItem(STORE,JSON.stringify(d));
+   if(changed)localStorage.setItem(storeKey(),JSON.stringify(d));
    return d
   }
  }catch(e){}
  return blank()
 }
 function save(){
- localStorage.setItem(STORE,JSON.stringify(S.scene));
+ localStorage.setItem(storeKey(),JSON.stringify(S.scene));
  const e=document.getElementById("ks121SaveState");if(e){e.textContent="✓ OTOMATİK KAYIT";e.classList.add("saved");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("saved"),800)}
 }
 function byId(id){return S.scene.objects.find(o=>o.id===id)}
@@ -3756,12 +3781,14 @@ function ks161UnlockEdit(){
 }
 function showReadonly(){
  if(S.active)return;
+ const prev=ACTIVE_AIRPORT;ACTIVE_AIRPORT="ADB";
  S.scene=load();S.sel.clear();S.tool=null;S.draft=[];S.paste=false;clearDraftVisuals();clearSelectionVisuals();renderAll();
+ ACTIVE_AIRPORT=prev;
 }
 function shell(){
  let r=document.getElementById("ks116");if(r)return r;
  r=document.createElement("div");r.id="ks116";r.innerHTML=`
- <div class="ks116top"><div><b>ADB • 3D OPERASYON</b><small>V161 • GÖRÜNTÜLEME + ŞİFRELİ DÜZENLEME</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <div class="ks116top"><div><b id="ks162AirportTitle">3D OPERASYON</b><small>V162 • TÜM MEYDANLAR 3D + ŞİFRELİ DÜZENLEME</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
  <aside class="ks116panel">
    <h4>ÇİZİM / NESNE</h4>
    <div class="ks120main"><div id="ks120Cats">
@@ -3777,7 +3804,7 @@ function shell(){
      <button id="ks116AddGroup">GRUBA EKLE</button><button id="ks116Ungroup">GRUBU ÇÖZ</button>
    </div>
    <div id="ks120Palette" hidden></div><div id="ks121Props" hidden></div>
-   <h4>ADB SAHNE NESNELERİ / GRUPLAR</h4><div id="ks116List"></div>
+   <h4 id="ks162SceneTitle">SAHNE NESNELERİ / GRUPLAR</h4><div id="ks116List"></div>
  </aside>
  <div id="ks116Status">HAZIR</div>
  <div class="ks116pad">
@@ -3802,11 +3829,16 @@ function shell(){
 function hideNormal(){S.hidden=[];for(const e of viewer.entities.values){S.hidden.push([e,e.show]);e.show=false}}
 function restoreNormal(){for(const [e,v] of S.hidden)try{e.show=v}catch(x){}S.hidden=[]}
 function open(){
- let code="";try{code=String(selectedCode||"").toUpperCase()}catch(e){}if(code!=="ADB")return;
+ let code="";try{code=String(selectedCode||"").toUpperCase()}catch(e){}
+ if(!AIRPORT_3D_CODES.includes(code))return;
+ ACTIVE_AIRPORT=code;loadCameraTune();
  ksCancelCameraMotion();
  S.scene=load();S.active=true;S.tool=null;S.draft=[];S.sel.clear();S.clipboard=[];S.paste=false;S.history=[];S.future=[];
  try{S.savedCamera={destination:Cesium.Cartesian3.clone(viewer.camera.positionWC),orientation:{heading:viewer.camera.heading,pitch:viewer.camera.pitch,roll:viewer.camera.roll}}}catch(e){}
- hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");S.editUnlocked=false;renderAll();sync();ks161ApplyLockUI();msg("GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI");ks144HidePreview();enter3DCamera();
+ hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");
+ const t=document.getElementById("ks162AirportTitle");if(t)t.textContent=`${ACTIVE_AIRPORT} • 3D OPERASYON`;
+ const st=document.getElementById("ks162SceneTitle");if(st)st.textContent=`${ACTIVE_AIRPORT} SAHNE NESNELERİ / GRUPLAR`;
+ S.editUnlocked=false;renderAll();sync();ks161ApplyLockUI();msg("GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI");ks144HidePreview();enter3DCamera();
 }
 function close(){
  if(!S.active)return;
