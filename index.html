@@ -2021,6 +2021,103 @@ const storeKey=()=>`KS_AIRPORT_${ACTIVE_AIRPORT}_3D_V2`;
 const cameraStoreKey=()=>`KS_AIRPORT_${ACTIVE_AIRPORT}_3D_CAMERA_V1`;
 const tuneStoreKey=()=>`KS_${ACTIVE_AIRPORT}_CAMERA_APPROACH_V1`;
 const previewStoreKey=()=>`KS_${ACTIVE_AIRPORT}_VISUAL_PREVIEW_V1`;
+/* V165 CLOUD READ — Supabase is read-only in this version.
+   Local scene renders immediately. Cloud is checked in background.
+   IMPORTANT: an empty/bootstrap cloud row NEVER overwrites a populated local scene. */
+const KS_CLOUD={
+ url:"https://dgvasjxnutzxqouphvqi.supabase.co",
+ key:"sb_publishable_4Xo1gNGsNgV5Jc7At-e8Pg_9zvcOA_n"
+};
+const cloudRevisionKey=code=>`KS_CLOUD_${code}_REVISION_V1`;
+function ksValidScene(d,code){
+ return !!(d&&d.schema==="KS_AIRPORT_3D_V2"&&Array.isArray(d.objects)&&(!d.airport||String(d.airport).toUpperCase()===String(code).toUpperCase()));
+}
+function ksSceneHasContent(d){return !!(ksValidScene(d,d?.airport||"")&&(d.objects.length>0||(Array.isArray(d.groups)&&d.groups.length>0)))}
+/* V167: one airport = one complete cloud package. Scene stays the root schema for backward compatibility;
+   camera + approach tune travel with it and are restored into their authoritative local keys. */
+function ksReadJsonKey(key){try{return JSON.parse(localStorage.getItem(key)||"null")}catch(e){return null}}
+function ksCameraKeyFor(code){return `KS_AIRPORT_${code}_3D_CAMERA_V1`}
+function ksTuneKeyFor(code){return `KS_${code}_CAMERA_APPROACH_V1`}
+function ksCompleteAirportPackage(code,scene){
+ code=String(code||"").toUpperCase();
+ const base=JSON.parse(JSON.stringify(scene));
+ const camera=ksReadJsonKey(ksCameraKeyFor(code));
+ const tune=ksReadJsonKey(ksTuneKeyFor(code));
+ if(camera)base.camera=camera; else delete base.camera;
+ if(tune)base.tune=tune; else delete base.tune;
+ base.cloudPackageVersion=1;
+ return base;
+}
+function ksRestoreAirportExtras(code,pkg){
+ code=String(code||"").toUpperCase();
+ if(pkg?.camera&&Number.isFinite(+pkg.camera.lon)&&Number.isFinite(+pkg.camera.lat)&&Number.isFinite(+pkg.camera.alt))
+   localStorage.setItem(ksCameraKeyFor(code),JSON.stringify(pkg.camera));
+ if(pkg?.tune&&Number.isFinite(+pkg.tune.total)&&Number.isFinite(+pkg.tune.turn)&&Number.isFinite(+pkg.tune.range))
+   localStorage.setItem(ksTuneKeyFor(code),JSON.stringify(pkg.tune));
+ if(ACTIVE_AIRPORT===code)loadCameraTune();
+}
+async function cloudReadAirport(code,{apply=true}={}){
+ code=String(code||"").toUpperCase();
+ if(!AIRPORT_3D_CODES.includes(code))return {ok:false,reason:"unsupported"};
+ try{
+  const u=`${KS_CLOUD.url}/rest/v1/airport_3d_scenes?airport_code=eq.${encodeURIComponent(code)}&select=airport_code,scene_data,revision,updated_at`;
+  const r=await fetch(u,{headers:{apikey:KS_CLOUD.key,Authorization:`Bearer ${KS_CLOUD.key}`,Accept:"application/json"},cache:"no-store"});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const rows=await r.json(),row=Array.isArray(rows)?rows[0]:null;
+  if(!row)return {ok:false,reason:"missing"};
+  const remote=row.scene_data,rev=Number(row.revision)||0;
+  // Bootstrap rows are currently {}. Never let them erase the user's local drawings.
+  if(!ksValidScene(remote,code))return {ok:true,empty:true,revision:rev};
+  // V167 complete sync: camera/final view and approach action settings follow the same airport revision.
+  if(apply)ksRestoreAirportExtras(code,remote);
+  let local=null;try{local=JSON.parse(localStorage.getItem(`KS_AIRPORT_${code}_3D_V2`)||"null")}catch(e){}
+  const cachedRev=Number(localStorage.getItem(cloudRevisionKey(code))||0);
+  // Until first upload/migration, a populated local scene wins over an empty remote scene.
+  if(ksSceneHasContent(local)&&!ksSceneHasContent(remote))return {ok:true,protectedLocal:true,revision:rev};
+  if(apply&&(rev>cachedRev||!ksValidScene(local,code))){
+    localStorage.setItem(`KS_AIRPORT_${code}_3D_V2`,JSON.stringify(remote));
+    localStorage.setItem(cloudRevisionKey(code),String(rev));
+    if(S.active&&ACTIVE_AIRPORT===code){S.scene=load();renderAll();sync();msg(`☁ ${code} BULUT SAHNESİ GÜNCELLENDİ`)}
+    else if(!S.active&&String(selectedCode||"").toUpperCase()===code){showReadonly(code)}
+    return {ok:true,updated:true,revision:rev};
+  }
+  return {ok:true,updated:false,revision:rev};
+ }catch(e){
+  console.warn("KS V165 cloud read",code,e);
+  if(S.active&&ACTIVE_AIRPORT===code)msg("YEREL SAHNE AÇIK • BULUT BAĞLANTISI BEKLENİYOR");
+  return {ok:false,error:String(e)};
+ }
+}
+function cloudCheckAirport(code){setTimeout(()=>cloudReadAirport(code,{apply:true}),0)}
+/* V167 CLOUD WRITE — authenticated user only; no secret/service-role key in browser. */
+const KS_CLOUD_SESSION_KEY="KS_SUPABASE_USER_SESSION_V1";
+function cloudSession(){try{return JSON.parse(sessionStorage.getItem(KS_CLOUD_SESSION_KEY)||"null")}catch(e){return null}}
+function cloudClearSession(){sessionStorage.removeItem(KS_CLOUD_SESSION_KEY)}
+async function cloudLogin(){
+ const old=cloudSession();if(old?.access_token&&old?.expires_at>Date.now()+30000)return old;
+ const email=prompt("BULUT KAYIT E-POSTASI:",old?.email||"");if(email===null||!email.trim())return null;
+ const password=prompt("BULUT KAYIT ŞİFRESİ:","");if(password===null||!password)return null;
+ const r=await fetch(`${KS_CLOUD.url}/auth/v1/token?grant_type=password`,{method:"POST",headers:{apikey:KS_CLOUD.key,"Content-Type":"application/json"},body:JSON.stringify({email:email.trim(),password})});
+ const d=await r.json().catch(()=>({}));if(!r.ok||!d.access_token)throw new Error(d?.error_description||d?.msg||`Giriş başarısız (${r.status})`);
+ const sess={access_token:d.access_token,email:email.trim(),expires_at:Date.now()+Math.max(60,Number(d.expires_in)||3600)*1000};sessionStorage.setItem(KS_CLOUD_SESSION_KEY,JSON.stringify(sess));return sess;
+}
+async function cloudSaveScene(code,scene){
+ code=String(code||"").toUpperCase();if(!AIRPORT_3D_CODES.includes(code)||!ksValidScene(scene,code))throw new Error("Geçerli 3D sahne bulunamadı");
+ const complete=ksCompleteAirportPackage(code,scene);
+ let sess=cloudSession();if(!sess?.access_token||sess.expires_at<=Date.now()+30000){cloudClearSession();sess=await cloudLogin()}if(!sess)return {ok:false,cancelled:true};
+ const r=await fetch(`${KS_CLOUD.url}/rest/v1/rpc/save_airport_3d_scene`,{method:"POST",headers:{apikey:KS_CLOUD.key,Authorization:`Bearer ${sess.access_token}`,"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({p_airport_code:code,p_scene_data:complete})});
+ if(r.status===401)cloudClearSession();const raw=await r.text();if(!r.ok)throw new Error(raw||`HTTP ${r.status}`);let rev=0;try{rev=Number(JSON.parse(raw))||0}catch(e){rev=Number(raw)||0}if(rev)localStorage.setItem(cloudRevisionKey(code),String(rev));return {ok:true,revision:rev};
+}
+async function cloudUploadCurrent(){
+ if(!S.editUnlocked){msg("🔒 ÖNCE 3D DÜZENLEMEYİ AÇ");return}const code=ACTIVE_AIRPORT,scene=S.scene;if(!ksSceneHasContent(scene)){msg(`${code} • AKTARILACAK 3D ÇİZİM YOK`);return}
+ if(!confirm(`${code} 3D PAKETİ (SAHNE + KAMERA + YAKLAŞIM) MERKEZİ BULUTA AKTARILSIN MI?\n\nYerel kayıt silinmez.`))return;
+ try{msg(`☁ ${code} BULUTA AKTARILIYOR...`);const x=await cloudSaveScene(code,scene);if(x?.cancelled){msg("BULUT AKTARIMI İPTAL");return}msg(`☁ ${code} BULUTA KAYDEDİLDİ • REV ${x.revision||"?"} ✓`)}catch(e){console.error(e);msg("BULUT KAYIT HATASI");alert("Bulut kayıt başarısız:\n"+e.message)}
+}
+async function cloudUploadAllLocal(){
+ if(!S.editUnlocked){msg("🔒 ÖNCE 3D DÜZENLEMEYİ AÇ");return}const items=[];for(const code of AIRPORT_3D_CODES){try{const d=JSON.parse(localStorage.getItem(`KS_AIRPORT_${code}_3D_V2`)||"null");if(ksSceneHasContent(d))items.push([code,d])}catch(e){}}
+ if(!items.length){msg("AKTARILACAK YEREL 3D SAHNE YOK");return}const count=items.reduce((n,x)=>n+(x[1].objects?.length||0),0);if(!confirm(`${items.map(x=>x[0]).join(", ")} 3D PAKETLERİ (SAHNE + KAMERA + YAKLAŞIM) MERKEZİ BULUTA AKTARILSIN MI?\n\nToplam ${count} nesne. Yerel kayıtlar silinmez.`))return;
+ try{let done=[];for(const [code,d] of items){msg(`☁ ${code} BULUTA AKTARILIYOR...`);const x=await cloudSaveScene(code,d);if(x?.cancelled){msg("BULUT AKTARIMI İPTAL");return}done.push(`${code}:${x.revision||"?"}`)}msg(`☁ BULUT AKTARIMI TAMAM • ${done.join(" • ")} ✓`)}catch(e){console.error(e);msg("BULUT AKTARIM HATASI");alert("Bulut aktarım başarısız:\n"+e.message)}
+}
 function loadCameraTune(){
  try{
    const d=JSON.parse(localStorage.getItem(tuneStoreKey())||"null");if(!d)return;
@@ -3770,7 +3867,7 @@ function ks161ApplyLockUI(){
  const panel=r.querySelector(".ks116panel"),pad=r.querySelector(".ks116pad");
  if(panel)panel.style.display=locked?"none":"";
  if(pad)pad.style.display=locked?"none":"";
- for(const id of ["ks138CamSave","ks139CamTune","ks121SaveState","ks116Count"]){const e=r.querySelector("#"+id);if(e)e.style.display=locked?"none":""}
+ for(const id of ["ks166CloudCurrent","ks166CloudAll","ks138CamSave","ks139CamTune","ks121SaveState","ks116Count"]){const e=r.querySelector("#"+id);if(e)e.style.display=locked?"none":""}
  const st=r.querySelector("#ks161LockState");if(st){st.textContent=locked?"🔒 3D KİLİTLİ":"🔓 DÜZENLEME AÇIK";st.style.color=locked?"#ffd36a":"#aaff24"}
  const b=r.querySelector("#ks161Unlock");if(b){b.textContent=locked?"🔒 DÜZENLE":"🔓 DÜZENLEME AÇIK";b.disabled=!locked}
  const status=r.querySelector("#ks116Status");if(status&&locked)status.textContent="GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI";
@@ -3793,11 +3890,12 @@ function showReadonly(code){
  S.scene=load();
  renderAll();
  ACTIVE_AIRPORT=prev;
+ cloudCheckAirport(requested);
 }
 function shell(){
  let r=document.getElementById("ks116");if(r)return r;
  r=document.createElement("div");r.id="ks116";r.innerHTML=`
- <div class="ks116top"><div><b id="ks162AirportTitle">3D OPERASYON</b><small>V164 • TEK KATMAN DURUMU + ÇOKLU MEYDAN 3D</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
+ <div class="ks116top"><div><b id="ks162AirportTitle">3D OPERASYON</b><small>V168 • CLOUD-FIRST CAMERA SYNC</small></div><div><span id="ks161LockState">🔒 3D KİLİTLİ</span><span id="ks121SaveState">✓ OTOMATİK KAYIT</span><span id="ks116Count">0 SEÇİLİ</span><button id="ks161Unlock">🔒 DÜZENLE</button><button id="ks166CloudCurrent">☁ TAM 3D BULUTA KAYDET</button><button id="ks166CloudAll">☁ TÜM 3D PAKETLERİNİ AKTAR</button><button id="ks138CamSave">3D KAMERA KAYDET</button><button id="ks139CamTune">KAMERA YAKLAŞIM AYARI</button><button id="ks116Exit">3D'DEN ÇIK</button></div></div>
  <aside class="ks116panel">
    <h4>ÇİZİM / NESNE</h4>
    <div class="ks120main"><div id="ks120Cats">
@@ -3829,7 +3927,7 @@ function shell(){
  const pal=r.querySelector("#ks120Palette");
  PALETTE.forEach(c=>{const b=document.createElement("button");b.className="ks120swatch";b.style.background=c;b.title=c;b.onclick=()=>applyColor(c);pal.appendChild(b)});
  const custom=document.createElement("input");custom.type="color";custom.value="#d9d7cf";custom.title="ÖZEL RENK";custom.oninput=()=>applyColor(custom.value);pal.appendChild(custom);
- r.querySelector("#ks161Unlock").onclick=ks161UnlockEdit;r.querySelector("#ks138CamSave").onclick=save3DCamera;r.querySelector("#ks139CamTune").onclick=tuneCamera;r.querySelector("#ks116Exit").onclick=close;
+ r.querySelector("#ks161Unlock").onclick=ks161UnlockEdit;r.querySelector("#ks166CloudCurrent").onclick=cloudUploadCurrent;r.querySelector("#ks166CloudAll").onclick=cloudUploadAllLocal;r.querySelector("#ks138CamSave").onclick=save3DCamera;r.querySelector("#ks139CamTune").onclick=tuneCamera;r.querySelector("#ks116Exit").onclick=close;
  const A={undo,redo,delete:del,left:()=>move(-.5,0),right:()=>move(.5,0),up:()=>move(0,.5),down:()=>move(0,-.5),rotl:()=>rotate(-5),rotr:()=>rotate(5)};
  r.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>A[b.dataset.a]?.());
  closeCategory();
@@ -3837,20 +3935,33 @@ function shell(){
 }
 function hideNormal(){S.hidden=[];for(const e of viewer.entities.values){S.hidden.push([e,e.show]);e.show=false}}
 function restoreNormal(){for(const [e,v] of S.hidden)try{e.show=v}catch(x){}S.hidden=[]}
-function open(){
+let ksV168OpenToken=0;
+async function open(){
  let code="";try{code=String(selectedCode||"").toUpperCase()}catch(e){}
  if(!AIRPORT_3D_CODES.includes(code))return;
- ACTIVE_AIRPORT=code;loadCameraTune();
+ const myOpen=++ksV168OpenToken;
+ ACTIVE_AIRPORT=code;
  ksCancelCameraMotion();
  S.scene=load();S.active=true;S.tool=null;S.draft=[];S.sel.clear();S.clipboard=[];S.paste=false;S.history=[];S.future=[];
  try{S.savedCamera={destination:Cesium.Cartesian3.clone(viewer.camera.positionWC),orientation:{heading:viewer.camera.heading,pitch:viewer.camera.pitch,roll:viewer.camera.roll}}}catch(e){}
  hideNormal();document.body.classList.add("ks116active");shell().classList.add("open");
  const t=document.getElementById("ks162AirportTitle");if(t)t.textContent=`${ACTIVE_AIRPORT} • 3D OPERASYON`;
  const st=document.getElementById("ks162SceneTitle");if(st)st.textContent=`${ACTIVE_AIRPORT} SAHNE NESNELERİ / GRUPLAR`;
- S.editUnlocked=false;renderAll();sync();ks161ApplyLockUI();msg("GÖRÜNTÜLEME MODU • ÇİZİMLER KORUMALI");ks144HidePreview();enter3DCamera();
+ S.editUnlocked=false;renderAll();sync();ks161ApplyLockUI();ks144HidePreview();
+ // V168: 3D hareketi başlamadan ÖNCE merkezi paket okunur.
+ // Böylece ikinci bilgisayar yerel/fallback kamera ile harekete başlayamaz.
+ msg("☁ MERKEZİ 3D PAKETİ ALINIYOR...");
+ try{await cloudReadAirport(code,{apply:true})}catch(e){console.warn("KS V168 cloud-first",e)}
+ if(myOpen!==ksV168OpenToken||!S.active||ACTIVE_AIRPORT!==code)return;
+ // Buluttan gelen authoritative camera+tune anahtarlarını şimdi yükle.
+ loadCameraTune();
+ S.scene=load();renderAll();sync();ks161ApplyLockUI();
+ msg("☁ MERKEZİ 3D PAKET HAZIR • KAMERA BAŞLIYOR");
+ enter3DCamera();
 }
 function close(){
  if(!S.active)return;
+ ksV168OpenToken++;
  ksCancelCameraMotion();
  ks144CapturePreview();save();S.active=false;if(S.handler)try{S.handler=S.handler.destroy()}catch(e){}window.removeEventListener("keydown",keydown,true);document.removeEventListener("pointerdown",marqueeDown,true);document.removeEventListener("pointermove",marqueeMove,true);document.removeEventListener("pointerup",marqueeUp,true);S.marquee?.remove();S.marquee=null;S.marqueeStart=null;
  clearDraftVisuals();clearSelectionVisuals();S.editUnlocked=false;restoreNormal();document.body.classList.remove("ks116active");document.getElementById("ks116")?.classList.remove("open");renderAll();
@@ -3858,7 +3969,7 @@ function close(){
  try{if(selectedCode&&points[selectedCode])showSelected(points[selectedCode])}catch(e){}
  try{showReadonly(selectedCode)}catch(e){}
 }
-return {open,close,showReadonly};
+return {open,close,showReadonly,cloudReadAirport,cloudSaveScene,cloudUploadCurrent,cloudUploadAllLocal};
 })();
 setTimeout(()=>{try{KSADB3D.showReadonly(selectedCode)}catch(e){}},1200);
 document.getElementById("adb3dBtn")?.addEventListener("click",e=>{e.preventDefault();KSADB3D.open()});
