@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#03080b">
-<title>V121 • KS Operations Center V20</title>
+<title>V169 • KS Operations Center • Responsive</title>
 <script>window.CESIUM_BASE_URL="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/";</script>
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Cesium.js"></script>
 <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Widgets/widgets.css">
@@ -546,6 +546,67 @@ body.ks116active .logistics-dock{display:none!important}
 #ks144Preview{position:fixed;inset:0;z-index:1198;background:#060b10 center/cover no-repeat;opacity:0;pointer-events:none;transition:opacity .75s ease}
 #ks144Preview.show{opacity:1}
 #ks144Preview .ks144load{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);padding:9px 14px;border:1px solid #6f8592;border-radius:10px;background:rgba(5,12,17,.76);color:#eef5f7;font:800 12px Segoe UI;letter-spacing:.5px;backdrop-filter:blur(5px)}
+
+/* ================= V169 RESPONSIVE / MOBILE LAYER ================= */
+:root{--ks-mobile-top:58px}
+.ks-mobile-menu,.ks-mobile-layers-close{display:none}
+@media (max-width:1100px){
+  .topbar{height:64px!important;grid-template-columns:minmax(230px,1fr) auto!important;padding:0 10px!important}
+  .topbar nav{display:none!important}
+  .brand-zone{gap:8px!important;min-width:0}
+  .brand>b{font-size:31px!important}.brand strong{font-size:13px!important;letter-spacing:.10em!important}.brand small{font-size:7px!important}
+  .right-zone{display:flex!important;grid-template-columns:none!important;gap:7px!important;justify-content:flex-end}
+  .telemetry{display:none!important}
+  .mode-switch{width:154px!important}
+  #cesiumContainer{top:64px!important;left:250px!important}
+  .left-panel{top:76px!important;left:8px!important;width:232px!important;max-height:calc(100vh - 150px);overflow:auto}
+  .bottom-dock{left:8px!important;right:8px!important;grid-template-columns:160px minmax(380px,1fr) 44px!important;min-height:82px!important}
+  .bottom-dock .storage-strip,.bottom-dock .aliaga-strip{display:none!important}
+  .primary-airports b{font-size:22px!important}.airport-strip b{font-size:12px!important}
+}
+@media (max-width:760px){
+  html,body{overscroll-behavior:none;touch-action:manipulation}
+  .topbar{height:58px!important;grid-template-columns:1fr auto!important;padding:0 8px!important}
+  .brand-zone{overflow:hidden}.brand{gap:7px!important}.brand>b{font-size:27px!important}.brand strong{font-size:11px!important;white-space:nowrap}.brand small{font-size:6px!important;white-space:nowrap}
+  .right-zone{gap:5px!important}.mode-switch{width:128px!important;padding:2px!important}.mode-switch button{height:26px!important;font-size:8px!important}
+  #cesiumContainer{top:58px!important;left:0!important;right:0!important;bottom:76px!important}
+  .ks-mobile-menu{display:grid;place-items:center;position:fixed;z-index:65;left:8px;bottom:86px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(170,255,36,.45);background:rgba(3,12,15,.94);color:var(--lime);font-size:21px;box-shadow:0 8px 28px #0009}
+  .left-panel{display:none!important;z-index:70!important;inset:66px 8px 86px 8px!important;width:auto!important;max-height:none!important;overflow:auto!important;border-radius:14px!important;padding:12px!important;background:rgba(3,10,14,.98)!important}
+  body.ks-mobile-layers-open .left-panel{display:block!important}
+  .ks-mobile-layers-close{display:block;position:sticky;top:0;float:right;z-index:2;width:36px;height:36px;border-radius:8px;border:1px solid #ffffff1f;background:#071014;color:#eef4f4;font-size:20px;margin:-4px -4px 4px 6px}
+  .selected-panel{z-index:68!important;left:8px!important;right:8px!important;top:auto!important;bottom:84px!important;width:auto!important;max-height:48vh;overflow:auto;padding:11px!important;border-radius:14px!important}
+  .selected-panel .info-grid{grid-template-columns:70px 1fr!important}.selected-panel>button{min-height:40px}
+  .bottom-dock{z-index:55!important;left:5px!important;right:5px!important;bottom:5px!important;height:68px!important;min-height:68px!important;display:flex!important;overflow-x:auto!important;overflow-y:hidden!important;border-radius:11px!important;scrollbar-width:none;backdrop-filter:blur(10px)}
+  .bottom-dock::-webkit-scrollbar{display:none}.bottom-dock section{flex:0 0 auto!important;height:66px!important}
+  .primary-airports{width:164px!important}.primary-airports button{min-width:82px!important;padding:2px!important}.primary-airports b{font-size:18px!important}.primary-airports span{font-size:6.7px!important}
+  .airport-strip{display:flex!important;width:auto!important}.airport-strip button{min-width:58px!important;padding:3px 5px!important}.airport-strip svg{width:18px!important;height:18px!important}.airport-strip b{font-size:10px!important}.airport-strip span{display:none!important}
+  .bottom-dock .storage-strip,.bottom-dock .aliaga-strip{display:none!important}.world-btn{flex:0 0 42px!important;width:42px!important}
+  .private-dock{padding:0 4px!important;justify-content:flex-start!important}.private-group{height:66px!important}.private-title{width:70px!important;padding:8px 5px!important}.private-cards button{min-width:104px!important}
+  .logistics-dock{display:flex!important}.log-summary{min-width:95px!important}.log-route-list{display:flex!important;min-width:max-content!important}
+  .modal-card{width:calc(100% - 18px)!important;max-height:85vh;overflow:auto;padding:18px!important}.token-card{width:calc(100% - 18px)!important;padding:20px!important}.token-card h1{font-size:27px!important}
+  /* 3D editor: full-map, thumb-sized controls, no desktop squeeze */
+  body.ks116active #cesiumContainer,body.ks-v111-3d #cesiumContainer{top:0!important;left:0!important;right:0!important;bottom:0!important}
+  .ks116panel{left:6px!important;top:54px!important;bottom:84px!important;width:202px!important;max-height:calc(100vh - 138px)!important;padding:7px!important;overflow:auto!important}
+  .ks116panel h4{font-size:8px!important}.ks116grid{gap:4px!important}.ks116grid button{min-height:38px!important;font-size:8px!important;padding:4px!important}
+  #ks116Status{left:6px!important;bottom:6px!important;max-width:calc(100vw - 198px);font-size:8px!important;padding:6px 8px!important}
+  .ks116pad{right:6px!important;bottom:6px!important;width:174px!important;padding:6px!important;grid-template-columns:repeat(3,50px)!important;gap:4px!important}.ks116pad button{width:50px!important;height:44px!important;font-size:10px!important;padding:2px!important}
+}
+@media (max-width:760px) and (orientation:landscape){
+  .topbar{height:48px!important}.brand small{display:none!important}.brand>b{font-size:23px!important}.mode-switch{width:122px!important}
+  #cesiumContainer{top:48px!important;bottom:61px!important}
+  .bottom-dock{height:54px!important;min-height:54px!important}.bottom-dock section{height:52px!important}.primary-airports{width:150px!important}.primary-airports button{min-width:75px!important}.primary-airports b{font-size:15px!important}.primary-airports span{font-size:6px!important}.airport-strip button{min-width:52px!important}.airport-strip svg{display:none!important}
+  .ks-mobile-menu{bottom:66px!important;width:40px!important;height:40px!important}
+  .left-panel{inset:54px 8px 64px 8px!important}
+  .selected-panel{left:auto!important;right:6px!important;bottom:62px!important;width:240px!important;max-height:calc(100vh - 116px)!important}
+  .ks116panel{top:44px!important;bottom:6px!important;width:190px!important;max-height:calc(100vh - 50px)!important}
+  .ks116pad{width:162px!important;grid-template-columns:repeat(3,46px)!important}.ks116pad button{width:46px!important;height:38px!important}
+  #ks116Status{left:198px!important;bottom:6px!important;max-width:calc(100vw - 370px)!important}
+}
+@media (max-width:420px){
+  .brand strong{font-size:9.5px!important}.brand small{display:none!important}.brand>b{font-size:24px!important}.mode-switch{width:116px!important}.mode-switch button{font-size:7.3px!important}
+  .ks116panel{width:184px!important}.ks116grid button{font-size:7.3px!important}.ks116pad{transform:scale(.92);transform-origin:right bottom}
+}
+
 </style>
 </head>
 <body>
@@ -578,6 +639,7 @@ window.addEventListener("error",function(e){
 </svg>
 
 <div id="cesiumContainer"></div>
+<button class="ks-mobile-menu" id="ksMobileMenu" type="button" aria-label="Katmanlar ve araçlar" title="Katmanlar / Araçlar">☰</button>
 
 <header class="topbar">
   <div class="brand-zone">
@@ -600,6 +662,7 @@ window.addEventListener("error",function(e){
 </header>
 
 <aside class="left-panel glass">
+  <button class="ks-mobile-layers-close" id="ksMobileLayersClose" type="button" aria-label="Menüyü kapat">×</button>
   <div class="section-title"><svg><use href="#i-globe"/></svg><span>KATMANLAR</span></div>
   <div class="master-actions">
     <button id="showAll"><span class="eye">◉</span>HEPSİNİ GÖSTER</button>
@@ -4025,5 +4088,28 @@ document.getElementById("adb3dBtn")?.addEventListener("click",e=>{e.preventDefau
 })();
 
 </script>
+
+<script id="v169-responsive-controller">
+(()=>{
+  const menu=document.getElementById('ksMobileMenu');
+  const close=document.getElementById('ksMobileLayersClose');
+  const shut=()=>document.body.classList.remove('ks-mobile-layers-open');
+  if(menu) menu.addEventListener('click',()=>document.body.classList.toggle('ks-mobile-layers-open'));
+  if(close) close.addEventListener('click',shut);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')shut();});
+  document.querySelectorAll('.left-panel button,.left-panel input,.left-panel select').forEach(el=>{
+    el.addEventListener('click',()=>{ if(innerWidth<=760 && !el.matches('input[type="checkbox"]')) setTimeout(shut,80); });
+  });
+  const sync=()=>{
+    document.documentElement.dataset.viewport = innerWidth<=760 ? 'mobile' : innerWidth<=1100 ? 'compact' : 'desktop';
+    if(innerWidth>760) shut();
+    try{ window.viewer && window.viewer.resize && window.viewer.resize(); }catch(_){ }
+  };
+  addEventListener('resize',sync,{passive:true});
+  addEventListener('orientationchange',()=>setTimeout(sync,180),{passive:true});
+  sync();
+})();
+</script>
+
 </body>
 </html>
