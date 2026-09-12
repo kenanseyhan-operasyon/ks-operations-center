@@ -1,7 +1,7 @@
 name: KS 3D Studio tests
 on:
   push:
-    branches: [ks-3d-studio]
+    branches: [ks-3d-studio, ks-3d-studio-verify]
     paths: ['studio/**', '.github/workflows/studio-tests.yml']
   pull_request:
     paths: ['studio/**', '.github/workflows/studio-tests.yml']
@@ -23,3 +23,20 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+  engine-and-live:
+    if: github.ref == 'refs/heads/ks-3d-studio-verify'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node scripts/live-check.mjs
+      - run: npm run probe:engine
+        env:
+          MODEL_ENGINE: triposg

@@ -1,7 +1,7 @@
 import {writeFile} from 'node:fs/promises';
 import {generateModel,validateGLB} from '../inference.mjs';
-const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),150000);
-const probe={checkedAt:new Date().toISOString(),engine:'stabilityai/TripoSR',ok:false};
+const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),240000);
+const probe={checkedAt:new Date().toISOString(),engine:process.env.MODEL_ENGINE==='triposg'?'VAST-AI/TripoSG':'stabilityai/TripoSR',ok:false};
 try{
   const r=await fetch('https://raw.githubusercontent.com/VAST-AI-Research/TripoSR/main/examples/chair.png',{signal:controller.signal});
   if(!r.ok)throw new Error('Sample image unavailable');

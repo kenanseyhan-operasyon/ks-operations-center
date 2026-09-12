@@ -44,3 +44,5 @@ Three.js (MIT): https://github.com/mrdoob/three
 Gradio JS client (ISC): https://github.com/gradio-app/gradio/tree/main/client/js
 TripoSR (MIT): https://github.com/VAST-AI-Research/TripoSR
 Sağlayıcı çalışma alanı: https://huggingface.co/spaces/stabilityai/TripoSR
+
+MODEL_ENGINE=triposg ile VAST-AI/TripoSG kullanılabilir (30 adım, 50.000 yüzey, dokusuz geometri). Varsayılan TripoSR motorudur. TripoSG için /start_session, /run_segmentation ve /image_to_3d uçları aynı Gradio oturumunda çağrılır.

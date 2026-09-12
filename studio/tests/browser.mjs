@@ -32,7 +32,6 @@ try{
  assert.equal(errors.length,0,errors.join('\n'));
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Mobile horizontal overflow');
- await page.setViewportSize({width:1440,height:1000});
  await page.locator('#logout').click();await page.waitForURL(base+'/login');
  const noAccess=await page.request.get(base+'/api/session');assert.equal(noAccess.status(),401);
  console.log('BROWSER_TESTS_PASS: login gate, GLB import, transforms, undo/redo, duplicate/delete, export round trip, mobile layout, logout');

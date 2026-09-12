@@ -33,7 +33,7 @@ export function friendlyEngineError(error) {
   if(/timeout|abort|cancel/i.test(raw))return 'Üretim zaman aşımına uğradı veya iptal edildi. Tekrar deneyebilirsin.';
   return '3D üretim servisine şu anda ulaşılamıyor veya üretim tamamlanamadı. GLB düzenlemeye devam edebilirsin.';
 }
-export async function generateModel(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN,space=process.env.TRIPOSR_SPACE||'stabilityai/TripoSR'}={}) {
+export async function generateTripoSR(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN,space=process.env.TRIPOSR_SPACE||'stabilityai/TripoSR'}={}) {
   let client,submission;
   const abort=()=>{try{submission?.cancel();}catch{}try{client?.close();}catch{}};
   signal?.addEventListener('abort',abort,{once:true});
@@ -63,4 +63,35 @@ export async function generateModel(bytes,type,{signal,onProgress=()=>{},token=p
     onProgress('GLB doğrulanıyor…');
     return await downloadModel(output.url,signal);
   }finally{signal?.removeEventListener('abort',abort);try{client?.close();}catch{}}
+}
+
+export async function generateTripoSG(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN}={}){
+  let client,submission;
+  const abort=()=>{try{submission?.cancel();}catch{}try{client?.close();}catch{}};
+  signal?.addEventListener('abort',abort,{once:true});
+  async function call(endpoint,payload,message){
+    if(signal?.aborted)throw new Error('aborted');onProgress(message);
+    submission=client.submit(endpoint,payload);let data;
+    for await(const event of submission){
+      if(signal?.aborted)throw new Error('aborted');
+      if(event.type==='status'&&event.stage==='error')throw new Error(event.message||'generation failed');
+      if(event.type==='status')onProgress(message+(typeof event.queue_size==='number'?' · Sıra: '+event.queue_size:''));
+      if(event.type==='data')data=event.data;
+    }
+    if(!data)throw new Error('Üretim adımı tamamlanamadı.');return data;
+  }
+  try{
+    onProgress('TripoSG servisine bağlanılıyor…');
+    client=await Client.connect('VAST-AI/TripoSG',{token:token||undefined,events:['status','data']});
+    const api=await client.view_api();
+    if(!api.named_endpoints?.['/run_segmentation']||!api.named_endpoints?.['/image_to_3d'])throw new Error('TripoSG API sözleşmesi değişti.');
+    if(api.named_endpoints['/start_session'])await call('/start_session',[],'Üretim oturumu açılıyor…');
+    const prepared=await call('/run_segmentation',[handle_file(new Blob([bytes],{type}))],'Fotoğrafın arka planı hazırlanıyor…');
+    const outputs=await call('/image_to_3d',[prepared[0],0,30,7,true,50000],'TripoSG ile 3D yüzey oluşturuluyor…');
+    if(!outputs[0]?.url)throw new Error('TripoSG GLB döndürmedi.');
+    onProgress('GLB doğrulanıyor…');return await downloadModel(outputs[0].url,signal);
+  }finally{signal?.removeEventListener('abort',abort);try{client?.close();}catch{}}
+}
+export async function generateModel(bytes,type,options={}){
+  return process.env.MODEL_ENGINE==='triposg'?generateTripoSG(bytes,type,options):generateTripoSR(bytes,type,options);
 }
