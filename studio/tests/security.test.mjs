@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import {createApp,validImage} from '../server.mjs';
+import {createApp,validImage,passwordAuthenticator} from '../server.mjs';
 import {validateGLB,safeModelURL} from '../inference.mjs';
 import {fixtureGLB} from './fixture.mjs';
 test('GLB validation rejects corruption and unsafe downloads',()=>{
@@ -42,4 +42,12 @@ test('all private assets and model APIs require owner session; CSRF and logout',
     assert.equal((await fetch(base+'/api/logout',{method:'POST',headers})).status,200);
     assert.equal((await fetch(base+'/api/session',{headers})).status,401);
   }finally{app.closeAllConnections();await new Promise(r=>app.close(r));}
+});
+
+test('production password verifier enforces owner and fails closed',async()=>{
+ const auth=passwordAuthenticator({owner:'owner@example.test',password:'test-only-long-password!'});
+ assert.equal((await auth('OWNER@example.test','test-only-long-password!')).id,'owner@example.test');
+ await assert.rejects(auth('other@example.test','test-only-long-password!'),e=>e.status===401);
+ await assert.rejects(auth('owner@example.test','wrong-password'),e=>e.status===401);
+ await assert.rejects(passwordAuthenticator({owner:'owner@example.test',password:''})('owner@example.test',''),e=>e.status===503);
 });

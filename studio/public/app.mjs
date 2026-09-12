@@ -195,16 +195,17 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 $('generate').onclick=async()=>{
   if(!photo||jobId||!$('photo-consent').checked)return;
   if(dirty&&!confirm('Yeni model geldiğinde mevcut düzenlemeler kapanacak. Önce GLB indirdiğinden emin misin?'))return;
+  const sourcePhoto=photo;
   $('generate').disabled=true;status('Fotoğraf gönderiliyor…');
   try{
-    const result=await(await api('/api/generate',{method:'POST',headers:{'Content-Type':photo.type},body:photo})).json();
+    const result=await(await api('/api/generate',{method:'POST',headers:{'Content-Type':sourcePhoto.type},body:sourcePhoto})).json();
     jobId=result.id;const ownJob=jobId;$('cancel-job').hidden=false;
     while(jobId===ownJob){
       const job=await(await api('/api/jobs/'+ownJob)).json();status(job.message);
       if(job.state==='complete'){
         const buffer=await(await api('/api/jobs/'+ownJob+'/model')).arrayBuffer();
         if(dirty&&!confirm('Model hazır. Açarsan mevcut düzenlemeler kapanacak. Yeni modeli aç?')){status('Model hazır; açma işlemi iptal edildi.');break;}
-        await loadBuffer(buffer,photo.name.replace(/\.[^.]+$/,''));markDirty();status('Fotoğraftan üretilen gerçek 3D model açıldı. Düzeltip GLB indirebilirsin.');break;
+        await loadBuffer(buffer,sourcePhoto.name.replace(/\.[^.]+$/,''));markDirty();status('Fotoğraftan üretilen gerçek 3D model açıldı. Düzeltip GLB indirebilirsin.');break;
       }
       if(job.state==='failed'||job.state==='cancelled')throw new Error(job.message);
       await wait(2500);

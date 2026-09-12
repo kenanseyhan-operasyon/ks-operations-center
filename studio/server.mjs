@@ -1,13 +1,12 @@
 import http from 'node:http';
-import {randomBytes,randomUUID} from 'node:crypto';
+import {randomBytes,randomUUID,scrypt,timingSafeEqual} from 'node:crypto';
+import {promisify} from 'node:util';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {generateModel,friendlyEngineError,validateGLB} from './inference.mjs';
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 const OWNER=process.env.OWNER_EMAIL?.trim().toLowerCase();
-const AUTH_URL=process.env.SUPABASE_URL;
-const AUTH_KEY=process.env.SUPABASE_ANON_KEY;
 const COOKIE='__Host-ks_studio';
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wasm':'application/wasm','.svg':'image/svg+xml'};
 function send(res,status,body,type='application/json; charset=utf-8',extra={}){
@@ -26,19 +25,18 @@ export function validImage(bytes,type){
   if(type==='image/webp')return bytes.length>12&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';
   return false;
 }
-async function verifyOwner(email,password){
-  if(!OWNER||!AUTH_URL||!AUTH_KEY)throw Object.assign(new Error('Giriş hizmeti yapılandırılmamış.'),{status:503});
-  if(email.toLowerCase()!==OWNER)throw Object.assign(new Error('E-posta veya parola doğrulanamadı.'),{status:401});
-  const r=await fetch(AUTH_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:AUTH_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password}),signal:AbortSignal.timeout(15000)});
-  if(!r.ok)throw Object.assign(new Error('E-posta veya parola doğrulanamadı.'),{status:401});
-  const token=await r.json();
-  const check=await fetch(AUTH_URL+'/auth/v1/user',{headers:{apikey:AUTH_KEY,Authorization:'Bearer '+token.access_token},signal:AbortSignal.timeout(15000)});
-  if(!check.ok)throw Object.assign(new Error('Oturum doğrulanamadı.'),{status:401});
-  const user=await check.json();
-  if(user.email?.toLowerCase()!==OWNER||!user.email_confirmed_at)throw Object.assign(new Error('Bu hesap için erişim tanımlı değil.'),{status:403});
-  return {id:user.id,email:user.email,ttl:Math.min(Number(token.expires_in)||3600,3600)*1000};
+const scryptAsync=promisify(scrypt);
+export function passwordAuthenticator({owner=OWNER,password=process.env.OWNER_PASSWORD}={}){
+  const salt=randomBytes(16);
+  const expected=password&&password.length>=14?scryptAsync(password,salt,32):null;
+  return async(email,provided)=>{
+    if(!owner||!expected)throw Object.assign(new Error('Sahip parolası henüz tanımlanmamış.'),{status:503});
+    const actual=await scryptAsync(provided,salt,32),hash=await expected;
+    if(email.toLowerCase()!==owner.toLowerCase()||!timingSafeEqual(actual,hash))throw Object.assign(new Error('E-posta veya parola doğrulanamadı.'),{status:401});
+    return{id:owner.toLowerCase(),email:owner,ttl:3600000};
+  };
 }
-export function createApp({authenticate=verifyOwner,generate=generateModel}={}){
+export function createApp({authenticate=passwordAuthenticator(),generate=generateModel}={}){
   const sessions=new Map(),jobs=new Map(),attempts=new Map();
   const cookieValue=req=>(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith(COOKIE+'='))?.slice(COOKIE.length+1);
   function getSession(req){
@@ -132,6 +130,6 @@ export function createApp({authenticate=verifyOwner,generate=generateModel}={}){
   return server;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  if(!OWNER||!AUTH_URL||!AUTH_KEY){console.error('Missing required owner authentication configuration');process.exit(1);}
+  if(!OWNER||!process.env.OWNER_PASSWORD||process.env.OWNER_PASSWORD.length<14){console.error('Missing required owner authentication configuration');process.exit(1);}
   createApp().listen(Number(process.env.PORT)||3000,'0.0.0.0',()=>console.log('KS 3D Studio ready; owner authentication required.'));
 }

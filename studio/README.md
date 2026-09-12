@@ -4,17 +4,16 @@ Ayrı, sunucuda sahip hesabı doğrulanan 3D çalışma alanı. Mevcut operasyon
 
 ## Çalışma
 Node.js 22 veya 24. Bu dizinde npm install, npm test, npm start.
-Gerekli ortam değişkenleri: OWNER_EMAIL, SUPABASE_URL, SUPABASE_ANON_KEY.
-OWNER_EMAIL mevcut bulut hesabının doğrulanmış e-postası olmalı.
+Gerekli ortam değişkenleri: OWNER_EMAIL, OWNER_PASSWORD.
+OWNER_PASSWORD en az 14 karakterli olmalı ve yalnızca Render Environment üzerinde saklanmalı.
 İsteğe bağlı HF_TOKEN: Hugging Face API/GPU erişimi için. Token yalnızca sunucuda kalır.
 TRIPOSR_SPACE varsayılan stabilityai/TripoSR; uyumlu /preprocess ve /generate API uçlarını gerektirir.
 
 ## Erişim
-Giriş Supabase parola akışı ve /auth/v1/user doğrulamasıyla yapılır.
-Sunucu yalnızca OWNER_EMAIL ile eşleşen, e-postası doğrulanmış hesabı kabul eder.
+Giriş sahip e-postası ve parolasıyla yapılır. Sunucu scrypt ve sabit zamanlı karşılaştırma kullanır. Eski Supabase adresi çalışmadığından bu atölyede kullanılmaz.
 Erişim kontrolü HTML, uygulama dosyaları ve üretim/indirme API uçlarını kapsar.
 Oturum çerezi Secure, HttpOnly, SameSite=Strict. CSRF kaynak kontrolü ve giriş hız sınırı vardır.
-Parolalar saklanmaz. Oturumlar ve üretilen GLB'ler bellektedir; yeniden başlatmada silinir.
+Giriş parolaları loglanmaz; sahip parolası Render ortam değişkeninde saklanır. Oturumlar ve üretilen GLB'ler bellektedir; yeniden başlatmada silinir.
 Giriş yapılandırması yoksa sunucu kapalı kalır. Test kimlik doğrulayıcısı yalnızca test kodundaki createApp çağrısına enjekte edilir; üretim ortamından açılabilen test girişi yoktur.
 
 ## Düzenleyici
