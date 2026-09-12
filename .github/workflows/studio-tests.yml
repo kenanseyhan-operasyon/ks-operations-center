@@ -1,0 +1,25 @@
+name: KS 3D Studio tests
+on:
+  push:
+    branches: [ks-3d-studio]
+    paths: ['studio/**', '.github/workflows/studio-tests.yml']
+  pull_request:
+    paths: ['studio/**', '.github/workflows/studio-tests.yml']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
