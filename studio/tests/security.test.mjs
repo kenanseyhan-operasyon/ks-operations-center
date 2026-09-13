@@ -77,7 +77,7 @@ test('Hugging Face credentials stay inside the owning session and are removed on
 test('TRELLIS requires authentication and stops on GPU quota errors before extraction',async()=>{
  let calls=[];
  await assert.rejects(generateTrellis2(Buffer.alloc(0),'image/png',{token:'',connect:async()=>{throw new Error('Should not connect');}}),/token required/);
- const connect=async()=>({view_api:async()=>({named_endpoints:Object.fromEntries(['/start_session','/preprocess_image','/image_to_3d','/extract_glb'].map(n=>[n,{}]))}),submit:async function*(name){calls.push(name);if(name==='/image_to_3d')yield {type:'status',stage:'error',title:'ZeroGPU quota exceeded',message:'Authenticate with a Hugging Face token'};else yield {type:'data',data:name==='/preprocess_image'?[{url:'https://microsoft-trellis-2.hf.space/test.png'}]:[]};},close(){}});
+ const connect=async(space,options)=>{assert.equal(space,'microsoft/TRELLIS.2');assert.equal(options.hf_token,'test-only');assert.equal('token' in options,false);return {view_api:async()=>({named_endpoints:Object.fromEntries(['/start_session','/preprocess_image','/image_to_3d','/extract_glb'].map(n=>[n,{}]))}),submit:async function*(name){calls.push(name);if(name==='/image_to_3d')yield {type:'status',stage:'error',title:'ZeroGPU quota exceeded',message:'Authenticate with a Hugging Face token'};else yield {type:'data',data:name==='/preprocess_image'?[{url:'https://microsoft-trellis-2.hf.space/test.png'}]:[]};},close(){}};};
  await assert.rejects(generateTrellis2(Buffer.alloc(0),'image/png',{token:'test-only',connect}),/ZeroGPU quota exceeded/);
  assert.equal(calls.includes('/extract_glb'),false);
 });
