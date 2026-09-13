@@ -40,7 +40,7 @@ export async function generateTripoSR(bytes,type,{signal,onProgress=()=>{},token
   signal?.addEventListener('abort',abort,{once:true});
   try{
     onProgress('Üretim servisine bağlanılıyor…');
-    client=await Client.connect(space,{token:token||undefined,events:['status','data']});
+    client=await Client.connect(space,{hf_token:token||undefined,events:['status','data']});
     if(signal?.aborted)throw new Error('aborted');
     const api=await client.view_api();
     if(!api.named_endpoints?.['/preprocess']||!api.named_endpoints?.['/generate'])throw new Error('Üretim API sözleşmesi değişti.');
@@ -83,7 +83,7 @@ export async function generateTripoSG(bytes,type,{signal,onProgress=()=>{},token
   }
   try{
     onProgress('TripoSG servisine bağlanılıyor…');
-    client=await Client.connect('VAST-AI/TripoSG',{token:token||undefined,events:['status','data']});
+    client=await Client.connect('VAST-AI/TripoSG',{hf_token:token||undefined,events:['status','data']});
     const api=await client.view_api();
     if(!api.named_endpoints?.['/run_segmentation']||!api.named_endpoints?.['/image_to_3d'])throw new Error('TripoSG API sözleşmesi değişti.');
     if(api.named_endpoints['/start_session'])await call('/start_session',[],'Üretim oturumu açılıyor…');
@@ -117,13 +117,13 @@ export async function generateTrellis2(bytes,type,{signal,onProgress=()=>{},toke
   }
   try{
     onProgress('TRELLIS.2 servisine bağlanılıyor…');
-    client=await connect('microsoft/TRELLIS.2',{token,events:['status','data']});
+    client=await connect('microsoft/TRELLIS.2',{hf_token:token,events:['status','data']});
     const api=await client.view_api();
     for(const name of ['/start_session','/preprocess_image','/image_to_3d','/extract_glb'])if(!api.named_endpoints?.[name])throw new Error('TRELLIS.2 API sözleşmesi değişti.');
     await call('/start_session',[],'Üretim oturumu açılıyor…');
     const prepared=await call('/preprocess_image',[handle_file(new Blob([bytes],{type}))],'Fotoğraf hazırlanıyor…');
     await call('/image_to_3d',[prepared[0],0,'512',7.5,0.7,12,5,7.5,0.5,12,3,1,0,12,3],'TRELLIS.2 ile şekil ve doku üretiliyor…');
-    const outputs=await call('/extract_glb',[100000,1024],'Model GLB dosyasına dönüştürülüyor…');
+    const outputs=await call('/extract_glb',[500000,1024],'Model GLB dosyasına dönüştürülüyor…');
     const url=typeof outputs[0]==='string'?outputs[0]:outputs[0]?.url;
     if(!url)throw new Error('TRELLIS.2 GLB döndürmedi.');
     onProgress('GLB indiriliyor ve doğrulanıyor…');return await downloadModel(url,signal);
