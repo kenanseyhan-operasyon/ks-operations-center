@@ -179,7 +179,8 @@ $('download').onclick=async()=>{
     dirty=false;$('dirty').textContent='GLB indirmesi başlatıldı';status('Düzeltilmiş model GLB olarak indiriliyor.');
   }catch(e){status('GLB dışa aktarılamadı: '+e.message,true);}finally{setBusy(null);}
 };
-function updateGenerate(){$('generate').disabled=!photo||!$('photo-consent').checked||!!jobId;}
+let engineConnected=false;
+function updateGenerate(){$('generate').disabled=!engineConnected||!photo||!$('photo-consent').checked||!!jobId;}
 $('photo').onchange=e=>{
   const file=e.target.files[0];if(!file)return;
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024){status('En fazla 8 MB PNG, JPG veya WebP seç.',true);e.target.value='';return;}
@@ -191,9 +192,24 @@ async function api(url,options){
   if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||(r.status===401?'Oturum sona erdi. Önce GLB indir, ardından tekrar giriş yap.':'İşlem tamamlanamadı.'));}
   return r;
 }
+function showEngine(data){
+  engineConnected=data.connected;
+  $('engine-status').textContent=engineConnected?'Hesabın bağlı. Üretim motoru: TRELLIS.2.':'Fotoğraftan üretmek için Hugging Face hesabını bağla.';
+  $('engine-form').hidden=engineConnected;$('engine-disconnect').hidden=!engineConnected;updateGenerate();
+}
+$('engine-form').onsubmit=async e=>{
+  e.preventDefault();const token=$('engine-token').value.trim();$('engine-token').value='';
+  $('engine-connect').disabled=true;$('engine-status').textContent='Anahtar doğrulanıyor…';
+  try{showEngine(await(await api('/api/engine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})})).json());}
+  catch(e){$('engine-status').textContent=e.message;}finally{$('engine-connect').disabled=false;}
+};
+$('engine-disconnect').onclick=async()=>{
+  try{showEngine(await(await api('/api/engine',{method:'DELETE'})).json());}catch(e){$('engine-status').textContent=e.message;}
+};
+api('/api/engine').then(r=>r.json()).then(showEngine).catch(e=>{$('engine-status').textContent=e.message;});
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 $('generate').onclick=async()=>{
-  if(!photo||jobId||!$('photo-consent').checked)return;
+  if(!engineConnected||!photo||jobId||!$('photo-consent').checked)return;
   if(dirty&&!confirm('Yeni model geldiğinde mevcut düzenlemeler kapanacak. Önce GLB indirdiğinden emin misin?'))return;
   const sourcePhoto=photo;
   $('generate').disabled=true;status('Fotoğraf gönderiliyor…');

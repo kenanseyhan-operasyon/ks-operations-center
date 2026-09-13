@@ -45,3 +45,9 @@ TripoSR (MIT): https://github.com/VAST-AI-Research/TripoSR
 Sağlayıcı çalışma alanı: https://huggingface.co/spaces/stabilityai/TripoSR
 
 MODEL_ENGINE=triposg ile VAST-AI/TripoSG kullanılabilir (30 adım, 50.000 yüzey, dokusuz geometri). Varsayılan TripoSR motorudur. TripoSG için /start_session, /run_segmentation ve /image_to_3d uçları aynı Gradio oturumunda çağrılır.
+
+## TRELLIS.2 ve hesap bağlantısı
+Varsayılan üretim motoru microsoft/TRELLIS.2. MODEL_ENGINE=triposr veya triposg eski adaptörleri seçer.
+Sahip, /api/engine üzerinden Read yetkili HF anahtarını oturuma bağlar; sunucu whoami-v2 ile doğrular. Anahtar cevaplarda, tarayıcı depolamasında veya diskte tutulmaz. Çıkış ve oturum süresi dolması bağlantıyı siler. HF_TOKEN ortam değişkeni de desteklenir.
+Üretim sırası: start_session, preprocess_image, image_to_3d (512), extract_glb (100000 yüzey, 1024 doku), GLB doğrulama. GPU kotası ve servis durumu sağlayıcıya bağlıdır.
+12 Eylül 2026: anonim TRELLIS.2 ön işleme başarılı, GPU üretimi açık kota/kimlik doğrulama hatası döndürdü. Hesapla gerçek GLB üretimi henüz doğrulanmadı.

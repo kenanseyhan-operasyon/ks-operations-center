@@ -5,7 +5,7 @@ import {createApp} from '../server.mjs';
 import {fixtureGLB} from './fixture.mjs';
 import {validateGLB} from '../inference.mjs';
 import {readFile} from 'node:fs/promises';
-const app=createApp({authenticate:async(email,password)=>{if(email!=='owner@example.test'||password!=='test-only-password')throw Object.assign(new Error('Denied'),{status:401});return{id:'owner',ttl:60000};}});
+const app=createApp({verifyEngineToken:async token=>{assert.equal(token,'test-only-browser-credential');},authenticate:async(email,password)=>{if(email!=='owner@example.test'||password!=='test-only-password')throw Object.assign(new Error('Denied'),{status:401});return{id:'owner',ttl:60000};}});
 app.listen(0,'127.0.0.1');await once(app,'listening');const base='http://127.0.0.1:'+app.address().port;
 let browser;
 try{
@@ -15,6 +15,7 @@ try{
  await page.goto(base);assert.ok(page.url().endsWith('/login'));
  await page.locator('#email').fill('owner@example.test');await page.locator('#password').fill('test-only-password');
  await page.locator('button[type=submit]').click();await page.waitForURL(base+'/');
+ await page.locator('#engine-token').fill('test-only-browser-credential');await page.locator('#engine-connect').click();await page.waitForFunction(()=>document.getElementById('engine-form').hidden);assert.equal(await page.locator('#engine-token').inputValue(),'');await page.locator('#engine-disconnect').click();await page.waitForFunction(()=>!document.getElementById('engine-form').hidden);
  await page.locator('#glb').setInputFiles({name:'test-ekipman.glb',mimeType:'model/gltf-binary',buffer:fixtureGLB()});
  await page.waitForFunction(()=>document.getElementById('part-count').textContent==='2');
  await page.getByRole('option',{name:'Tank',exact:true}).click();

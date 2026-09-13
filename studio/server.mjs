@@ -36,7 +36,13 @@ export function passwordAuthenticator({owner=OWNER,password=process.env.OWNER_PA
     return{id:owner.toLowerCase(),email:owner,ttl:3600000};
   };
 }
-export function createApp({authenticate=passwordAuthenticator(),generate=generateModel}={}){
+export async function verifyHFToken(token){
+  if(typeof token!=='string'||!/^hf_[A-Za-z0-9]{20,200}$/.test(token))throw Object.assign(new Error('Geçerli bir Hugging Face erişim anahtarı gir.'),{status:400});
+  const r=await fetch('https://huggingface.co/api/whoami-v2',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(30000)});
+  if(!r.ok)throw Object.assign(new Error('Hugging Face anahtarı doğrulanamadı. Anahtarın geçerliliğini kontrol et.'),{status:400});
+  const user=await r.json();if(!user.name)throw Object.assign(new Error('Hugging Face hesabı doğrulanamadı.'),{status:400});
+}
+export function createApp({authenticate=passwordAuthenticator(),generate=generateModel,verifyEngineToken=verifyHFToken}={}){
   const sessions=new Map(),jobs=new Map(),attempts=new Map();
   const cookieValue=req=>(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith(COOKIE+'='))?.slice(COOKIE.length+1);
   function getSession(req){
@@ -88,7 +94,16 @@ export function createApp({authenticate=passwordAuthenticator(),generate=generat
         sessions.delete(cookieValue(req));return send(res,200,{ok:true},undefined,{'Set-Cookie':COOKIE+'=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'});
       }
       if(req.method==='GET'&&u.pathname==='/api/session')return send(res,200,{ok:true});
+      if(u.pathname==='/api/engine'){
+        if(req.method==='POST'){
+          const data=JSON.parse((await readBody(req,2048)).toString());
+          await verifyEngineToken(data.token);session.hfToken=data.token;
+        }else if(req.method==='DELETE'){delete session.hfToken;}
+        else if(req.method!=='GET')return send(res,405,{error:'Yöntem desteklenmiyor.'});
+        return send(res,200,{connected:!!(session.hfToken||process.env.HF_TOKEN),engine:process.env.MODEL_ENGINE||'trellis2'});
+      }
       if(req.method==='POST'&&u.pathname==='/api/generate'){
+        if(generate===generateModel&&!(session.hfToken||process.env.HF_TOKEN))return send(res,409,{error:'Önce Hugging Face hesabını erişim anahtarıyla bağla.'});
         if([...jobs.values()].some(j=>j.state==='running'))return send(res,409,{error:'Bir üretim zaten sürüyor.'});
         const bytes=await readBody(req,8*1024*1024),type=(req.headers['content-type']||'').split(';')[0];
         if(!validImage(bytes,type))return send(res,400,{error:'En fazla 8 MB PNG, JPEG veya WebP fotoğraf seç.'});
@@ -98,7 +113,7 @@ export function createApp({authenticate=passwordAuthenticator(),generate=generat
         jobs.set(id,job);
         const deadline=setTimeout(()=>controller.abort(),10*60*1000);deadline.unref();
         const abortPromise=new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}));
-        Promise.race([generate(bytes,type,{signal:controller.signal,onProgress:m=>{job.message=m;}}),abortPromise]).then(buffer=>{
+        Promise.race([generate(bytes,type,{signal:controller.signal,token:session.hfToken||process.env.HF_TOKEN,onProgress:m=>{job.message=m;}}),abortPromise]).then(buffer=>{
           if(job.state!=='running')return;validateGLB(buffer);job.buffer=buffer;job.state='complete';job.message='Model hazır.';
         }).catch(error=>{job.state=controller.signal.aborted?'cancelled':'failed';job.message=friendlyEngineError(error);console.warn('3D generation failed:',String(error?.message||error).replace(/hf_[A-Za-z0-9]+/g,'[redacted]').slice(0,300));}).finally(()=>clearTimeout(deadline));
         return send(res,202,{id});
