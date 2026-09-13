@@ -166,11 +166,13 @@ async function loadBuffer(buffer,name){
     dirty=false;$('dirty').textContent='Model açıldı';updateParts();updateHistory();fit();applyWireframe();status('Model hazır. Bir parça seçerek düzenlemeye başla.');
   }finally{setBusy(null);}
 }
-$('glb').onchange=async e=>{
-  const file=e.target.files[0];if(!file)return;
-  if(dirty&&!confirm('Kaydedilmemiş düzenlemeler kapanacak. Yeni modeli açmak istiyor musun?')){e.target.value='';return;}
-  try{await loadBuffer(await file.arrayBuffer(),file.name);}catch(e){status(e.message,true);}finally{e.target.value='';}
-};
+async function chooseGLB(file){
+  if(!file)return;
+  if(!/\.glb$/i.test(file.name)||file.size>50*1024*1024){status('En fazla 50 MB geçerli bir GLB dosyası seç.',true);return;}
+  if(dirty&&!confirm('Kaydedilmemiş düzenlemeler kapanacak. Yeni modeli açmak istiyor musun?'))return;
+  try{await loadBuffer(await file.arrayBuffer(),file.name);}catch(e){status(e.message,true);}
+}
+$('glb').onchange=async e=>{const file=e.target.files[0];e.target.value='';await chooseGLB(file);};
 $('download').onclick=async()=>{
   if(!root.children.length)return;setBusy('GLB hazırlanıyor…');
   try{
@@ -181,11 +183,20 @@ $('download').onclick=async()=>{
 };
 let engineConnected=false;
 function updateGenerate(){$('generate').disabled=!engineConnected||!photo||!$('photo-consent').checked||!!jobId;}
-$('photo').onchange=e=>{
-  const file=e.target.files[0];if(!file)return;
-  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024){status('En fazla 8 MB PNG, JPG veya WebP seç.',true);e.target.value='';return;}
-  if(previewURL)URL.revokeObjectURL(previewURL);photo=file;previewURL=URL.createObjectURL(file);$('photo-preview').src=previewURL;$('photo-preview').hidden=false;$('photo-name').textContent=file.name;updateGenerate();
-};
+function choosePhoto(file){
+  if(!file)return;
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024){status('En fazla 8 MB PNG, JPG veya WebP seç.',true);return;}
+  if(previewURL)URL.revokeObjectURL(previewURL);photo=file;previewURL=URL.createObjectURL(file);$('photo-preview').src=previewURL;$('photo-preview').hidden=false;$('photo-name').textContent=file.name;updateGenerate();status('Fotoğraf hazır. Onay kutusunu işaretleyip üretimi başlatabilirsin.');
+}
+$('photo').onchange=e=>{const file=e.target.files[0];e.target.value='';choosePhoto(file);};
+function enableDrop(id,accept){
+  const target=$(id);
+  for(const event of ['dragenter','dragover'])target.addEventListener(event,e=>{e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';target.classList.add('drag-over');});
+  for(const event of ['dragleave','drop'])target.addEventListener(event,e=>{e.preventDefault();e.stopPropagation();target.classList.remove('drag-over');});
+  target.addEventListener('drop',e=>{const files=[...(e.dataTransfer?.files||[])];if(files.length!==1){status('Lütfen tek bir dosya sürükle.',true);return;}accept(files[0]);});
+}
+enableDrop('photo-drop',choosePhoto);
+enableDrop('glb-drop',chooseGLB);
 $('photo-consent').onchange=updateGenerate;
 async function api(url,options){
   const r=await fetch(url,options);
