@@ -20,7 +20,7 @@ Giriş yapılandırması yoksa sunucu kapalı kalır. Test kimlik doğrulayıcı
 Gömülü verili GLB 2.0 içe aktarma, parça listesi, taşıma/döndürme/ölçekleme, renk, çoğaltma/silme,
 şişirme/içeri itme/yumuşatma, yüzey boyayarak parça ayırma, geri alma/yineleme, GLB dışa aktarma.
 Model koordinat birimleri korunur. Rig/morph mevcut pozda statik yüzeye dönüştürülür; animasyon düzenleyicisi değildir.
-En fazla 50 MB ve 500.000 üçgen. Undo geçmişi 12 adım/128 MB hedef sınırı.
+En fazla 50 MB ve 500.000 üçgen; TRELLIS.2 GLB çıkarımı da aynı 500.000 yüzey sınırını kullanır. Undo geçmişi 12 adım/128 MB hedef sınırı.
 Düzenlemeler otomatik kalıcı kaydedilmez; çıkmadan önce GLB indirin.
 
 ## Fotoğraftan üretim
@@ -49,5 +49,5 @@ MODEL_ENGINE=triposg ile VAST-AI/TripoSG kullanılabilir (30 adım, 50.000 yüze
 ## TRELLIS.2 ve hesap bağlantısı
 Varsayılan üretim motoru microsoft/TRELLIS.2. MODEL_ENGINE=triposr veya triposg eski adaptörleri seçer.
 Sahip, /api/engine üzerinden Read yetkili HF anahtarını oturuma bağlar; sunucu whoami-v2 ile doğrular. Anahtar cevaplarda, tarayıcı depolamasında veya diskte tutulmaz. Çıkış ve oturum süresi dolması bağlantıyı siler. HF_TOKEN ortam değişkeni de desteklenir.
-Üretim sırası: start_session, preprocess_image, image_to_3d (512), extract_glb (100000 yüzey, 1024 doku), GLB doğrulama. GPU kotası ve servis durumu sağlayıcıya bağlıdır.
+Üretim sırası: start_session, preprocess_image, image_to_3d (512), extract_glb (500000 yüzeye kadar, 1024 doku), GLB doğrulama. GPU kotası ve servis durumu sağlayıcıya bağlıdır.
 12 Eylül 2026: anonim TRELLIS.2 ön işleme başarılı, GPU üretimi açık kota/kimlik doğrulama hatası döndürdü. Hesapla gerçek GLB üretimi henüz doğrulanmadı.
