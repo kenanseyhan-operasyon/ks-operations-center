@@ -16,7 +16,9 @@ try{
  await page.locator('#email').fill('owner@example.test');await page.locator('#password').fill('test-only-password');
  await page.locator('button[type=submit]').click();await page.waitForURL(base+'/');
  await page.locator('#engine-token').fill('test-only-browser-credential');await page.locator('#engine-connect').click();await page.waitForFunction(()=>document.getElementById('engine-form').hidden);assert.equal(await page.locator('#engine-token').inputValue(),'');await page.locator('#engine-disconnect').click();await page.waitForFunction(()=>!document.getElementById('engine-form').hidden);
- await page.locator('#glb').setInputFiles({name:'test-ekipman.glb',mimeType:'model/gltf-binary',buffer:fixtureGLB()});
+ await page.evaluate(()=>{const transfer=new DataTransfer();transfer.items.add(new File([new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0,73,72,68,82,0,0,0,1,0,0,0,1])],'drop.png',{type:'image/png'}));document.getElementById('photo-drop').dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));});
+ await page.waitForFunction(()=>document.getElementById('photo-name').textContent==='drop.png');
+ await page.evaluate(bytes=>{const transfer=new DataTransfer();transfer.items.add(new File([new Uint8Array(bytes)],'test-ekipman.glb',{type:'model/gltf-binary'}));document.getElementById('glb-drop').dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));},[...fixtureGLB()]);
  await page.waitForFunction(()=>document.getElementById('part-count').textContent==='2');
  await page.getByRole('option',{name:'Tank',exact:true}).click();
  await page.locator('#position-x').fill('3');await page.locator('#position-x').press('Tab');
@@ -35,5 +37,5 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Mobile horizontal overflow');
  await page.locator('#logout').click();await page.waitForURL(base+'/login');
  const noAccess=await page.request.get(base+'/api/session');assert.equal(noAccess.status(),401);
- console.log('BROWSER_TESTS_PASS: login gate, GLB import, transforms, undo/redo, duplicate/delete, export round trip, mobile layout, logout');
+ console.log('BROWSER_TESTS_PASS: login gate, photo/GLB drag-drop import, transforms, undo/redo, duplicate/delete, export round trip, mobile layout, logout');
 }finally{await browser?.close();app.closeAllConnections();await new Promise(r=>app.close(r));}
