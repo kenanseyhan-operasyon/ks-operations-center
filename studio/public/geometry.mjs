@@ -97,6 +97,22 @@ function subsetGeometry(source,faces){
   }
   g.computeBoundingBox();g.computeBoundingSphere();return g;
 }
+export function splitDisconnected(mesh,{minFaces=30,maxParts=200}={}){
+  const source=mesh.geometry.index?mesh.geometry.toNonIndexed():mesh.geometry,p=source.attributes.position,total=Math.floor(p.count/3);
+  if(total<2)throw new Error('Bu parçada ayrılabilecek bağlantısız yüzey bulunamadı.');
+  source.computeBoundingBox();const eps=Math.max(source.boundingBox.getSize(new THREE.Vector3()).length()*1e-6,1e-8),parent=new Int32Array(total),rank=new Uint8Array(total),owner=new Map();
+  for(let i=0;i<total;i++)parent[i]=i;
+  const find=x=>{while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};
+  const join=(a,b)=>{a=find(a);b=find(b);if(a===b)return;if(rank[a]<rank[b])[a,b]=[b,a];parent[b]=a;if(rank[a]===rank[b])rank[a]++;};
+  for(let face=0;face<total;face++)for(let v=0;v<3;v++){
+    const i=face*3+v,key=[p.getX(i),p.getY(i),p.getZ(i)].map(n=>Math.round(n/eps)).join(',');const other=owner.get(key);if(other===undefined)owner.set(key,face);else join(face,other);
+  }
+  const groups=new Map();for(let face=0;face<total;face++){const root=find(face);if(!groups.has(root))groups.set(root,[]);groups.get(root).push(face);}
+  let components=[...groups.values()].sort((a,b)=>b.length-a.length);if(components.length<2){if(source!==mesh.geometry)source.dispose();throw new Error('Bu GLB geometrik olarak tek bağlantılı parça. Yüzey boyama ile ayırabilirsin.');}
+  const keep=components.filter((faces,i)=>i===0||faces.length>=minFaces).slice(0,maxParts),small=components.filter(faces=>!keep.includes(faces)).flat();if(small.length)keep[0]=keep[0].concat(small);
+  const result=keep.map((faces,index)=>{const part=new THREE.Mesh(subsetGeometry(source,faces),Array.isArray(mesh.material)?mesh.material.map(m=>m.clone()):mesh.material.clone());part.name=(mesh.name||'Parça')+' — '+(index+1);part.position.copy(mesh.position);part.quaternion.copy(mesh.quaternion);part.scale.copy(mesh.scale);part.userData=structuredClone(mesh.userData||{});return part;});
+  if(source!==mesh.geometry)source.dispose();return result;
+}
 export function splitFaces(mesh,selection){
   if(mesh.geometry.index)throw new Error('Parça ayırma için üçgen yüzey gerekir.');
   const n=mesh.geometry.attributes.position.count/3;
