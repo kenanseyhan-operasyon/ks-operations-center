@@ -28,14 +28,18 @@ try{
  await page.locator('#duplicate').click();assert.equal(await page.locator('#part-count').textContent(),'3');
  await page.locator('#delete').click();assert.equal(await page.locator('#part-count').textContent(),'2');
  await page.getByRole('option',{name:'Tank',exact:true}).click();await page.locator('#part-name').fill('Düzeltilmiş tank');await page.locator('#part-name').press('Tab');
+ await page.locator('#training-title').fill('Yakıt tankı');await page.locator('#training-description').fill('Gövde üzerindeki ana tank');await page.locator('#training-action').fill('Hasar ve sızıntı kontrolü yap');await page.locator('#training-action').press('Tab');
+ await page.evaluate(async()=>{const canvas=document.createElement('canvas');canvas.width=4;canvas.height=4;const ctx=canvas.getContext('2d');ctx.fillStyle='#e31b23';ctx.fillRect(0,0,4,4);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));const transfer=new DataTransfer();transfer.items.add(new File([blob],'tank-kaplama.png',{type:'image/png'}));document.getElementById('texture-drop').dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));});await page.waitForFunction(()=>document.getElementById('status').textContent.includes('kaplandı'));
+ const manifestEvent=page.waitForEvent('download');await page.locator('#training-package').click();const manifestDownload=await manifestEvent,manifest=JSON.parse(await readFile(await manifestDownload.path(),'utf8'));assert.equal(manifest.parts.find(p=>p.part==='Düzeltilmiş tank').expectedAction,'Hasar ve sızıntı kontrolü yap');
  const event=page.waitForEvent('download');await page.locator('#download').click();const download=await event,bytes=await readFile(await download.path());const doc=validateGLB(bytes);
  assert.ok(doc.nodes.some(n=>n.name==='Düzeltilmiş tank'));assert.ok(doc.nodes.some(n=>n.translation?.[0]===3));
  await page.locator('#glb').setInputFiles({name:'roundtrip.glb',mimeType:'model/gltf-binary',buffer:bytes});
  await page.waitForFunction(()=>document.getElementById('model-stats').textContent.includes('2 parça'));
+ const options=page.getByRole('option');await options.nth(0).click({modifiers:['Shift']});await options.nth(1).click({modifiers:['Shift']});await page.locator('#merge-parts').click();assert.equal(await page.locator('#part-count').textContent(),'1');
  assert.equal(errors.length,0,errors.join('\n'));
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Mobile horizontal overflow');
- await page.locator('#logout').click();await page.waitForURL(base+'/login');
+ page.once('dialog',dialog=>dialog.accept());await page.locator('#logout').click();await page.waitForURL(base+'/login');
  const noAccess=await page.request.get(base+'/api/session');assert.equal(noAccess.status(),401);
- console.log('BROWSER_TESTS_PASS: login gate, photo/GLB drag-drop import, transforms, undo/redo, duplicate/delete, export round trip, mobile layout, logout');
+ console.log('BROWSER_TESTS_PASS: login gate, drag-drop, transforms, metadata package, merge, export round trip, mobile layout, logout');
 }finally{await browser?.close();app.closeAllConnections();await new Promise(r=>app.close(r));}
