@@ -6,31 +6,31 @@ import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {bakeStaticScene,disposeModel,ModelHistory,splitFaces,buildWeldMap,sculpt,facesInBrush,selectionGeometry,checkGLB,mergeMeshes,projectPlanarUV} from './geometry.mjs';
+import {bakeStaticScene,disposeModel,ModelHistory,splitFaces,splitDisconnected,buildWeldMap,sculpt,facesInBrush,selectionGeometry,checkGLB,mergeMeshes,projectPlanarUV} from './geometry.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),wrap=$('canvas-wrap');
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});}
 catch{status('Bu tarayıcıda WebGL başlatılamadı. Donanım hızlandırmasını etkinleştirip tekrar aç.',true);throw new Error('WebGL unavailable');}
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.82;
 const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(40,1,.001,100000);
 camera.position.set(4,3,5);
 const environment=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer),environmentTarget=pmrem.fromScene(environment,.04);
 scene.environment=environmentTarget.texture;environment.dispose();pmrem.dispose();
-scene.add(new THREE.HemisphereLight(0xe9faff,0x303d25,2));
-const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(3,8,5);scene.add(light);
+scene.add(new THREE.HemisphereLight(0xe9faff,0x303d25,1.15));
+const light=new THREE.DirectionalLight(0xffffff,1.6);light.position.set(3,8,5);scene.add(light);
 const orbit=new OrbitControls(camera,canvas);orbit.enableDamping=true;orbit.target.set(0,0,0);orbit.update();
 const transform=new TransformControls(camera,canvas);transform.setSize(.8);scene.add(transform.getHelper());
 let grid=new THREE.GridHelper(10,20,0x52644b,0x344044);grid.material.transparent=true;grid.material.opacity=.5;scene.add(grid);
 let root=new THREE.Group();scene.add(root);
 let selected=null,selection=new Set(),mergeSelection=new Set(),selectionOverlay=null,weldMap=null,tool='select',dirty=false,modelName='ks-ekipman',modelSize=2,photo=null,previewURL=null,jobId=null,stroke=false,strokeChanged=false,down=null,lastPaint=0;
 const history=new ModelHistory(),raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let box=null;
+let box=null,selectionGuide=null;
 const brush=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0xbbf25a,wireframe:true,transparent:true,opacity:.45,depthTest:false}));brush.visible=false;scene.add(brush);
 const loader=new GLTFLoader(),draco=new DRACOLoader().setDecoderPath('/vendor/examples/jsm/libs/draco/gltf/');loader.setDRACOLoader(draco);loader.setMeshoptDecoder(MeshoptDecoder);
 const exporter=new GLTFExporter();
 const resize=new ResizeObserver(()=>{const w=wrap.clientWidth,h=wrap.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();});resize.observe(wrap);
-function render(){requestAnimationFrame(render);orbit.update();if(box&&selected)box.update();if(selectionOverlay&&selected){selected.updateMatrixWorld(true);selectionOverlay.matrix.copy(selected.matrixWorld);}renderer.render(scene,camera);}render();
+function render(){requestAnimationFrame(render);orbit.update();if(box&&selected)box.update();if(selected){selected.updateMatrixWorld(true);if(selectionOverlay)selectionOverlay.matrix.copy(selected.matrixWorld);if(selectionGuide)selectionGuide.matrix.copy(selected.matrixWorld);}renderer.render(scene,camera);}render();
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
 function setBusy(message){$('busy').hidden=!message;$('busy-text').textContent=message||'';}
 function markDirty(){dirty=true;$('dirty').textContent='Kaydedilmemiş değişiklikler var';updateHistory();}
@@ -51,8 +51,8 @@ function paintOverlay(){
 }
 function select(mesh){
   clearPaint();weldMap=null;selected=mesh;
-  transform.detach();if(box){scene.remove(box);box.geometry.dispose();box.material.dispose();box=null;}
-  if(selected){box=new THREE.BoxHelper(selected,0xbbf25a);scene.add(box);if(['translate','rotate','scale'].includes(tool)){transform.setMode(tool);transform.attach(selected);}}
+  transform.detach();if(box){scene.remove(box);box.geometry.dispose();box.material.dispose();box=null;}if(selectionGuide){scene.remove(selectionGuide);selectionGuide.geometry.dispose();selectionGuide.material.dispose();selectionGuide=null;}
+  if(selected){box=new THREE.BoxHelper(selected,0xbbf25a);scene.add(box);selectionGuide=new THREE.Mesh(selected.geometry.clone(),new THREE.MeshBasicMaterial({color:0x70d6ff,wireframe:true,transparent:true,opacity:.5,depthTest:false}));selectionGuide.matrixAutoUpdate=false;selected.updateMatrixWorld(true);selectionGuide.matrix.copy(selected.matrixWorld);scene.add(selectionGuide);if(['translate','rotate','scale'].includes(tool)){transform.setMode(tool);transform.attach(selected);}}
   $('part-name').disabled=!mesh;$('part-name').value=mesh?.name||'';
   ['duplicate','delete','part-color'].forEach(id=>$(id).disabled=!mesh);
   ['part-texture','remove-texture','training-title','training-description','training-action'].forEach(id=>$(id).disabled=!mesh);
@@ -70,6 +70,7 @@ function updateParts(){
   $('model-stats').textContent=root.children.length?root.children.length+' parça · '+Math.round(triangles).toLocaleString('tr-TR')+' yüzey':'Model bekleniyor';
   $('empty').hidden=!!root.children.length;$('download').disabled=!root.children.length;
   $('merge-parts').disabled=mergeSelection.size<2;
+  $('auto-separate').disabled=!selected;
 }
 for(const [key,title,step]of [['position','Konum (model birimi)',.01],['rotation','Açı (derece)',1],['scale','Ölçek',.01]]){
   const group=document.createElement('div');group.className='transform-group';const label=document.createElement('span');label.textContent=title;group.append(label);const row=document.createElement('div');row.className='transform-row';
@@ -161,6 +162,12 @@ $('merge-parts').onclick=()=>{
   const meshes=[...mergeSelection].filter(mesh=>mesh.parent===root);if(meshes.length<2)return;
   try{checkpoint();const merged=mergeMeshes(meshes);meshes.forEach(mesh=>{root.remove(mesh);disposeModel(mesh);});root.add(merged);mergeSelection.clear();select(merged);markDirty();updateParts();status('İşaretli parçalar tek parça olarak birleştirildi.');}catch(e){status(e.message,true);}
 };
+$('auto-separate').onclick=()=>{
+  if(!selected)return;
+  try{
+    checkpoint();const source=selected,parts=splitDisconnected(source);mergeSelection.delete(source);root.remove(source);select(null);disposeModel(source);parts.forEach(part=>root.add(part));select(parts[0]);markDirty();updateParts();status(parts.length+' bağlantısız parça ayrıldı. Parça listesinden veya model üzerinden seçebilirsin.');
+  }catch(e){status(e.message,true);}
+};
 async function applyTexture(file){
   if(!selected||!file)return;
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>12*1024*1024){status('En fazla 12 MB PNG, JPG veya WebP kaplama seç.',true);return;}
@@ -226,6 +233,7 @@ function enableDrop(id,accept){
 }
 enableDrop('photo-drop',choosePhoto);
 enableDrop('glb-drop',chooseGLB);
+enableDrop('canvas-wrap',chooseGLB);
 $('photo-consent').onchange=updateGenerate;
 async function api(url,options){
   const r=await fetch(url,options);
