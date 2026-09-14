@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {bakeStaticScene,splitFaces,buildWeldMap,sculpt,ModelHistory,checkGLB,disposeModel,mergeMeshes,projectPlanarUV} from '../public/geometry.mjs';
+import {bakeStaticScene,splitFaces,splitDisconnected,buildWeldMap,sculpt,ModelHistory,checkGLB,disposeModel,mergeMeshes,projectPlanarUV} from '../public/geometry.mjs';
 import {fixtureGLB} from './fixture.mjs';
 test('static conversion preserves world bounds and splits faces with UVs/materials',()=>{
   const source=new THREE.Group(),mesh=new THREE.Mesh(new THREE.BoxGeometry(2,3,4),new THREE.MeshStandardMaterial({color:'red'}));mesh.position.set(5,2,1);mesh.rotation.y=.3;source.add(mesh);
@@ -34,6 +34,7 @@ test('parts merge in model space and planar projection creates usable UVs',()=>{
   const material=new THREE.MeshStandardMaterial(),a=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),material),b=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),material.clone());a.name='Pompa';b.name='Hortum';a.position.x=-2;b.position.x=2;
   const merged=mergeMeshes([a,b]);const bounds=new THREE.Box3().setFromObject(merged);
   assert.ok(bounds.min.x< -2.4&&bounds.max.x>2.4);assert.match(merged.name,/Pompa.*Hortum/);assert.ok(merged.geometry.groups.length>=2);
+  const separated=splitDisconnected(merged,{minFaces:1});assert.equal(separated.length,2);separated.forEach(part=>disposeModel(part));
   const projected=projectPlanarUV(merged.geometry),uv=projected.attributes.uv;assert.equal(uv.count,projected.attributes.position.count);for(let i=0;i<uv.count;i++){assert.ok(uv.getX(i)>=0&&uv.getX(i)<=1);assert.ok(uv.getY(i)>=0&&uv.getY(i)<=1);}
   disposeModel(a);disposeModel(b);disposeModel(merged);projected.dispose();
 });
