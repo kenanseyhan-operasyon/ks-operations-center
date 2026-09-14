@@ -6,7 +6,7 @@ import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {bakeStaticScene,disposeModel,ModelHistory,splitFaces,buildWeldMap,sculpt,facesInBrush,selectionGeometry,checkGLB} from './geometry.mjs';
+import {bakeStaticScene,disposeModel,ModelHistory,splitFaces,buildWeldMap,sculpt,facesInBrush,selectionGeometry,checkGLB,mergeMeshes,projectPlanarUV} from './geometry.mjs';
 const $=id=>document.getElementById(id);
 const canvas=$('canvas'),wrap=$('canvas-wrap');
 let renderer;
@@ -23,7 +23,7 @@ const orbit=new OrbitControls(camera,canvas);orbit.enableDamping=true;orbit.targ
 const transform=new TransformControls(camera,canvas);transform.setSize(.8);scene.add(transform.getHelper());
 let grid=new THREE.GridHelper(10,20,0x52644b,0x344044);grid.material.transparent=true;grid.material.opacity=.5;scene.add(grid);
 let root=new THREE.Group();scene.add(root);
-let selected=null,selection=new Set(),selectionOverlay=null,weldMap=null,tool='select',dirty=false,modelName='ks-ekipman',modelSize=2,photo=null,previewURL=null,jobId=null,stroke=false,strokeChanged=false,down=null,lastPaint=0;
+let selected=null,selection=new Set(),mergeSelection=new Set(),selectionOverlay=null,weldMap=null,tool='select',dirty=false,modelName='ks-ekipman',modelSize=2,photo=null,previewURL=null,jobId=null,stroke=false,strokeChanged=false,down=null,lastPaint=0;
 const history=new ModelHistory(),raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let box=null;
 const brush=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0xbbf25a,wireframe:true,transparent:true,opacity:.45,depthTest:false}));brush.visible=false;scene.add(brush);
@@ -55,17 +55,21 @@ function select(mesh){
   if(selected){box=new THREE.BoxHelper(selected,0xbbf25a);scene.add(box);if(['translate','rotate','scale'].includes(tool)){transform.setMode(tool);transform.attach(selected);}}
   $('part-name').disabled=!mesh;$('part-name').value=mesh?.name||'';
   ['duplicate','delete','part-color'].forEach(id=>$(id).disabled=!mesh);
+  ['part-texture','remove-texture','training-title','training-description','training-action'].forEach(id=>$(id).disabled=!mesh);
   if(mesh){const material=Array.isArray(mesh.material)?mesh.material[0]:mesh.material;if(material.color)$('part-color').value='#'+material.color.getHexString();}
+  const training=mesh?.userData?.training||{};
+  $('training-title').value=training.title||mesh?.name||'';$('training-description').value=training.description||'';$('training-action').value=training.action||'';
   updateFields();updateParts();
 }
 function updateParts(){
   $('parts').replaceChildren();
   if(!root.children.length){const p=document.createElement('p');p.className='muted';p.textContent='Henüz model yok.';$('parts').append(p);}
-  root.children.forEach(mesh=>{const b=document.createElement('button');b.textContent=mesh.name;b.setAttribute('role','option');b.setAttribute('aria-selected',String(mesh===selected));b.classList.toggle('selected',mesh===selected);b.onclick=()=>{select(mesh);status(mesh.name+' seçildi.');};$('parts').append(b);});
+  root.children.forEach(mesh=>{const b=document.createElement('button');b.textContent=(mergeSelection.has(mesh)?'✓ ':'')+mesh.name;b.setAttribute('role','option');b.setAttribute('aria-selected',String(mesh===selected));b.classList.toggle('selected',mesh===selected);b.classList.toggle('merge-selected',mergeSelection.has(mesh));b.onclick=e=>{if(e.shiftKey){mergeSelection.has(mesh)?mergeSelection.delete(mesh):mergeSelection.add(mesh);updateParts();status(mergeSelection.size+' parça birleştirme için işaretlendi.');}else{select(mesh);status(mesh.name+' seçildi.');}};$('parts').append(b);});
   $('part-count').textContent=root.children.length;
   let triangles=0;root.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;});
   $('model-stats').textContent=root.children.length?root.children.length+' parça · '+Math.round(triangles).toLocaleString('tr-TR')+' yüzey':'Model bekleniyor';
   $('empty').hidden=!!root.children.length;$('download').disabled=!root.children.length;
+  $('merge-parts').disabled=mergeSelection.size<2;
 }
 for(const [key,title,step]of [['position','Konum (model birimi)',.01],['rotation','Açı (derece)',1],['scale','Ölçek',.01]]){
   const group=document.createElement('div');group.className='transform-group';const label=document.createElement('span');label.textContent=title;group.append(label);const row=document.createElement('div');row.className='transform-row';
@@ -151,8 +155,33 @@ $('split').onclick=()=>{
 };
 $('part-name').onchange=()=>{if(selected&&$('part-name').value.trim()){checkpoint();selected.name=$('part-name').value.trim();updateParts();markDirty();}};
 $('part-color').onchange=()=>{if(!selected)return;checkpoint();for(const m of Array.isArray(selected.material)?selected.material:[selected.material])if(m.color)m.color.set($('part-color').value);markDirty();};
-$('delete').onclick=()=>{if(!selected)return;checkpoint();const old=selected;root.remove(old);select(null);disposeModel(old);markDirty();updateParts();};
+$('delete').onclick=()=>{if(!selected)return;checkpoint();const old=selected;mergeSelection.delete(old);root.remove(old);select(null);disposeModel(old);markDirty();updateParts();};
 $('duplicate').onclick=()=>{if(!selected)return;checkpoint();const mesh=selected.clone();mesh.geometry=selected.geometry.clone();mesh.material=Array.isArray(selected.material)?selected.material.map(m=>m.clone()):selected.material.clone();mesh.name=selected.name+' — kopya';mesh.position.x+=modelSize*.08;root.add(mesh);select(mesh);markDirty();};
+$('merge-parts').onclick=()=>{
+  const meshes=[...mergeSelection].filter(mesh=>mesh.parent===root);if(meshes.length<2)return;
+  try{checkpoint();const merged=mergeMeshes(meshes);meshes.forEach(mesh=>{root.remove(mesh);disposeModel(mesh);});root.add(merged);mergeSelection.clear();select(merged);markDirty();updateParts();status('İşaretli parçalar tek parça olarak birleştirildi.');}catch(e){status(e.message,true);}
+};
+async function applyTexture(file){
+  if(!selected||!file)return;
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>12*1024*1024){status('En fazla 12 MB PNG, JPG veya WebP kaplama seç.',true);return;}
+  try{
+    checkpoint();const bitmap=await createImageBitmap(file),texture=new THREE.CanvasTexture(bitmap);texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=false;texture.needsUpdate=true;
+    const oldGeometry=selected.geometry;selected.geometry=projectPlanarUV(oldGeometry);oldGeometry.dispose();
+    const oldMaterials=Array.isArray(selected.material)?selected.material:[selected.material];const material=new THREE.MeshStandardMaterial({map:texture,color:0xffffff,roughness:.72,metalness:.08});selected.material=material;oldMaterials.forEach(m=>m.dispose());
+    selected.userData.textureSource=file.name;markDirty();updateParts();status(file.name+' seçili parçaya kaplandı.');
+  }catch(e){status('Fotoğraf kaplanamadı: '+e.message,true);}
+}
+$('part-texture').onchange=e=>{const file=e.target.files[0];e.target.value='';applyTexture(file);};
+enableDrop('texture-drop',applyTexture);
+$('remove-texture').onclick=()=>{if(!selected)return;checkpoint();for(const m of Array.isArray(selected.material)?selected.material:[selected.material]){m.map?.dispose();m.map=null;m.color?.set(0xb9c5cb);m.needsUpdate=true;}delete selected.userData.textureSource;markDirty();status('Seçili parçanın fotoğraf kaplaması kaldırıldı.');};
+function saveTraining(){
+  if(!selected)return;selected.userData.training={title:$('training-title').value.trim()||selected.name,description:$('training-description').value.trim(),action:$('training-action').value.trim()};markDirty();
+}
+for(const id of ['training-title','training-description','training-action'])$(id).addEventListener('change',saveTraining);
+$('training-package').onclick=()=>{
+  const parts=[];root.children.forEach((mesh,index)=>{const t=mesh.userData.training||{};parts.push({id:index+1,part:mesh.name,title:t.title||mesh.name,description:t.description||'',expectedAction:t.action||'',textureSource:mesh.userData.textureSource||null});});
+  const data={schema:'ks-training-model/v1',model:modelName,createdAt:new Date().toISOString(),parts};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=modelName+'-egitim.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);status('Eğitim açıklama paketi indirildi.');
+};
 function restore(next){if(!next)return;select(null);scene.remove(root);disposeModel(root);root=next;scene.add(root);updateParts();updateHistory();applyWireframe();markDirty();}
 $('undo').onclick=()=>restore(history.undo(root));$('redo').onclick=()=>restore(history.redo(root));
 function applyWireframe(){root.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])m.wireframe=$('wireframe').checked;});}
@@ -162,7 +191,7 @@ async function loadBuffer(buffer,name){
   setBusy('GLB açılıyor…');
   try{
     const gltf=await loader.parseAsync(buffer,'');const next=bakeStaticScene(gltf.scene);disposeModel(gltf.scene);
-    select(null);history.clear();scene.remove(root);disposeModel(root,{textures:true});root=next;scene.add(root);modelName=(name||'ks-ekipman').replace(/\.glb$/i,'').replace(/[^\p{L}\p{N}_-]+/gu,'-').slice(0,80)||'ks-ekipman';
+    select(null);mergeSelection.clear();history.clear();scene.remove(root);disposeModel(root,{textures:true});root=next;scene.add(root);modelName=(name||'ks-ekipman').replace(/\.glb$/i,'').replace(/[^\p{L}\p{N}_-]+/gu,'-').slice(0,80)||'ks-ekipman';
     dirty=false;$('dirty').textContent='Model açıldı';updateParts();updateHistory();fit();applyWireframe();status('Model hazır. Bir parça seçerek düzenlemeye başla.');
   }finally{setBusy(null);}
 }
