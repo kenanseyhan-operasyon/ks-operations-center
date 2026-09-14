@@ -45,8 +45,42 @@ export function bakeStaticScene(scene){
     group.add(mesh);triangles+=geometry.attributes.position.count/3;
   });
   if(!group.children.length)throw new Error('GLB içinde düzenlenebilir yüzey bulunamadı.');
-  if(triangles>500000){disposeModel(group);throw new Error('Bu model 500.000 yüzey sınırını aşıyor. Önce yüzey sayısını azalt.');}
+  if(triangles>2000000){disposeModel(group);throw new Error('Bu model 2.000.000 yüzey sınırını aşıyor. Eğitim kullanımı için modeli sadeleştir.');}
   return group;
+}
+
+export function projectPlanarUV(geometry){
+  const g=geometry.clone(),p=g.attributes.position;
+  if(!p)throw new Error('Kaplama için konum verisi bulunamadı.');
+  g.computeBoundingBox();const box=g.boundingBox,size=box.getSize(new THREE.Vector3());
+  const axes=[['x','y'],['x','z'],['z','y']].sort((a,b)=>size[b[0]]*size[b[1]]-size[a[0]]*size[a[1]])[0];
+  const uv=new Float32Array(p.count*2),minA=box.min[axes[0]],minB=box.min[axes[1]],spanA=Math.max(size[axes[0]],1e-8),spanB=Math.max(size[axes[1]],1e-8);
+  for(let i=0;i<p.count;i++){uv[i*2]=(p['get'+axes[0].toUpperCase()](i)-minA)/spanA;uv[i*2+1]=(p['get'+axes[1].toUpperCase()](i)-minB)/spanB;}
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));return g;
+}
+
+export function mergeMeshes(meshes){
+  if(!Array.isArray(meshes)||meshes.length<2)throw new Error('Birleştirmek için en az iki parça seç.');
+  const positions=[],normals=[],uvs=[],materials=[],groups=[];let vertexStart=0;
+  for(const mesh of meshes){
+    mesh.updateMatrix();const source=mesh.geometry.index?mesh.geometry.toNonIndexed():mesh.geometry.clone(),p=source.attributes.position;
+    if(!p){source.dispose();continue;}
+    const n=source.attributes.normal,uv=source.attributes.uv,matrix=mesh.matrix.clone(),normalMatrix=new THREE.Matrix3().getNormalMatrix(matrix),v=new THREE.Vector3();
+    for(let i=0;i<p.count;i++){
+      v.fromBufferAttribute(p,i).applyMatrix4(matrix);positions.push(v.x,v.y,v.z);
+      if(n){v.fromBufferAttribute(n,i).applyNormalMatrix(normalMatrix);normals.push(v.x,v.y,v.z);}else normals.push(0,1,0);
+      if(uv)uvs.push(uv.getX(i),uv.getY(i));else uvs.push(0,0);
+    }
+    const sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material],materialOffset=materials.length;
+    sourceMaterials.forEach(m=>materials.push(m.clone()));
+    if(source.groups.length)for(const group of source.groups)groups.push({start:vertexStart+group.start,count:group.count,materialIndex:materialOffset+group.materialIndex});
+    else groups.push({start:vertexStart,count:p.count,materialIndex:materialOffset});
+    vertexStart+=p.count;source.dispose();
+  }
+  if(!positions.length)throw new Error('Birleştirilecek yüzey bulunamadı.');
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  groups.forEach(g=>geometry.addGroup(g.start,g.count,g.materialIndex));geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const merged=new THREE.Mesh(geometry,materials);merged.name=meshes.map(m=>m.name).join(' + ').slice(0,80);merged.userData={training:{title:merged.name,description:'',action:''}};return merged;
 }
 function subsetGeometry(source,faces){
   const g=new THREE.BufferGeometry();
