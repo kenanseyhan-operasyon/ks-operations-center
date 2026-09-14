@@ -7,3 +7,4 @@
 .drop-label{transition:border-color .16s ease,background .16s ease,transform .16s ease}.drop-label.drag-over{border-color:#bbf25a!important;background:rgba(187,242,90,.12)!important;transform:translateY(-1px)}.compact-drop{min-height:64px;display:flex!important;align-items:center;justify-content:center;text-align:center;border-style:dashed!important}
 .parts-section button.merge-selected{border-color:#bbf25a;background:rgba(187,242,90,.12)}textarea{width:100%;min-height:78px;resize:vertical;background:#111719;color:#eef3f0;border:1px solid #3c494b;border-radius:8px;padding:10px;font:inherit;box-sizing:border-box}textarea:focus{outline:2px solid rgba(187,242,90,.35);border-color:#bbf25a}
 #canvas-wrap.drag-over{outline:3px dashed #bbf25a;outline-offset:-8px;background:rgba(187,242,90,.08)}
+.producer-link{text-decoration:none;display:block;padding-top:11px}
