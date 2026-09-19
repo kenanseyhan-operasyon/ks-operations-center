@@ -73,6 +73,7 @@ function leaveFacility(){sceneMode='world';document.getElementById('home')!.clas
 document.getElementById('langBtn')!.onclick=()=>{lang=lang==='tr'?'en':'tr';localStorage.setItem('ks-lang',lang);renderCopy()};
 document.getElementById('exploreBtn')!.onclick=enterWorld;document.getElementById('quickBtn')!.onclick=enterFacility;document.getElementById('worldQuick')!.onclick=enterFacility;document.getElementById('backBtn')!.onclick=leaveFacility;
 document.addEventListener('click',e=>{if(!(e.target as HTMLElement).closest('.context-menu'))document.getElementById('contextMenu')!.classList.add('hidden')});
+renderCopy();
 
 // Lightweight Three.js globe — no Cesium, terrain, imagery token or blocking GIS startup.
 const host=document.getElementById('globe')!;
@@ -124,4 +125,3 @@ async function ensureFacilityScene(){
  const fresize=()=>{const r=fhost.getBoundingClientRect();if(!r.width||!r.height)return;frenderer.setSize(r.width,r.height,false);fcamera.aspect=r.width/r.height;fcamera.updateProjectionMatrix()};new ResizeObserver(fresize).observe(fhost);fresize();
  const clock=new THREE.Clock();const flooop=()=>{requestAnimationFrame(flooop);const delta=Math.min(clock.getDelta(),.05);if(sceneMode==='facility'){facilityMixer?.update(delta);fcontrols.update();frenderer.render(fscene,fcamera)}};flooop();
 }
-renderCopy();
