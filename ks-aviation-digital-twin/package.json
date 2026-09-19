@@ -1,0 +1,23 @@
+{
+  "name": "ks-aviation-digital-twin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "prebuild": "node scripts/extract-model.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "@types/topojson-client": "^3.1.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  }
+}
