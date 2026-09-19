@@ -1,12 +1,16 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 
-const legacy = await readFile('../index.html', 'utf8');
-const marker = '<script id="ksR14ModelData" type="application/octet-stream">';
-const start = legacy.indexOf(marker);
-const end = legacy.indexOf('</script>', start + marker.length);
-if (start < 0 || end < 0) throw new Error('R14 model data was not found in the legacy index.html');
-const encoded = legacy.slice(start + marker.length, end).trim();
+const partsDir = new URL('../model-parts/', import.meta.url);
+const partNames = (await readdir(partsDir)).filter(name => name.endsWith('.b64')).sort();
+if (!partNames.length) throw new Error('R14 model parts were not found');
+const buffers = [];
+for (const name of partNames) {
+  const encoded = await readFile(new URL(name, partsDir), 'utf8');
+  buffers.push(Buffer.from(encoded.trim(), 'base64'));
+}
+const model = Buffer.concat(buffers);
+if (model.length !== 6437208) throw new Error(`R14 model size mismatch: ${model.length}`);
 const outDir = new URL('../public/models/', import.meta.url);
 await mkdir(outDir, { recursive: true });
-await writeFile(new URL('refueller-38k-r14.glb', outDir), Buffer.from(encoded, 'base64'));
-console.log('R14 GLB extracted for the new Digital Twin build.');
+await writeFile(new URL('refueller-38k-r14.glb', outDir), model);
+console.log(`R14 GLB reconstructed: ${model.length} bytes`);
