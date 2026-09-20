@@ -17,13 +17,13 @@ TR/EN aviation workspace using Vite, TypeScript and Three.js. No Cesium dependen
 
 `public/data/adb-legacy.json` contains 61 ADB objects and 4 groups from the user's `KS-KAYITLAR-20260915-101627.json` backup. Original IDs, geographic footprints, headings, dimensions, colors and groups are preserved. Terrain is a flat local map plane; historical terrain elevations are not treated as object elevations. One separately editable R14 is added on first load.
 
-On 2026-09-20 the user authorized reading the old Supabase ADB record. Both reads returned HTTP 502. This version uses the dated backup, not an unverified latest cloud revision. No Supabase credentials are included in this app.
+On 2026-09-20 the user authorized reading the old Supabase ADB record. Reads, including the post-deployment retry, returned HTTP 502. This version uses the dated backup, not an unverified latest cloud revision. No Supabase credentials are included in this app.
 
 Import accepts the new schema, a legacy `KS_AIRPORT_3D_V2` ADB scene, or an old complete backup containing `airport3d.ADB.scene`. Import replaces the workspace and can be undone. BJV scenes are rejected in this ADB workspace.
 
 ## Maps
 
-World: bundled Three.js earth texture with country-outline fallback. Map: Esri World Imagery tiles loaded on demand, with attribution displayed. Imagery availability is independent of editable objects; geometry works if tile requests fail.
+World: bundled Three.js earth texture with country-outline fallback. Map: Esri World Imagery tiles loaded on demand, with attribution displayed. ADB imagery is capped at the verified level 19 and enlarged for closer views; level 20 returns unavailable-image placeholders. Imagery availability is independent of editable objects; geometry works if tile requests fail.
 
 ## Development
 

@@ -7,7 +7,9 @@ export class Imagery {
   onChange=()=>{};
   update(x:number,z:number,span:number){
     if(!this.enabled){this.active=[];this.onChange();return;}
-    const p=geographic(x,z), zoom=Math.max(12,Math.min(20,Math.ceil(Math.log2(31400000/Math.max(80,span)*4))));
+    // ADB imagery is available through level 19; level 20 returns a gray
+    // "Map data not yet available" tile with HTTP 200. Reuse level 19 up close.
+    const p=geographic(x,z), zoom=Math.max(12,Math.min(19,Math.ceil(Math.log2(31400000/Math.max(80,span)*4))));
     const c=tileOf(p.lat,p.lon,zoom), centerX=Math.floor(c.x),centerY=Math.floor(c.y);
     const count=3; const next:Tile[]=[];
     for(let dy=-count;dy<=count;dy++)for(let dx=-count;dx<=count;dx++){
@@ -87,6 +89,6 @@ export class PlanMap {
       c.stroke();if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }
     if(this.draft.length){c.beginPath();this.draft.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.strokeStyle='#b7ff3c';c.lineWidth=3/p;c.stroke();for(const [x,z] of this.draft){c.beginPath();c.arc(x,z,4/p,0,Math.PI*2);c.fillStyle='#b7ff3c';c.fill();}}
-    c.restore();c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const metres=this.span>500?500:this.span>100?50:10;const px=metres*p;c.fillRect(23,h-24,Math.min(115,px),2);c.fillText(`${metres} m`,23,h-28);
+    c.restore();c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const maxMetres=115/p,unit=10**Math.floor(Math.log10(maxMetres)),metres=([5,2,1].find(n=>n*unit<=maxMetres)??1)*unit;c.fillRect(23,h-24,metres*p,2);c.fillText(`${Number(metres.toPrecision(3))} m`,23,h-28);
   }
 }
