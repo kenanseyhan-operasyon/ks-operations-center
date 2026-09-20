@@ -1,13 +1,14 @@
 {
   "name": "ks-aviation-digital-twin",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "prebuild": "node scripts/extract-model.mjs"
+    "prebuild": "node scripts/extract-model.mjs",
+    "test": "esbuild tests/scene.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ks-scene-test.mjs && node node_modules/.cache/ks-scene-test.mjs"
   },
   "dependencies": {
     "three": "^0.186.0",

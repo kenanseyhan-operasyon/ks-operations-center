@@ -1,0 +1,1386 @@
+{
+  "tune": {
+    "turn": 180,
+    "range": 6,
+    "total": 30
+  },
+  "camera": {
+    "alt": 203.3058943395683,
+    "lat": 38.279030445891756,
+    "lon": 27.153159832340883,
+    "roll": 6.283185153978944,
+    "pitch": -0.4655969529736512,
+    "heading": 5.475697306013226
+  },
+  "groups": [
+    {
+      "id": "mtfij5v840ifws",
+      "name": "TESİS AĞAÇLARI",
+      "objectIds": [
+        "mtfig0xoapk9fl",
+        "mtfig7e18y0dsy",
+        "mtfigas8drjk15",
+        "mtfige0ujzjx06",
+        "mtfigi1lvyzqr8",
+        "mtfihsrgroppq1",
+        "mtfihxafk381sq"
+      ]
+    },
+    {
+      "id": "mtfit0k5ajhzy5",
+      "name": "TESİS",
+      "objectIds": [
+        "mtfgxtgly8vqxd",
+        "mtfgxtghpljrum",
+        "mtfhc483jg7zz9",
+        "mtfgxtgub0vkjj",
+        "mtfgd0f5ucmhs2",
+        "mtfgdsfpr7rq8i",
+        "mtfgxtgq8facra"
+      ]
+    },
+    {
+      "id": "mtfitqafvth22u",
+      "name": "YOL AĞAÇLARI",
+      "objectIds": [
+        "mtfilpzhheq3yc",
+        "mtfiluxbbp9r0m",
+        "mtfilzdhz7yd8n",
+        "mtfim305e9d7gk"
+      ]
+    },
+    {
+      "id": "mtfjkui5k4jr8q",
+      "name": "UÇAK",
+      "objectIds": [
+        "mtdyz8k594yla5",
+        "mte43kcwbcs6sr",
+        "mte43o0ks97ox7",
+        "mte43xrrkks2a6",
+        "mtfi4k7o2j1lie",
+        "mtfi59bt36osc3",
+        "mtfi5ykaa9rax4",
+        "mtfi6k5myw4ywy",
+        "mtfi7c5qtd9jk0",
+        "mtfi860j3o4g26",
+        "mtfi8gocyaascu",
+        "mtfi8vqe7w4vkq",
+        "mtfi9d2qpud7rn",
+        "mtfi9jr5kkh29a",
+        "mtfi9zwby1iv9r",
+        "mtfia37x1dbqyd",
+        "mtfiatdas0x52d",
+        "mtfj93sihqw46y",
+        "mtfja26omu9aqp",
+        "mtfjah19rlf7q6",
+        "mtfjapvdanbzg7",
+        "mtfjashiz230vr",
+        "mtfjavjjtub0gu",
+        "mtfjbs5ocfjfvw",
+        "mtfjbs5shj6ybk",
+        "mtfjegcg9xldut",
+        "mtfjfg73yeke5j",
+        "mtfjgo52meon3n",
+        "mte43dzzh1vr0m",
+        "mtfjcoecuzah0x",
+        "mtfjcoegy7kr70",
+        "mtfjfwesco43vy"
+      ]
+    }
+  ],
+  "schema": "KS_AIRPORT_3D_V2",
+  "airport": "ADB",
+  "objects": [
+    {
+      "id": "mtdyz8k594yla5",
+      "lat": 38.28403363068433,
+      "lon": 27.153535887145296,
+      "name": "UÇAK 1",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 151.274903805907,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mte43dzzh1vr0m",
+      "lat": 38.279898327185414,
+      "lon": 27.156072282446203,
+      "name": "UÇAK 2",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 64.8,
+      "ground": 148.87050067007678,
+      "height": 18.5,
+      "length": 73.9,
+      "preset": "B777",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165
+    },
+    {
+      "id": "mte43kcwbcs6sr",
+      "lat": 38.28166421214333,
+      "lon": 27.155497466158725,
+      "name": "UÇAK 3",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 60.3,
+      "ground": 149.96023932724287,
+      "height": 16.8,
+      "length": 63.7,
+      "preset": "A330",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165
+    },
+    {
+      "id": "mte43o0ks97ox7",
+      "lat": 38.28268150915899,
+      "lon": 27.15370769697945,
+      "name": "UÇAK 4",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 11,
+      "ground": 151.15088802748463,
+      "height": 2.7,
+      "length": 8.3,
+      "preset": "GA",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mte43xrrkks2a6",
+      "lat": 38.283229101224535,
+      "lon": 27.15363647069327,
+      "name": "UÇAK 5",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 28.5,
+      "ground": 151.38888073063677,
+      "height": 7.8,
+      "length": 30.4,
+      "preset": "GULFSTREAM",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfgd0f5ucmhs2",
+      "lat": 38.279952679334464,
+      "lon": 27.15203122289666,
+      "name": "T1",
+      "type": "tank",
+      "color": "#ffffff",
+      "scale": 1,
+      "ground": 149.14844739720542,
+      "height": 11,
+      "preset": "TANK",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0,
+      "foundationTop": 149.14844739720542,
+      "foundationBottom": 149.0284473972054
+    },
+    {
+      "id": "mtfgdsfpr7rq8i",
+      "lat": 38.27982564401497,
+      "lon": 27.152086384443802,
+      "name": "T2",
+      "type": "tank",
+      "color": "#ffffff",
+      "scale": 1,
+      "ground": 148.89892833890215,
+      "height": 11,
+      "preset": "TANK",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0,
+      "foundationTop": 148.89892833890215,
+      "foundationBottom": 148.77892833890215
+    },
+    {
+      "id": "mtfgxtghpljrum",
+      "lat": 38.27991631545987,
+      "lon": 27.15226246986991,
+      "name": "N3",
+      "type": "structure",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2,
+      "ground": 148.88572899438046,
+      "height": 2.5,
+      "length": 3,
+      "preset": "PUMP",
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0
+    },
+    {
+      "id": "mtfgxtgly8vqxd",
+      "lat": 38.279942111004445,
+      "lon": 27.152327064852656,
+      "name": "ARAÇ 4",
+      "type": "vehicle",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.4,
+      "ground": 148.88536700475478,
+      "height": 2.8,
+      "length": 7,
+      "preset": "HYDRANT",
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 165
+    },
+    {
+      "id": "mtfgxtgq8facra",
+      "lat": 38.279774037059276,
+      "lon": 27.152384839164533,
+      "name": "ARAÇ 5",
+      "type": "vehicle",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.55,
+      "ground": 148.4963973982705,
+      "height": 3.6,
+      "length": 13.5,
+      "preset": "REF45",
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 165
+    },
+    {
+      "id": "mtfgxtgub0vkjj",
+      "lat": 38.279774068954026,
+      "lon": 27.152320751323128,
+      "name": "ARAÇ 6",
+      "type": "vehicle",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.5,
+      "ground": 148.55316196485927,
+      "height": 3.2,
+      "length": 9,
+      "preset": "REF20",
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 165
+    },
+    {
+      "id": "mtfhc483jg7zz9",
+      "lat": 38.279918483803144,
+      "lon": 27.152269444034967,
+      "name": "N2",
+      "type": "structure",
+      "color": "#ffffff",
+      "scale": 1.1500000000000001,
+      "width": 6,
+      "ground": 148.8842867929814,
+      "height": 4,
+      "length": 10,
+      "preset": "CANOPY",
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 345
+    },
+    {
+      "id": "mtfi4k7o2j1lie",
+      "lat": 38.28148130942604,
+      "lon": 27.158848316102564,
+      "name": "UÇAK 6",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 150.7943478249141,
+      "height": 11.8,
+      "length": 37.6,
+      "preset": "A320",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 75
+    },
+    {
+      "id": "mtfi59bt36osc3",
+      "lat": 38.29070425712098,
+      "lon": 27.157507917610097,
+      "name": "UÇAK 7",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 156.22982197571554,
+      "height": 11.8,
+      "length": 37.6,
+      "preset": "A320",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 350
+    },
+    {
+      "id": "mtfi5ykaa9rax4",
+      "lat": 38.29914091967282,
+      "lon": 27.148304709856355,
+      "name": "UÇAK 8",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 157.34968479765482,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfi6k5myw4ywy",
+      "lat": 38.29851787429475,
+      "lon": 27.14853636302292,
+      "name": "UÇAK 9",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 60.3,
+      "ground": 156.88501662362165,
+      "height": 16.8,
+      "length": 63.7,
+      "preset": "A330",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfi7c5qtd9jk0",
+      "lat": 38.298922103798915,
+      "lon": 27.150566692585482,
+      "name": "UÇAK 10",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 156.2599461392969,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfi860j3o4g26",
+      "lat": 38.29824931348469,
+      "lon": 27.15075967426993,
+      "name": "UÇAK 11",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 155.48576695551392,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfi8gocyaascu",
+      "lat": 38.29772716705228,
+      "lon": 27.15092709216454,
+      "name": "UÇAK 12",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.8666976755263,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfi8vqe7w4vkq",
+      "lat": 38.29721608677363,
+      "lon": 27.151101159316042,
+      "name": "UÇAK 13",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.40202950154426,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfi9d2qpud7rn",
+      "lat": 38.29625778997499,
+      "lon": 27.151356462574363,
+      "name": "UÇAK 14",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.40202950091322,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfi9jr5kkh29a",
+      "lat": 38.2957647163813,
+      "lon": 27.151491520486193,
+      "name": "UÇAK 15",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.39600466801505,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 75
+    },
+    {
+      "id": "mtfi9zwby1iv9r",
+      "lat": 38.29478945958762,
+      "lon": 27.1517985168033,
+      "name": "UÇAK 16",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.39600466831013,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfia37x1dbqyd",
+      "lat": 38.29430437238595,
+      "lon": 27.151941391771015,
+      "name": "UÇAK 17",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.39600466833878,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfiatdas0x52d",
+      "lat": 38.297675757127585,
+      "lon": 27.14862296883033,
+      "name": "UÇAK 18",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 64.8,
+      "ground": 155.9564363343098,
+      "height": 18.5,
+      "length": 73.9,
+      "preset": "B777",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfig0xoapk9fl",
+      "lat": 38.2797281026201,
+      "lon": 27.152475803385382,
+      "name": "AĞAÇ 1",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.04885525286142,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfig7e18y0dsy",
+      "lat": 38.27977154253716,
+      "lon": 27.152459013781897,
+      "name": "AĞAÇ 2",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.12566596287112,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfigas8drjk15",
+      "lat": 38.27982556419824,
+      "lon": 27.15243825328534,
+      "name": "AĞAÇ 3",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.22130722714877,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfige0ujzjx06",
+      "lat": 38.279870733367446,
+      "lon": 27.152423266862947,
+      "name": "AĞAÇ 4",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.3162160644648,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfigi1lvyzqr8",
+      "lat": 38.279912560405656,
+      "lon": 27.15240888387941,
+      "name": "AĞAÇ 5",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.3342905629072,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfihsrgroppq1",
+      "lat": 38.27995560928079,
+      "lon": 27.152391425578845,
+      "name": "AĞAÇ 6",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.33429056123566,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfihxafk381sq",
+      "lat": 38.27999857962731,
+      "lon": 27.152376369827355,
+      "name": "AĞAÇ 7",
+      "tree": "CYPRESS",
+      "type": "tree",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "ground": 148.42993182779585,
+      "height": 11,
+      "preset": "CYPRESS",
+      "groupId": "mtfij5v840ifws",
+      "heading": 0
+    },
+    {
+      "id": "mtfilpzhheq3yc",
+      "lat": 38.2801453683755,
+      "lon": 27.15248415080377,
+      "name": "AĞAÇ 8",
+      "tree": "PLANE",
+      "type": "tree",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "ground": 148.65309867594047,
+      "height": 11,
+      "preset": "PLANE",
+      "groupId": "mtfitqafvth22u",
+      "heading": 0
+    },
+    {
+      "id": "mtfiluxbbp9r0m",
+      "lat": 38.28006479554796,
+      "lon": 27.152507832883856,
+      "name": "AĞAÇ 9",
+      "tree": "PLANE",
+      "type": "tree",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "ground": 148.70329384168338,
+      "height": 11,
+      "preset": "PLANE",
+      "groupId": "mtfitqafvth22u",
+      "heading": 0
+    },
+    {
+      "id": "mtfilzdhz7yd8n",
+      "lat": 38.27999621052997,
+      "lon": 27.152527701783708,
+      "name": "AĞAÇ 10",
+      "tree": "PLANE",
+      "type": "tree",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "ground": 148.4419814925121,
+      "height": 11,
+      "preset": "PLANE",
+      "groupId": "mtfitqafvth22u",
+      "heading": 0
+    },
+    {
+      "id": "mtfim305e9d7gk",
+      "lat": 38.27992054793105,
+      "lon": 27.152546909001046,
+      "name": "AĞAÇ 11",
+      "tree": "PLANE",
+      "type": "tree",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "ground": 148.19720789779817,
+      "height": 11,
+      "preset": "PLANE",
+      "groupId": "mtfitqafvth22u",
+      "heading": 0
+    },
+    {
+      "id": "mtfj93sihqw46y",
+      "lat": 38.295833605728,
+      "lon": 27.149828545197654,
+      "name": "UÇAK 19",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.4020295040347,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfja26omu9aqp",
+      "lat": 38.294057400451564,
+      "lon": 27.150349000739094,
+      "name": "UÇAK 20",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.86067284335255,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfjah19rlf7q6",
+      "lat": 38.29201066057747,
+      "lon": 27.15098839092545,
+      "name": "UÇAK 21",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 154.71156414144846,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfjapvdanbzg7",
+      "lat": 38.288019867033086,
+      "lon": 27.152460388036044,
+      "name": "UÇAK 22",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 152.9907301670341,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfjashiz230vr",
+      "lat": 38.2876341458686,
+      "lon": 27.152591747140942,
+      "name": "UÇAK 23",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 152.37166088729043,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfjavjjtub0gu",
+      "lat": 38.287259672754914,
+      "lon": 27.15267627192442,
+      "name": "UÇAK 24",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 152.3656360540604,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfjbs5ocfjfvw",
+      "lat": 38.28593019628108,
+      "lon": 27.153086921039762,
+      "name": "UÇAK 25",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 151.7104414073224,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfjbs5shj6ybk",
+      "lat": 38.28555559086246,
+      "lon": 27.153190785382435,
+      "name": "UÇAK 26",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 151.90099150893803,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfjcoecuzah0x",
+      "lat": 38.27797716216586,
+      "lon": 27.156668071608568,
+      "name": "UÇAK 27",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 147.93513948721173,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165
+    },
+    {
+      "id": "mtfjcoegy7kr70",
+      "lat": 38.27770985856673,
+      "lon": 27.157925201810603,
+      "name": "UÇAK 28",
+      "type": "aircraft",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "ground": 146.98848470038453,
+      "height": 12.5,
+      "length": 39.5,
+      "preset": "B737",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80
+    },
+    {
+      "id": "mtfjegcg9xldut",
+      "lat": 38.28143807322756,
+      "lon": 27.154167368162543,
+      "name": "UÇAK 29",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 28.5,
+      "ground": 150.34129227527882,
+      "height": 7.8,
+      "length": 30.4,
+      "preset": "GULFSTREAM",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfjfg73yeke5j",
+      "lat": 38.28206335024276,
+      "lon": 27.153867539132836,
+      "name": "UÇAK 30",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 21,
+      "ground": 150.73968728851477,
+      "height": 6.5,
+      "length": 22,
+      "preset": "CITATION",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260
+    },
+    {
+      "id": "mtfjfwesco43vy",
+      "lat": 38.28056189556326,
+      "lon": 27.154390559156916,
+      "name": "UÇAK 31",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 27.1,
+      "ground": 149.81110699996563,
+      "height": 7.7,
+      "length": 27.2,
+      "preset": "TURBOPROP",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mtfjgo52meon3n",
+      "lat": 38.28016056939839,
+      "lon": 27.15444643998349,
+      "name": "UÇAK 32",
+      "type": "aircraft",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 11,
+      "ground": 149.8050821658338,
+      "height": 2.7,
+      "length": 8.3,
+      "preset": "GA",
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255
+    },
+    {
+      "id": "mth2p0eir1ulfz",
+      "name": "Z1",
+      "type": "ground",
+      "color": "#9b8060",
+      "points": [
+        {
+          "lat": 38.28004508182646,
+          "lon": 27.151835992072105,
+          "ground": 149.29899622218667
+        },
+        {
+          "lat": 38.28013494851543,
+          "lon": 27.152327558807244,
+          "ground": 148.98346037647582
+        },
+        {
+          "lat": 38.27955554467541,
+          "lon": 27.15253052385274,
+          "ground": 148.0066814229207
+        },
+        {
+          "lat": 38.27951173156543,
+          "lon": 27.152200891968832,
+          "ground": 148.33429056186975
+        },
+        {
+          "lat": 38.28004569306861,
+          "lon": 27.15183125817494,
+          "ground": 149.311045887753
+        }
+      ],
+      "opacity": 0.62
+    },
+    {
+      "id": "mth2s0dlb3ztsx",
+      "name": "D1",
+      "type": "wall",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "height": 2.2,
+      "points": [
+        {
+          "lat": 38.2797628774627,
+          "lon": 27.152198737984556,
+          "ground": 148.638463359669
+        },
+        {
+          "lat": 38.28006097611128,
+          "lon": 27.152093647607284,
+          "ground": 149.1153558412117
+        },
+        {
+          "lat": 38.28002666470365,
+          "lon": 27.151880799012954,
+          "ground": 149.2922387226229
+        },
+        {
+          "lat": 38.279751639591616,
+          "lon": 27.152065715810384,
+          "ground": 148.75325233355784
+        },
+        {
+          "lat": 38.2797628774627,
+          "lon": 27.152198737984556,
+          "ground": 148.638463359669
+        }
+      ],
+      "thickness": 0.25,
+      "closedLoop": true,
+      "surfacePoints": [
+        {
+          "lat": 38.2797628774627,
+          "lon": 27.152198737984556,
+          "ground": 148.638463359669
+        },
+        {
+          "lat": 38.27982249719242,
+          "lon": 27.1521777199091,
+          "ground": 148.79282221076397
+        },
+        {
+          "lat": 38.27988211692213,
+          "lon": 27.152156701833647,
+          "ground": 148.92490570334107
+        },
+        {
+          "lat": 38.27994173665185,
+          "lon": 27.152135683758193,
+          "ground": 149.02058846847825
+        },
+        {
+          "lat": 38.28000135638156,
+          "lon": 27.15211466568274,
+          "ground": 149.08118868797283
+        },
+        {
+          "lat": 38.28006097611128,
+          "lon": 27.152093647607284,
+          "ground": 149.1153558412117
+        },
+        {
+          "lat": 38.280049538975405,
+          "lon": 27.15202269807584,
+          "ground": 149.200041795303
+        },
+        {
+          "lat": 38.28003810183952,
+          "lon": 27.1519517485444,
+          "ground": 149.2622556862892
+        },
+        {
+          "lat": 38.28002666470365,
+          "lon": 27.151880799012954,
+          "ground": 149.2922387226229
+        },
+        {
+          "lat": 38.279971659681244,
+          "lon": 27.15191778237244,
+          "ground": 149.25757770428268
+        },
+        {
+          "lat": 38.279916654658834,
+          "lon": 27.151954765731926,
+          "ground": 149.18332931269538
+        },
+        {
+          "lat": 38.27986164963643,
+          "lon": 27.151991749091412,
+          "ground": 149.07072807607227
+        },
+        {
+          "lat": 38.27980664461402,
+          "lon": 27.152028732450898,
+          "ground": 148.92400034491382
+        },
+        {
+          "lat": 38.279751639591616,
+          "lon": 27.152065715810384,
+          "ground": 148.75325233355784
+        },
+        {
+          "lat": 38.279757258527155,
+          "lon": 27.15213222689747,
+          "ground": 148.69223861162934
+        },
+        {
+          "lat": 38.2797628774627,
+          "lon": 27.152198737984556,
+          "ground": 148.638463359669
+        }
+      ]
+    },
+    {
+      "id": "mth2sq32g0ykx1",
+      "name": "D2",
+      "type": "wall",
+      "color": "#60686a",
+      "scale": 1,
+      "height": 2.2,
+      "points": [
+        {
+          "lat": 38.28009698041227,
+          "lon": 27.152167287085827,
+          "ground": 149.03180818380685
+        },
+        {
+          "lat": 38.280041452049225,
+          "lon": 27.151833481302965,
+          "ground": 149.30502105356385
+        },
+        {
+          "lat": 38.27951544988525,
+          "lon": 27.15220388451727,
+          "ground": 148.32832463026463
+        },
+        {
+          "lat": 38.27956133056324,
+          "lon": 27.152526592954644,
+          "ground": 148.0015200971207
+        }
+      ],
+      "preset": "FENCE_WALL",
+      "thickness": 0.08,
+      "wallStyle": "fence",
+      "closedLoop": false,
+      "surfacePoints": [
+        {
+          "lat": 38.28009698041227,
+          "lon": 27.152167287085827,
+          "ground": 149.03180818380685
+        },
+        {
+          "lat": 38.280083098321505,
+          "lon": 27.152083835640113,
+          "ground": 149.12557443669346
+        },
+        {
+          "lat": 38.28006921623074,
+          "lon": 27.152000384194395,
+          "ground": 149.22200624797685
+        },
+        {
+          "lat": 38.28005533413999,
+          "lon": 27.15191693274868,
+          "ground": 149.28151957907343
+        },
+        {
+          "lat": 38.280041452049225,
+          "lon": 27.151833481302965,
+          "ground": 149.30502105356385
+        },
+        {
+          "lat": 38.279983007364336,
+          "lon": 27.151874637215666,
+          "ground": 149.12051941333914
+        },
+        {
+          "lat": 38.279924562679454,
+          "lon": 27.151915793128367,
+          "ground": 149.21789229825845
+        },
+        {
+          "lat": 38.279866117994565,
+          "lon": 27.151956949041068,
+          "ground": 149.10986625066394
+        },
+        {
+          "lat": 38.27980767330968,
+          "lon": 27.15199810495377,
+          "ground": 148.95960646379748
+        },
+        {
+          "lat": 38.279749228624794,
+          "lon": 27.152039260866466,
+          "ground": 148.77838428188133
+        },
+        {
+          "lat": 38.27969078393991,
+          "lon": 27.152080416779167,
+          "ground": 148.59167646216767
+        },
+        {
+          "lat": 38.27963233925502,
+          "lon": 27.15212157269187,
+          "ground": 148.43800597965867
+        },
+        {
+          "lat": 38.27957389457014,
+          "lon": 27.15216272860457,
+          "ground": 148.35018746195422
+        },
+        {
+          "lat": 38.27951544988525,
+          "lon": 27.15220388451727,
+          "ground": 148.32832463026463
+        },
+        {
+          "lat": 38.27952692005475,
+          "lon": 27.152284561626615,
+          "ground": 148.32137356805447
+        },
+        {
+          "lat": 38.279538390224246,
+          "lon": 27.152365238735957,
+          "ground": 148.2271969532651
+        },
+        {
+          "lat": 38.27954986039374,
+          "lon": 27.1524459158453,
+          "ground": 148.06784033252143
+        },
+        {
+          "lat": 38.27956133056324,
+          "lon": 27.152526592954644,
+          "ground": 148.0015200971207
+        }
+      ]
+    },
+    {
+      "id": "mth2tgcw0e7uce",
+      "name": "D3",
+      "type": "wall",
+      "color": "#60686a",
+      "scale": 1,
+      "height": 2.2,
+      "points": [
+        {
+          "lat": 38.279680355107374,
+          "lon": 27.152471651799022,
+          "ground": 148.20144353931923
+        },
+        {
+          "lat": 38.28013252267668,
+          "lon": 27.152328146804525,
+          "ground": 148.98346037666425
+        }
+      ],
+      "preset": "FENCE_WALL",
+      "thickness": 0.08,
+      "wallStyle": "fence",
+      "closedLoop": false,
+      "surfacePoints": [
+        {
+          "lat": 38.279680355107374,
+          "lon": 27.152471651799022,
+          "ground": 148.20144353931923
+        },
+        {
+          "lat": 38.27974495047442,
+          "lon": 27.152451151085522,
+          "ground": 148.36972360262595
+        },
+        {
+          "lat": 38.27980954584146,
+          "lon": 27.152430650372022,
+          "ground": 148.5464643909497
+        },
+        {
+          "lat": 38.2798741412085,
+          "lon": 27.15241014965852,
+          "ground": 148.7134548445412
+        },
+        {
+          "lat": 38.27993873657555,
+          "lon": 27.152389648945025,
+          "ground": 148.8489593946446
+        },
+        {
+          "lat": 38.280003331942595,
+          "lon": 27.152369148231525,
+          "ground": 148.93743281007417
+        },
+        {
+          "lat": 38.28006792730964,
+          "lon": 27.152348647518025,
+          "ground": 148.97672921050366
+        },
+        {
+          "lat": 38.28013252267668,
+          "lon": 27.152328146804525,
+          "ground": 148.98346037666425
+        }
+      ]
+    },
+    {
+      "id": "mth3xxcgq09qx9",
+      "lat": 38.279556363076004,
+      "lon": 27.152408554643902,
+      "flag": "TR",
+      "name": "N4",
+      "type": "structure",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "ground": 148.14362123327987,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_TR",
+      "heading": 0
+    },
+    {
+      "id": "mth3y49bzxkiuc",
+      "lat": 38.27955353026175,
+      "lon": 27.15236707701432,
+      "flag": "SOCAR",
+      "name": "N5",
+      "type": "structure",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "ground": 148.2216955174097,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_SOCAR",
+      "heading": 0
+    },
+    {
+      "id": "mth46dm5pcof9u",
+      "lat": 38.279570668064096,
+      "lon": 27.1524921503053,
+      "name": "N8",
+      "type": "structure",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.45,
+      "ground": 147.9967008836228,
+      "height": 8,
+      "length": 0.45,
+      "preset": "LIGHT_CAM",
+      "heading": 0
+    },
+    {
+      "id": "mth6j6kj8p8p40",
+      "lat": 38.27966482215194,
+      "lon": 27.1522222976481,
+      "name": "OFİS BİNASI 2",
+      "type": "structure",
+      "color": "#d0cbc0",
+      "scale": 1,
+      "width": 12,
+      "ground": 148.38859263709543,
+      "height": 4.6,
+      "length": 10,
+      "preset": "BUILDING",
+      "heading": 75,
+      "doorSide": "short"
+    },
+    {
+      "id": "mth6nbtbcjj0ds",
+      "lat": 38.27959575210462,
+      "lon": 27.15228136465888,
+      "name": "OFİS BİNASI 1",
+      "type": "structure",
+      "color": "#d0cbc0",
+      "scale": 1,
+      "width": 9.1,
+      "ground": 148.29174300307767,
+      "height": 4.6,
+      "length": 5.8,
+      "preset": "BUILDING",
+      "heading": 345,
+      "doorSide": "short"
+    },
+    {
+      "id": "mthbzu8tubt3bb",
+      "lat": 38.27956056686977,
+      "lon": 27.152443835309832,
+      "flag": "AZ",
+      "name": "N9",
+      "type": "structure",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "ground": 148.0813783479745,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_AZ",
+      "heading": 0
+    },
+    {
+      "id": "mtlmdvtqajml89",
+      "name": "D4",
+      "type": "wall",
+      "color": "#636b6d",
+      "scale": 1,
+      "height": 2.6,
+      "points": [
+        {
+          "lat": 38.279679853563344,
+          "lon": 27.15247222460641,
+          "ground": 148.19456480951544
+        },
+        {
+          "lat": 38.279562209976575,
+          "lon": 27.15252540257163,
+          "ground": 148.0012871256359
+        }
+      ],
+      "preset": "MAIN_GATE",
+      "gateType": "sliding",
+      "thickness": 0.1,
+      "wallStyle": "gate",
+      "closedLoop": false,
+      "surfacePoints": [
+        {
+          "lat": 38.279679853563344,
+          "lon": 27.15247222460641,
+          "ground": 148.19456480951544
+        },
+        {
+          "lat": 38.27962103176996,
+          "lon": 27.15249881358902,
+          "ground": 148.06178002835722
+        },
+        {
+          "lat": 38.279562209976575,
+          "lon": 27.15252540257163,
+          "ground": 148.0012871256359
+        }
+      ]
+    }
+  ],
+  "version": 2,
+  "cloudPackageVersion": 1,
+  "source": {
+    "filename": "KS-KAYITLAR-20260915-101627.json",
+    "date": "2026-09-15",
+    "note": "Imported copy; edits are saved separately in this site."
+  }
+}
