@@ -32,3 +32,9 @@ Run `npm install`, then `npm run dev` or `npm run build`.
 Prebuild reconstructs the validated 6,437,208-byte GLB from `model-parts/`. Render watches only the `ks-aviation-digital-twin` branch, builds this directory and publishes its `dist` directory. The root `index.html` and `main` branch are unrelated to this release.
 
 Run focused data/geometry checks with `npm test`. They verify all 61 objects and 4 groups, geographic coordinate round trips, mesh ground placement, stable object identity during transforms, undo/redo, deletion recovery, and invalid import rejection. 3D visual QA still requires a WebGL-capable browser.
+
+## Operational aircraft and photo ground
+
+A320 and B737 catalogue objects now use variant-specific dimensions and named service anchors. **Aircraft services / Uçak servis noktaları** opens source-linked points and focuses the camera. Optional fittings, approximate drawing positions and unverified attachments are distinguished. Covers can open; tank regions and physical model envelopes can be shown. Overall geometry remains simplified and the nine-ray height screening is not a certified access/safety check. See [the source and validation specification](docs/operational-aircraft.md).
+
+**ADB photo ground / ADB fotoğraf zemini** shows the cleaned user image on demand. It is an oblique illustration with adjustable position, size, rotation and opacity, not a survey. Settings persist with the scene. Satellite imagery remains available for comparison.

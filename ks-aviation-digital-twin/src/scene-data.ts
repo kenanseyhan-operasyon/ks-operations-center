@@ -1,4 +1,6 @@
 import { local } from './geo';
+import { validatePhoto, type GroundPhoto } from './photo-ground';
+import { AIRCRAFT_SPECS } from './aircraft-specs';
 export type Kind = 'tank' | 'wall' | 'ground' | 'tree' | 'structure' | 'aircraft' | 'vehicle';
 export type Entity = {
   id: string; name: string; kind: Kind; preset: string; color: string;
@@ -6,7 +8,7 @@ export type Entity = {
   width: number; length: number; height: number; radius: number; thickness: number;
   points?: [number, number][]; wallStyle?: string; flag?: string; doorSide?: string;
 };
-export type SceneData = { schema: 'KS_DIGITAL_TWIN_V1'; airport: 'ADB'; entities: Entity[]; groups: { id: string; name: string }[]; source: string; updatedAt?: string };
+export type SceneData = { schema: 'KS_DIGITAL_TWIN_V1'; airport: 'ADB'; entities: Entity[]; groups: { id: string; name: string }[]; source: string; updatedAt?: string; groundPhoto?:GroundPhoto };
 export const id = () => crypto.randomUUID();
 const finite = (n: unknown, fallback = 0) => typeof n === 'number' && Number.isFinite(n) ? n : fallback;
 const str = (s: unknown, fallback = '') => typeof s === 'string' ? s.slice(0, 180) : fallback;
@@ -22,7 +24,8 @@ export function validateScene(value: unknown): SceneData {
     if (o.points && (!Array.isArray(o.points) || o.points.length > 1000 || o.points.some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n) || Math.abs(n)>50000)))) throw new Error('Çizim noktaları geçersiz.');
     return { id: str(o.id), name: str(o.name, o.kind), kind: o.kind, preset: str(o.preset), color: color(o.color), position: [...o.position], heading: finite(o.heading), scale: Math.max(.02, Math.min(100, finite(o.scale,1))), groupId: str(o.groupId) || undefined, width: Math.max(.05, finite(o.width, 2)), length: Math.max(.05, finite(o.length,2)), height: Math.max(.05, finite(o.height,2)), radius: Math.max(.05,finite(o.radius,2)), thickness: Math.max(.02,finite(o.thickness,.2)), points: o.points?.map(p=>[...p]), wallStyle: str(o.wallStyle), flag: str(o.flag), doorSide: str(o.doorSide) };
   });
-  return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt) };
+  for(const o of entities){const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
+  return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), groundPhoto:validatePhoto(d.groundPhoto) };
 }
 export function importScene(input: any): SceneData {
   if (input?.schema === 'KS_DIGITAL_TWIN_V1') return validateScene(input);
@@ -51,9 +54,9 @@ export const CATALOG: Record<string, { tr: string; en: string; kind: Kind; width
   FLAG_SOCAR:{tr:'SOCAR bayrağı',en:'SOCAR flag',kind:'structure',width:.3,length:.3,height:9},
   CYPRESS:{tr:'Selvi ağacı',en:'Cypress tree',kind:'tree',width:2.8,length:2.8,height:11,color:'#315f32'},
   PLANE:{tr:'Çınar ağacı',en:'Plane tree',kind:'tree',width:7,length:7,height:11,color:'#4a783d'},
-  B737:{tr:'Boeing 737',en:'Boeing 737',kind:'aircraft',width:35.8,length:39.5,height:12.5},
+  B737:{tr:'B737-800 · Winglets',en:'B737-800 · Winglets',kind:'aircraft',width:35.79,length:39.47,height:12.55},
   B777:{tr:'Boeing 777',en:'Boeing 777',kind:'aircraft',width:64.8,length:73.9,height:18.5},
-  A320:{tr:'Airbus A320',en:'Airbus A320',kind:'aircraft',width:35.8,length:37.6,height:11.8},
+  A320:{tr:'A320-200 · CFM56 · Sharklets',en:'A320-200 · CFM56 · Sharklets',kind:'aircraft',width:35.8,length:37.57,height:12.0},
   A330:{tr:'Airbus A330',en:'Airbus A330',kind:'aircraft',width:60.3,length:63.7,height:16.8},
   WALL:{tr:'Beton duvar çiz',en:'Draw concrete wall',kind:'wall',width:.25,length:10,height:2.2,color:'#ddd8ce',wallStyle:'solid'},
   FENCE_WALL:{tr:'Tel çit çiz',en:'Draw fence',kind:'wall',width:.08,length:10,height:2.2,color:'#60686a',wallStyle:'fence'},

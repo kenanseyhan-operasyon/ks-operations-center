@@ -3,6 +3,9 @@ import fs from 'node:fs';
 import * as THREE from 'three';
 import { importScene, validateScene, SceneHistory, moveEntities, newEntity } from '../src/scene-data';
 import { local, geographic, tileOf, tileCorner } from '../src/geo';
+import { aircraftLocalToWorld } from '../src/aircraft-specs';
+import { setAircraftDoor } from '../src/aircraft-model';
+import { DEFAULT_PHOTO, photoToWorld, validatePhoto } from '../src/photo-ground';
 import { makeObject, applyTransform } from '../src/objects';
 
 const source=JSON.parse(fs.readFileSync('public/data/adb-legacy.json','utf8'));
@@ -29,3 +32,32 @@ const invalid=structuredClone(restored);invalid.entities[0].position[0]=NaN;asse
 const duplicate=structuredClone(restored);duplicate.entities[1].id=duplicate.entities[0].id;assert.throws(()=>validateScene(duplicate));
 const truck=newEntity('R14',16,20);assert.equal(truck.position[1],0);assert.ok(truck.id);
 console.log('PASS: 61 legacy objects / 4 groups preserved; coordinates, ground placement, stable transforms, undo/redo, deletion recovery and import validation.');
+
+// Operational geometry must retain dimensions and anchors after scene transforms.
+for(const preset of ['A320','B737']){
+  const entity=newEntity(preset,0,0),root=makeObject(entity),bounds=new THREE.Box3().setFromObject(root),size=bounds.getSize(new THREE.Vector3());
+  assert.ok(Math.abs(size.x-entity.width)<.01,`${preset} span ${size.x}`);
+  assert.ok(Math.abs(size.z-entity.length)<.01,`${preset} length ${size.z}`);
+  assert.ok(Math.abs(size.y-entity.height)<.01,`${preset} height ${size.y}`);
+  assert.ok(Math.abs(bounds.min.y)<.01,`${preset} tyres must touch apron`);
+  for(const name of ['AIRCRAFT_BODY','ENGINE_1','ENGINE_2','LEFT_WING','RIGHT_WING','SERVICE_ANCHORS'])assert.ok(root.getObjectByName(name),`${preset}: ${name}`);
+  const port=root.getObjectByName('REFUEL_COUPLING_R')!;assert.ok(port);
+  if(preset==='A320'){
+    assert.deepEqual(port.position.toArray(),[9.83,3.65,17.59-37.57/2]);
+    assert.deepEqual(root.getObjectByName('REFUEL_PANEL')!.position.toArray(),[1.8,1.8,16.4-37.57/2]);
+    assert.ok(!root.getObjectByName('REFUEL_COUPLING_L'),'Optional coupling is absent by default');
+    const point=port.position.clone();root.updateMatrixWorld(true);
+    const ray=new THREE.Raycaster(new THREE.Vector3(point.x-.015,.01,point.z+.015),new THREE.Vector3(0,1,0));
+    assert.ok(ray.intersectObject(root.getObjectByName('RIGHT_WING')!,true).length,'Fuel station must meet wing geometry');
+  }else assert.ok(!root.getObjectByName('GROUND_NLG'),'Unverified bonding point must not become an active anchor');
+  const originalId=port.uuid;entity.position=[10,2,-40];entity.heading=90;entity.scale=1.5;applyTransform(root,entity);root.updateMatrixWorld(true);
+  const position=port.getWorldPosition(new THREE.Vector3());const expected=aircraftLocalToWorld(entity,port.position.toArray());assert.ok(position.distanceTo(new THREE.Vector3(...expected))<1e-9);assert.equal(port.uuid,originalId);
+  const door=root.getObjectByName('FWD_CARGO_COVER')!,doorId=door.uuid;assert.ok(setAircraftDoor(root,'FWD_CARGO',true));assert.ok(Math.abs(door.rotation.z)>1);assert.ok(setAircraftDoor(root,'FWD_CARGO',false));assert.equal(door.rotation.z,0);assert.equal(door.uuid,doorId);
+}
+const photo={...DEFAULT_PHOTO,enabled:true,x:123,z:-45,rotation:90,width:1000,height:400};
+const corners=[[0,0],[1,0],[1,1],[0,1]].map(([u,v])=>photoToWorld(photo,u,v));
+assert.ok(Math.abs(corners[1][1]-corners[0][1]-1000)<1e-9);
+assert.ok(Math.abs(corners[2][0]-corners[1][0]+400)<1e-9);
+const photoScene=validateScene({...restored,groundPhoto:photo});assert.deepEqual(validateScene(JSON.parse(JSON.stringify(photoScene))).groundPhoto,photo);
+assert.equal(validatePhoto({width:NaN,height:-4,opacity:5}).height,100);assert.equal(validatePhoto({opacity:5}).opacity,1);
+console.log('PASS: aircraft dimensions, ground contact, service references, optional/pending anchors, transformed positions, persistent door nodes and photo calibration round-trip.');

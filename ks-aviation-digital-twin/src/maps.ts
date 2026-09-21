@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { geographic, tileOf, tileCorner, TILE_URL } from './geo';
+import type { ServiceMarker } from './aircraft-services';
+import type { PhotoGround } from './photo-ground';
 import type { Entity } from './scene-data';
 type Tile = { key:string; x:number; z:number; size:number; image:HTMLImageElement; ready:boolean; failed:boolean };
 export class Imagery {
@@ -38,7 +40,7 @@ export class MapPlane {
     }
   }
 }
-export type MapHooks={ entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
+export type MapHooks={ photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
   canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;enabled=false;private ctx:CanvasRenderingContext2D;
   private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean};
@@ -59,7 +61,7 @@ export class PlanMap {
       else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.draw();}
       p.cx=e.clientX;p.cz=e.clientY;
     });
-    const up=(e:PointerEvent)=>{const p=this.pointer;if(!p)return;this.pointer=undefined;if(p.drag)this.hooks.dragEnd();else if(!p.move&&e.button===0)this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.refresh();};
+    const up=(e:PointerEvent)=>{const p=this.pointer;if(!p)return;this.pointer=undefined;if(p.drag)this.hooks.dragEnd();else if(!p.move&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],9/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.refresh();};
     this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',()=>{if(this.pointer?.drag)this.hooks.dragEnd();this.pointer=undefined;});
     this.canvas.addEventListener('wheel',e=>{e.preventDefault();const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
@@ -80,6 +82,7 @@ export class PlanMap {
     const p=this.pixels;c.save();c.translate(w/2,h/2);c.scale(p,p);c.translate(-this.center[0],-this.center[1]);
     if(this.imagery.enabled)for(const t of this.imagery.active)if(t.ready)c.drawImage(t.image,t.x,t.z,t.size+.02,t.size+.02);
     if(!this.imagery.enabled||!this.imagery.active.some(t=>t.ready)){c.lineWidth=1/p;c.strokeStyle='#496366';const step=this.span>500?100:10;for(let x=Math.floor((this.center[0]-this.span)/step)*step;x<this.center[0]+this.span;x+=step){c.beginPath();c.moveTo(x,this.center[1]-this.span);c.lineTo(x,this.center[1]+this.span);c.stroke();}for(let z=Math.floor((this.center[1]-this.span)/step)*step;z<this.center[1]+this.span;z+=step){c.beginPath();c.moveTo(this.center[0]-this.span,z);c.lineTo(this.center[0]+this.span,z);c.stroke();}}
+    this.hooks.photo()?.draw(c);
     for(const o of [...this.hooks.entities()].sort((a,b)=>Number(b.kind==='ground')-Number(a.kind==='ground'))){
       const selected=this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
@@ -88,6 +91,7 @@ export class PlanMap {
       else{c.rect(-o.width/2,-o.length/2,o.width,o.length);c.fill();if(o.kind==='vehicle'){c.fillStyle='#4d8498';c.fillRect(-o.width*.43,-o.length*.46,o.width*.86,o.length*.16);}}
       c.stroke();if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }
+    for(const marker of this.hooks.markers()){c.beginPath();c.arc(marker.x,marker.z,(marker.selected?7:5)/p,0,Math.PI*2);c.fillStyle=marker.selected?'#ffffff':marker.color;c.fill();c.strokeStyle='#10232b';c.lineWidth=2/p;c.stroke();if(marker.selected){c.font=`${12/p}px system-ui`;const textWidth=c.measureText(marker.label).width;c.fillStyle='#071c25ee';c.fillRect(marker.x+9/p,marker.z-17/p,textWidth+8/p,19/p);c.fillStyle='#fff';c.fillText(marker.label,marker.x+13/p,marker.z-3/p);}}
     if(this.draft.length){c.beginPath();this.draft.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.strokeStyle='#b7ff3c';c.lineWidth=3/p;c.stroke();for(const [x,z] of this.draft){c.beginPath();c.arc(x,z,4/p,0,Math.PI*2);c.fillStyle='#b7ff3c';c.fill();}}
     c.restore();c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const maxMetres=115/p,unit=10**Math.floor(Math.log10(maxMetres)),metres=([5,2,1].find(n=>n*unit<=maxMetres)??1)*unit;c.fillRect(23,h-24,metres*p,2);c.fillText(`${Number(metres.toPrecision(3))} m`,23,h-28);
   }
