@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "prebuild": "node scripts/extract-model.mjs",
-    "test": "esbuild tests/scene.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ks-scene-test.mjs && node node_modules/.cache/ks-scene-test.mjs"
+    "test": "esbuild tests/scene.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ks-scene-test.mjs && node node_modules/.cache/ks-scene-test.mjs && esbuild tests/mobile.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/ks-mobile-test.mjs && node node_modules/.cache/ks-mobile-test.mjs"
   },
   "dependencies": {
     "three": "^0.186.0",

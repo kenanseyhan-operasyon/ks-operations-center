@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+import { GSE_SPECS } from './gse-specs';
+import { makeGSE } from './gse-model';
 import type { Entity } from './scene-data';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
 export function makeObject(o: Entity) {
+  if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
   if(o.kind==='aircraft'&&AIRCRAFT_SPECS[o.preset]){const g=makeAircraft(o);applyTransform(g,o);return g;}
   const g = new THREE.Group(); g.name=o.name; g.userData.entityId=o.id;
   const mats=new Map<string,THREE.MeshStandardMaterial>();

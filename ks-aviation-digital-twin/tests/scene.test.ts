@@ -61,3 +61,15 @@ assert.ok(Math.abs(corners[2][0]-corners[1][0]+400)<1e-9);
 const photoScene=validateScene({...restored,groundPhoto:photo});assert.deepEqual(validateScene(JSON.parse(JSON.stringify(photoScene))).groundPhoto,photo);
 assert.equal(validatePhoto({width:NaN,height:-4,opacity:5}).height,100);assert.equal(validatePhoto({opacity:5}).opacity,1);
 console.log('PASS: aircraft dimensions, ground contact, service references, optional/pending anchors, transformed positions, persistent door nodes and photo calibration round-trip.');
+
+// Manufacturer envelopes, loaded variants, and stable selection after a transform.
+for(const preset of ['APRON_BUS','BAGGAGE_TRACTOR','BAGGAGE_CART','BAGGAGE_CART_LOADED','BELT_LOADER']){
+  const entity=newEntity(preset,0,0),root=makeObject(entity),box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3());
+  for(const [axis,expected] of [['x',entity.width],['y',entity.height],['z',entity.length]] as const)assert.ok(Math.abs(size[axis]-expected)<.011,`${preset} ${axis}: ${size[axis]} expected ${expected}`);
+  assert.ok(Math.abs(box.min.y)<.003,`${preset} ground contact`);
+  assert.ok(root.getObjectByName('WHEELS'));assert.ok(root.getObjectByName('BODY'));
+  if(preset==='BAGGAGE_CART_LOADED')assert.equal(root.getObjectByName('BAGGAGE_LOAD')?.children.length,16);
+  const node=root.uuid;entity.heading=90;entity.position=[20,0,30];applyTransform(root,entity);assert.equal(root.uuid,node);assert.equal(root.userData.entityId,entity.id);
+  const copy=validateScene({...restored,entities:[entity]});assert.equal(copy.entities[0].preset,preset);assert.equal(copy.entities[0].scale,1);
+}
+console.log('PASS: 5 GSE envelopes, tyre ground contact, loaded luggage, persistent nodes and save round-trip.');

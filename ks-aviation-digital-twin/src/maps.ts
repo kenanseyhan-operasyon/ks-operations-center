@@ -1,5 +1,7 @@
 import * as THREE from 'three';
+import { currentDevice, retainedTiles, pinchView } from './device';
 import { geographic, tileOf, tileCorner, TILE_URL } from './geo';
+import { GSE_SPECS } from './gse-specs';
 import { AIRCRAFT_SPECS, aircraftOutline } from './aircraft-specs';
 import type { ServiceMarker } from './aircraft-services';
 import type { PhotoGround } from './photo-ground';
@@ -7,13 +9,15 @@ import type { Entity } from './scene-data';
 type Tile = { key:string; x:number; z:number; size:number; image:HTMLImageElement; ready:boolean; failed:boolean };
 export class Imagery {
   tiles=new Map<string,Tile>(); active:Tile[]=[]; enabled=true;
-  onChange=()=>{};
+  onChange=()=>{};private requested:Tile[]=[];private region='';
+  private publish(){this.active=retainedTiles(this.active,this.requested);this.onChange();}
   update(x:number,z:number,span:number){
-    if(!this.enabled){this.active=[];this.onChange();return;}
+    if(!this.enabled){this.active=[];this.requested=[];this.region='';this.onChange();return;}
     // ADB imagery is available through level 19; level 20 returns a gray
     // "Map data not yet available" tile with HTTP 200. Reuse level 19 up close.
     const p=geographic(x,z), zoom=Math.max(12,Math.min(19,Math.ceil(Math.log2(31400000/Math.max(80,span)*4))));
     const c=tileOf(p.lat,p.lon,zoom), centerX=Math.floor(c.x),centerY=Math.floor(c.y);
+    const region=`${zoom}/${centerX}/${centerY}`;if(region===this.region)return;this.region=region;
     const count=3; const next:Tile[]=[];
     for(let dy=-count;dy<=count;dy++)for(let dx=-count;dx<=count;dx++){
       const tx=centerX+dx,ty=centerY+dy,key=`${zoom}/${ty}/${tx}`;
@@ -21,11 +25,11 @@ export class Imagery {
       if(!tile){
         const a=tileCorner(tx,ty,zoom),b=tileCorner(tx+1,ty+1,zoom),img=new Image();img.crossOrigin='anonymous';
         tile={key,x:a[0],z:a[1],size:b[0]-a[0],image:img,ready:false,failed:false};this.tiles.set(key,tile);
-        const t=tile;img.onload=()=>{t.ready=true;this.onChange();};img.onerror=()=>{t.failed=true;this.onChange();};img.src=`${TILE_URL}/${key}`;
+        const t=tile;img.onload=()=>{t.ready=true;this.publish();};img.onerror=()=>{t.failed=true;this.publish();};img.src=`${TILE_URL}/${key}`;
       }next.push(tile);
     }
-    this.active=next;
-    if(this.tiles.size>180){const keep=new Set(next.map(t=>t.key));for(const [k] of this.tiles){if(!keep.has(k)){this.tiles.delete(k);if(this.tiles.size<=120)break;}}}
+    this.requested=next;this.active=retainedTiles(this.active,next);
+    if(this.tiles.size>180){const keep=new Set(this.active.map(t=>t.key));for(const [k] of this.tiles){if(!keep.has(k)){this.tiles.delete(k);if(this.tiles.size<=120)break;}}}
     this.onChange();
   }
 }
@@ -37,33 +41,49 @@ export class MapPlane {
     for(const [key,m] of this.meshes)if(!keep.has(key)){this.group.remove(m);m.geometry.dispose();(m.material as THREE.MeshBasicMaterial).map?.dispose();(m.material as THREE.Material).dispose();this.meshes.delete(key);}
     for(const t of this.imagery.active)if(t.ready&&!this.meshes.has(t.key)){
       const tex=new THREE.Texture(t.image);tex.colorSpace=THREE.SRGBColorSpace;tex.needsUpdate=true;
-      const m=new THREE.Mesh(new THREE.PlaneGeometry(t.size,t.size),new THREE.MeshBasicMaterial({map:tex}));m.rotation.x=-Math.PI/2;m.position.set(t.x+t.size/2,-.035,t.z+t.size/2);this.meshes.set(t.key,m);this.group.add(m);
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(t.size,t.size),new THREE.MeshBasicMaterial({map:tex,depthTest:false,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(t.x+t.size/2,-.035,t.z+t.size/2);this.meshes.set(t.key,m);this.group.add(m);
     }
+    this.imagery.active.forEach((t,i)=>{const m=this.meshes.get(t.key);if(m)m.renderOrder=i+1;});
   }
 }
 export type MapHooks={ photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
   canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;enabled=false;private ctx:CanvasRenderingContext2D;
+  private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
   private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean};
   draft:[number,number][]=[];
   constructor(public host:HTMLElement,public imagery:Imagery,private hooks:MapHooks){
     this.canvas.className='plan-map';this.canvas.setAttribute('aria-label','ADB 2D harita ve çizim alanı');this.ctx=this.canvas.getContext('2d')!;host.appendChild(this.canvas);
     new ResizeObserver(()=>this.draw()).observe(host);
     this.canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    const coords=(e:PointerEvent):[number,number]=>{const r=this.canvas.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
     this.canvas.addEventListener('pointerdown',e=>{
-      if(e.button!==0&&e.button!==2)return;const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,w=this.toWorld(x,y),hit=this.pick(w[0],w[1]);
-      this.pointer={x,y,cx:e.clientX,cz:e.clientY,world:w,hit,drag:false,move:false,pan:e.button===2||!hit||!this.hooks.editable()};this.canvas.setPointerCapture(e.pointerId);
+      if(e.button!==0&&e.button!==2)return;
+      const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);this.canvas.setPointerCapture(e.pointerId);
+      if(this.points.size>1){if(this.pointer?.drag)this.hooks.dragEnd();this.pointer=undefined;this.multi=true;return;}
+      this.multi=false;const w=this.toWorld(x,y),hit=this.pick(w[0],w[1]);
+      this.pointer={x,y,cx:x,cz:y,world:w,hit,drag:false,move:false,pan:e.button===2||!hit||!this.hooks.editable()||(e.pointerType==='touch'&&!this.hooks.selection().has(hit))};
     });
     this.canvas.addEventListener('pointermove',e=>{
-      const p=this.pointer;if(!p)return;const dx=e.clientX-p.cx,dy=e.clientY-p.cz;if(!p.move&&Math.hypot(e.clientX-(p.x+this.canvas.getBoundingClientRect().left),e.clientY-(p.y+this.canvas.getBoundingClientRect().top))<4)return;
-      if(this.hooks.drawing())return;
-      p.move=true;
-      if(!p.pan){if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.hooks.dragStart();p.drag=true;}this.hooks.drag(dx/this.pixels,dy/this.pixels);}
-      else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.draw();}
-      p.cx=e.clientX;p.cz=e.clientY;
+      if(!this.points.has(e.pointerId))return;
+      const old=[...this.points.values()];const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);
+      if(this.points.size===2){
+        const next=[...this.points.values()],mid=(p:[number,number][]):[number,number]=>[(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2],distance=(p:[number,number][])=>Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
+        const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));this.center=v.center;this.span=v.span;this.draw();return;
+      }
+      const p=this.pointer;if(!p||this.multi)return;const dx=x-p.cx,dy=y-p.cz;
+      if(!p.move&&Math.hypot(x-p.x,y-p.y)<6)return;p.move=true;
+      // Drawing uses taps; a moving finger still pans the map.
+      if(!p.pan&&!this.hooks.drawing()){
+        if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.hooks.dragStart();p.drag=true;}
+        this.hooks.drag(dx/this.pixels,dy/this.pixels);
+      }else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.draw();}
+      p.cx=x;p.cz=y;
     });
-    const up=(e:PointerEvent)=>{const p=this.pointer;if(!p)return;this.pointer=undefined;if(p.drag)this.hooks.dragEnd();else if(!p.move&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],9/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.refresh();};
-    this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',()=>{if(this.pointer?.drag)this.hooks.dragEnd();this.pointer=undefined;});
+    const up=(e:PointerEvent)=>{this.points.delete(e.pointerId);const p=this.pointer;this.pointer=undefined;
+      if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);
+      if(!this.points.size)this.multi=false;this.refresh();};
+    this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',up);
     this.canvas.addEventListener('wheel',e=>{e.preventDefault();const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
   get pixels(){return (this.host.clientWidth||800)/this.span;}
@@ -78,8 +98,10 @@ export class PlanMap {
       else{const w=o.kind==='tank'?o.radius*2:o.width,l=o.kind==='tank'?o.radius*2:o.length;if(Math.abs(px)<Math.max(w/2,6/this.pixels)&&Math.abs(pz)<Math.max(l/2,6/this.pixels))return o.id;}
     }
   }
-  draw(){
-    if(!this.enabled)return;const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;const d=Math.min(devicePixelRatio,2);this.canvas.width=w*d;this.canvas.height=h*d;const c=this.ctx;c.setTransform(d,0,0,d,0,0);c.fillStyle='#223a3a';c.fillRect(0,0,w,h);
+  zoom(factor:number){this.span=Math.max(15,Math.min(20000,this.span*factor));this.refresh();}
+  draw(){if(this.drawPending||!this.enabled)return;this.drawPending=true;requestAnimationFrame(()=>{this.drawPending=false;this.paint();});}
+  private paint(){
+    if(!this.enabled)return;const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;const d=currentDevice().pixelRatio;if(this.canvas.width!==Math.round(w*d))this.canvas.width=Math.round(w*d);if(this.canvas.height!==Math.round(h*d))this.canvas.height=Math.round(h*d);const c=this.ctx;c.setTransform(d,0,0,d,0,0);c.fillStyle='#223a3a';c.fillRect(0,0,w,h);
     const p=this.pixels;c.save();c.translate(w/2,h/2);c.scale(p,p);c.translate(-this.center[0],-this.center[1]);
     if(this.imagery.enabled)for(const t of this.imagery.active)if(t.ready)c.drawImage(t.image,t.x,t.z,t.size+.02,t.size+.02);
     if(!this.imagery.enabled||!this.imagery.active.some(t=>t.ready)){c.lineWidth=1/p;c.strokeStyle='#496366';const step=this.span>500?100:10;for(let x=Math.floor((this.center[0]-this.span)/step)*step;x<this.center[0]+this.span;x+=step){c.beginPath();c.moveTo(x,this.center[1]-this.span);c.lineTo(x,this.center[1]+this.span);c.stroke();}for(let z=Math.floor((this.center[1]-this.span)/step)*step;z<this.center[1]+this.span;z+=step){c.beginPath();c.moveTo(this.center[0]-this.span,z);c.lineTo(this.center[0]+this.span,z);c.stroke();}}
@@ -89,6 +111,9 @@ export class PlanMap {
       if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
       else if(o.kind==='tank'||o.kind==='tree'){c.arc(0,0,o.kind==='tank'?o.radius:o.width/2,0,Math.PI*2);c.fill();}
       else if(o.kind==='aircraft'){const W=o.width,L=o.length,spec=AIRCRAFT_SPECS[o.preset],outline=spec?aircraftOutline(spec):[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]];outline.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
+      else if(GSE_SPECS[o.preset]){const s=GSE_SPECS[o.preset],W=o.width,L=o.length;c.rect(-W/2,-L/2,W,L);c.fill();
+        c.fillStyle='#345866';if(s.type==='bus'){c.fillRect(-W*.42,-L*.46,W*.84,L*.07);c.fillRect(-W*.28,-L*.14,W*.56,L*.22);}else if(s.type==='tractor'){c.fillRect(-W*.42,-.62,W*.84,1.2);}else if(s.type==='belt'){c.fillStyle='#34494f';c.fillRect(.2,-3.73,.6,7.46);c.fillStyle='#7395a4';c.fillRect(-1.08,-2.34,.95,1.3);}else{c.fillStyle='#223a3a';c.fillRect(-W/2,-L/2,W,L-3);c.fillStyle='#a9bdc2';c.fillRect(-.04,-L/2,.08,L-3);if(s.loaded){c.fillStyle='#b69b6c';for(let row=0;row<4;row++)for(const x of [-.62,.06])c.fillRect(x,L/2-2.86+row*.69,.56,.59);}}
+      }
       else{c.rect(-o.width/2,-o.length/2,o.width,o.length);c.fill();if(o.kind==='vehicle'){c.fillStyle='#4d8498';c.fillRect(-o.width*.43,-o.length*.46,o.width*.86,o.length*.16);}}
       c.stroke();if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }
