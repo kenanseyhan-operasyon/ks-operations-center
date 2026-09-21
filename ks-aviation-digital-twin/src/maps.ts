@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { geographic, tileOf, tileCorner, TILE_URL } from './geo';
+import { AIRCRAFT_SPECS, aircraftOutline } from './aircraft-specs';
 import type { ServiceMarker } from './aircraft-services';
 import type { PhotoGround } from './photo-ground';
 import type { Entity } from './scene-data';
@@ -87,7 +88,7 @@ export class PlanMap {
       const selected=this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
       else if(o.kind==='tank'||o.kind==='tree'){c.arc(0,0,o.kind==='tank'?o.radius:o.width/2,0,Math.PI*2);c.fill();}
-      else if(o.kind==='aircraft'){const W=o.width,L=o.length;[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]].forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
+      else if(o.kind==='aircraft'){const W=o.width,L=o.length,spec=AIRCRAFT_SPECS[o.preset],outline=spec?aircraftOutline(spec):[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]];outline.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
       else{c.rect(-o.width/2,-o.length/2,o.width,o.length);c.fill();if(o.kind==='vehicle'){c.fillStyle='#4d8498';c.fillRect(-o.width*.43,-o.length*.46,o.width*.86,o.length*.16);}}
       c.stroke();if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }

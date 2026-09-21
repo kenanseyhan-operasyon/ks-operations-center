@@ -68,3 +68,13 @@ export const AIRCRAFT_SPECS:Record<string,AircraftSpec>={
 export function pointLocal(spec:AircraftSpec,p:ServicePoint):[number,number,number]{return [p.lateral,p.height,p.aft-spec.length/2];}
 export function aircraftLocalToWorld(entity:{position:number[];heading:number;scale:number},p:number[]):[number,number,number]{const a=-entity.heading*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [entity.position[0]+entity.scale*(c*p[0]+s*p[2]),entity.position[1]+entity.scale*p[1],entity.position[2]+entity.scale*(-s*p[0]+c*p[2])];}
 export const SERVICE_COLORS:Record<ServiceKind,string>={fuel:'#ffb648',power:'#91c6ff',air:'#b3bfff',cargo:'#cb93ff',passenger:'#8af0cc',catering:'#e9d99b',water:'#50ccff',waste:'#ca9b70',grounding:'#b7ff3c'};
+
+// Top-view outline follows the same simplified wing stations as the 3D mesh.
+export function aircraftOutline(s:AircraftSpec):[number,number][]{
+  const z=(n:number)=>n-s.length/2,f=s.fuselageWidth/2,a=s.id.startsWith('A320'),mid=a?9.83:8;
+  const side:[number,number][]=[[0,z(0)],[f*.83,z(2.6)],[f,z(6)],[f,z(s.wingRootLE)],
+    [mid,z(a?17.4:18.8)],[s.span/2-1.61,z(s.wingTipLE-1.64)],[s.span/2,z(s.wingTipLE)],
+    [s.span/2,z(s.wingTipTE)],[s.span/2-1.61,z(s.wingTipTE-1.3)],[mid,z(a?20.8:22)],[f,z(s.wingRootTE)],
+    [f*.89,z(s.length*.8)],[s.tailSpan/2,z(s.length*.92)],[s.tailSpan/2,z(s.length*.977)],[f*.26,z(s.length*.96)],[0,z(s.length)]];
+  return [...side,...side.slice(1,-1).reverse().map(([x,z]):[number,number]=>[-x,z])];
+}
