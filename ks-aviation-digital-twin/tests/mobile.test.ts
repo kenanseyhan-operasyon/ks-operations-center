@@ -40,3 +40,13 @@ handlers.pointerdown(e(1,150,400));handlers.pointerdown(e(2,250,400));handlers.p
 handlers.pointerup(e(2,350,400,'pointerup'));handlers.pointerup(e(1,150,400,'pointerup'));assert.equal(clicks,0);assert.equal(drags,0);
 handlers.pointerdown(e(3,200,400));handlers.pointerup(e(3,200,400,'pointerup'));assert.equal(clicks,1);
 console.log('PASS: phone/landscape detection, pinch world anchoring, photo defaults/history, tile failure retention, ground render depth flags and real multi-touch selection guards.');
+// Shift-drag selects a rectangle without moving objects; Ctrl-click extends.
+let boxIds:string[]=[],extendSeen=false,delta=0;
+const entityList=[{id:'left',kind:'structure',heading:0,scale:1,width:8,length:10,position:[-20,0,0]},{id:'right',kind:'structure',heading:0,scale:1,width:8,length:10,position:[20,0,0]}] as any;
+const selection=new Set(['left','right']);
+const editor=new PlanMap({clientWidth:400,clientHeight:800,appendChild(){}} as any,new Imagery(),{photo:()=>undefined,markers:()=>[],serviceClick:()=>false,entities:()=>entityList,selection:()=>selection,editable:()=>true,drawing:()=>false,click:(_x,_z,_id,extend)=>{extendSeen=extend;},boxSelect:ids=>boxIds=ids,dragStart(){},drag(dx){delta+=dx;},dragEnd(){},change(){}});editor.enabled=true;
+const mouse=(x:number,y:number,type:string,extra={})=>({...e(11,x,y,type),pointerType:'mouse',...extra});
+handlers.pointerdown(mouse(100,300,'pointerdown',{shiftKey:true}));handlers.pointermove(mouse(300,500,'pointermove',{shiftKey:true}));handlers.pointerup(mouse(300,500,'pointerup',{shiftKey:true}));assert.deepEqual(boxIds,['left','right']);assert.equal(delta,0);
+handlers.pointerdown(mouse(156,400,'pointerdown',{ctrlKey:true}));handlers.pointerup(mouse(156,400,'pointerup',{ctrlKey:true}));assert.equal(extendSeen,true);
+handlers.pointerdown(mouse(156,400,'pointerdown'));handlers.pointermove(mouse(176,400,'pointermove'));handlers.pointerup(mouse(176,400,'pointerup'));assert.ok(delta>0,'Drag the selected set without selecting again');
+console.log('PASS: Shift rectangle, Ctrl selection and selected-object drag input paths.');

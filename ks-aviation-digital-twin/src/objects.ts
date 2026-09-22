@@ -1,10 +1,13 @@
 import * as THREE from 'three';
+import { FLEET_SPECS } from './fleet-specs';
+import { makeFleetAircraft } from './fleet-model';
 import { GSE_SPECS } from './gse-specs';
 import { makeGSE } from './gse-model';
 import type { Entity } from './scene-data';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
 export function makeObject(o: Entity) {
+  if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
   if(o.kind==='aircraft'&&AIRCRAFT_SPECS[o.preset]){const g=makeAircraft(o);applyTransform(g,o);return g;}
   const g = new THREE.Group(); g.name=o.name; g.userData.entityId=o.id;
@@ -101,7 +104,7 @@ export function makeObject(o: Entity) {
     box(W,H,L);box(W*1.04,.2,L*1.04,0,H+.1,0,'#6a777b');
     for(let x=-W*.38;x<=W*.39;x+=Math.max(1.9,W/5))for(const z of [-L*.505,L*.505])box(Math.min(1.2,W*.15),H*.3,.07,x,H*.48,z,'#385763');
     for(let z=-L*.35;z<=L*.36;z+=Math.max(2.2,L/5))for(const x of [-W*.505,W*.505])box(.07,H*.3,1.1,x,H*.48,z,'#385763');
-    if(o.doorSide==='short')box(Math.min(1.5,W*.2),2.3,.12,0,1.15,-L*.51,'#364e57');else box(.12,2.3,1.5,W*.51,1.15,0,'#364e57');
+    if((o.doorSide==='short')===(L>=W))box(Math.min(1.5,W*.2),2.3,.12,0,1.15,-L*.51,'#364e57');else box(.12,2.3,1.5,W*.51,1.15,0,'#364e57');
     for(const x of [-W*.18,W*.18])box(1.1,.6,.85,x,H+.4,0,'#a0aaaa');
   }
   const bounds=new THREE.Box3().setFromObject(g);if(Number.isFinite(bounds.min.y)&&bounds.min.y<0)g.children.forEach(child=>child.position.y-=bounds.min.y);

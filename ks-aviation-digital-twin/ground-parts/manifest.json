@@ -1,0 +1,26 @@
+[
+  {
+    "file": "adb-ortho.webp",
+    "bytes": 2398184,
+    "sha256": "78d156b7aa6926a9525db61bd7eb02c2a7cd748a1ef06e3df133cab5858a2b5e",
+    "parts": [
+      "adb-ortho-00.b64",
+      "adb-ortho-01.b64",
+      "adb-ortho-02.b64",
+      "adb-ortho-03.b64",
+      "adb-ortho-04.b64",
+      "adb-ortho-05.b64",
+      "adb-ortho-06.b64",
+      "adb-ortho-07.b64"
+    ]
+  },
+  {
+    "file": "adb-facility-detail.webp",
+    "bytes": 369650,
+    "sha256": "3febbb472773a3f6c2370a592c90bd36d0cfef03c05594bf3883674d1729f5a2",
+    "parts": [
+      "adb-facility-detail-00.b64",
+      "adb-facility-detail-01.b64"
+    ]
+  }
+]

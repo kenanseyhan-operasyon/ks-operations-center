@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { boundedView, type StaticGround } from './static-ground';
 import { currentDevice, retainedTiles, pinchView } from './device';
 import { geographic, tileOf, tileCorner, TILE_URL } from './geo';
+import { FLEET_SPECS, fleetOutline } from './fleet-specs';
 import { GSE_SPECS } from './gse-specs';
 import { AIRCRAFT_SPECS, aircraftOutline } from './aircraft-specs';
 import type { ServiceMarker } from './aircraft-services';
@@ -46,11 +48,11 @@ export class MapPlane {
     this.imagery.active.forEach((t,i)=>{const m=this.meshes.get(t.key);if(m)m.renderOrder=i+1;});
   }
 }
-export type MapHooks={ photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
+export type MapHooks={ ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
   canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;enabled=false;private ctx:CanvasRenderingContext2D;
   private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
-  private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean};
+  private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean;box:boolean;extend:boolean};
   draft:[number,number][]=[];
   constructor(public host:HTMLElement,public imagery:Imagery,private hooks:MapHooks){
     this.canvas.className='plan-map';this.canvas.setAttribute('aria-label','ADB 2D harita ve çizim alanı');this.ctx=this.canvas.getContext('2d')!;host.appendChild(this.canvas);
@@ -62,34 +64,36 @@ export class PlanMap {
       const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);this.canvas.setPointerCapture(e.pointerId);
       if(this.points.size>1){if(this.pointer?.drag)this.hooks.dragEnd();this.pointer=undefined;this.multi=true;return;}
       this.multi=false;const w=this.toWorld(x,y),hit=this.pick(w[0],w[1]);
-      this.pointer={x,y,cx:x,cz:y,world:w,hit,drag:false,move:false,pan:e.button===2||!hit||!this.hooks.editable()||(e.pointerType==='touch'&&!this.hooks.selection().has(hit))};
+      this.pointer={x,y,cx:x,cz:y,world:w,hit,drag:false,move:false,box:e.shiftKey&&e.button===0&&this.hooks.editable()&&!this.hooks.drawing(),extend:e.ctrlKey||e.metaKey,pan:e.button===2||!hit||!this.hooks.editable()||!this.hooks.selection().has(hit)};
     });
     this.canvas.addEventListener('pointermove',e=>{
       if(!this.points.has(e.pointerId))return;
       const old=[...this.points.values()];const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);
       if(this.points.size===2){
         const next=[...this.points.values()],mid=(p:[number,number][]):[number,number]=>[(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2],distance=(p:[number,number][])=>Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
-        const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));this.center=v.center;this.span=v.span;this.draw();return;
+        const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));this.center=v.center;this.span=v.span;this.limit();this.draw();return;
       }
       const p=this.pointer;if(!p||this.multi)return;const dx=x-p.cx,dy=y-p.cz;
       if(!p.move&&Math.hypot(x-p.x,y-p.y)<6)return;p.move=true;
+      if(p.box){p.cx=x;p.cz=y;this.draw();return;}
       // Drawing uses taps; a moving finger still pans the map.
       if(!p.pan&&!this.hooks.drawing()){
-        if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);this.hooks.dragStart();p.drag=true;}
+        if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);this.hooks.dragStart();p.drag=true;}
         this.hooks.drag(dx/this.pixels,dy/this.pixels);
-      }else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.draw();}
+      }else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.limit();this.draw();}
       p.cx=x;p.cz=y;
     });
     const up=(e:PointerEvent)=>{this.points.delete(e.pointerId);const p=this.pointer;this.pointer=undefined;
-      if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.shiftKey);
+      if(p?.box&&p.move&&e.type!=='pointercancel'){const a=this.toWorld(p.x,p.y),b=this.toWorld(p.cx,p.cz);this.hooks.boxSelect?.(this.hooks.entities().filter(o=>o.position[0]>=Math.min(a[0],b[0])&&o.position[0]<=Math.max(a[0],b[0])&&o.position[2]>=Math.min(a[1],b[1])&&o.position[2]<=Math.max(a[1],b[1])).map(o=>o.id),p.extend);}else if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);
       if(!this.points.size)this.multi=false;this.refresh();};
     this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',up);
     this.canvas.addEventListener('wheel',e=>{e.preventDefault();const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
+  private limit(){const v=boundedView(this.center,this.span);this.center=v.center;this.span=v.span;}
   get pixels(){return (this.host.clientWidth||800)/this.span;}
   toWorld(x:number,y:number):[number,number]{return [this.center[0]+(x-this.host.clientWidth/2)/this.pixels,this.center[1]+(y-this.host.clientHeight/2)/this.pixels];}
   view(center:[number,number],span:number){this.center=[...center];this.span=span;this.refresh();}
-  refresh(){if(this.enabled)this.imagery.update(this.center[0],this.center[1],this.span);this.draw();this.hooks.change();}
+  refresh(){this.limit();if(this.enabled)this.imagery.update(this.center[0],this.center[1],this.span);this.draw();this.hooks.change();}
   pick(x:number,z:number){
     for(const o of [...this.hooks.entities()].reverse()){
       const a=o.heading*Math.PI/180,dx=x-o.position[0],dz=z-o.position[2],px=(Math.cos(a)*dx+Math.sin(a)*dz)/o.scale,pz=(-Math.sin(a)*dx+Math.cos(a)*dz)/o.scale;
@@ -105,12 +109,13 @@ export class PlanMap {
     const p=this.pixels;c.save();c.translate(w/2,h/2);c.scale(p,p);c.translate(-this.center[0],-this.center[1]);
     if(this.imagery.enabled)for(const t of this.imagery.active)if(t.ready)c.drawImage(t.image,t.x,t.z,t.size+.02,t.size+.02);
     if(!this.imagery.enabled||!this.imagery.active.some(t=>t.ready)){c.lineWidth=1/p;c.strokeStyle='#496366';const step=this.span>500?100:10;for(let x=Math.floor((this.center[0]-this.span)/step)*step;x<this.center[0]+this.span;x+=step){c.beginPath();c.moveTo(x,this.center[1]-this.span);c.lineTo(x,this.center[1]+this.span);c.stroke();}for(let z=Math.floor((this.center[1]-this.span)/step)*step;z<this.center[1]+this.span;z+=step){c.beginPath();c.moveTo(this.center[0]-this.span,z);c.lineTo(this.center[0]+this.span,z);c.stroke();}}
+    this.hooks.ground?.()?.draw(c);
     this.hooks.photo()?.draw(c);
     for(const o of [...this.hooks.entities()].sort((a,b)=>Number(b.kind==='ground')-Number(a.kind==='ground'))){
       const selected=this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
       else if(o.kind==='tank'||o.kind==='tree'){c.arc(0,0,o.kind==='tank'?o.radius:o.width/2,0,Math.PI*2);c.fill();}
-      else if(o.kind==='aircraft'){const W=o.width,L=o.length,spec=AIRCRAFT_SPECS[o.preset],outline=spec?aircraftOutline(spec):[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]];outline.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
+      else if(o.kind==='aircraft'){const W=o.width,L=o.length,spec=AIRCRAFT_SPECS[o.preset],outline=spec?aircraftOutline(spec):FLEET_SPECS[o.preset]?fleetOutline(FLEET_SPECS[o.preset]):[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]];outline.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
       else if(GSE_SPECS[o.preset]){const s=GSE_SPECS[o.preset],W=o.width,L=o.length;c.rect(-W/2,-L/2,W,L);c.fill();
         c.fillStyle='#345866';if(s.type==='bus'){c.fillRect(-W*.42,-L*.46,W*.84,L*.07);c.fillRect(-W*.28,-L*.14,W*.56,L*.22);}else if(s.type==='tractor'){c.fillRect(-W*.42,-.62,W*.84,1.2);}else if(s.type==='belt'){c.fillStyle='#34494f';c.fillRect(.2,-3.73,.6,7.46);c.fillStyle='#7395a4';c.fillRect(-1.08,-2.34,.95,1.3);}else{c.fillStyle='#223a3a';c.fillRect(-W/2,-L/2,W,L-3);c.fillStyle='#a9bdc2';c.fillRect(-.04,-L/2,.08,L-3);if(s.loaded){c.fillStyle='#b69b6c';for(let row=0;row<4;row++)for(const x of [-.62,.06])c.fillRect(x,L/2-2.86+row*.69,.56,.59);}}
       }
@@ -119,6 +124,6 @@ export class PlanMap {
     }
     for(const marker of this.hooks.markers()){c.beginPath();c.arc(marker.x,marker.z,(marker.selected?7:5)/p,0,Math.PI*2);c.fillStyle=marker.selected?'#ffffff':marker.color;c.fill();c.strokeStyle='#10232b';c.lineWidth=2/p;c.stroke();if(marker.selected){c.font=`${12/p}px system-ui`;const textWidth=c.measureText(marker.label).width;c.fillStyle='#071c25ee';c.fillRect(marker.x+9/p,marker.z-17/p,textWidth+8/p,19/p);c.fillStyle='#fff';c.fillText(marker.label,marker.x+13/p,marker.z-3/p);}}
     if(this.draft.length){c.beginPath();this.draft.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.strokeStyle='#b7ff3c';c.lineWidth=3/p;c.stroke();for(const [x,z] of this.draft){c.beginPath();c.arc(x,z,4/p,0,Math.PI*2);c.fillStyle='#b7ff3c';c.fill();}}
-    c.restore();c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const maxMetres=115/p,unit=10**Math.floor(Math.log10(maxMetres)),metres=([5,2,1].find(n=>n*unit<=maxMetres)??1)*unit;c.fillRect(23,h-24,metres*p,2);c.fillText(`${Number(metres.toPrecision(3))} m`,23,h-28);
+    c.restore();if(this.pointer?.box&&this.pointer.move){const q=this.pointer;c.fillStyle='#b7ff3c25';c.strokeStyle='#b7ff3c';c.lineWidth=1.5;c.fillRect(q.x,q.y,q.cx-q.x,q.cz-q.y);c.strokeRect(q.x,q.y,q.cx-q.x,q.cz-q.y);}c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const maxMetres=115/p,unit=10**Math.floor(Math.log10(maxMetres)),metres=([5,2,1].find(n=>n*unit<=maxMetres)??1)*unit;c.fillRect(23,h-24,metres*p,2);c.fillText(`${Number(metres.toPrecision(3))} m`,23,h-28);
   }
 }
