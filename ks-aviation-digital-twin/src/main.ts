@@ -42,6 +42,15 @@ async function showAirportCard(a:Airport){if(!document.body.classList.contains('
 async function showHome(){if(workspace&&!await workspace.requestLeave())return;workspace?.hide();$('#workspace').hidden=true;$('#landing').hidden=false;document.body.classList.remove('in-workspace','world-expanded');$('#airportCard').classList.add('hidden');globe.show(true);globe.focus('world');window.scrollTo({top:0,behavior:'smooth'});}
 async function enterWorld(where:'world'|'turkey'='turkey'){if(workspace&&!await workspace.requestLeave())return false;workspace?.hide();$('#workspace').hidden=true;$('#landing').hidden=false;document.body.classList.remove('in-workspace');document.body.classList.add('world-expanded');$('#airportCard').classList.add('hidden');globe.show(true);globe.focus(where);$('#globeWorld').classList.toggle('active',where==='world');$('#globeTurkey').classList.toggle('active',where==='turkey');window.scrollTo(0,0);return true;}
 async function openWorkspace(mode:'airport'|'facility',edit=false){
+  if(edit){
+  const password=prompt(lang==='tr'?'Çizim / Tasarım parolası:':'Draw / Design password:');
+  if(password===null)return;
+  const normalized=password.toLocaleLowerCase('tr-TR').replace(/\s+/g,'');
+  if(normalized!=='kenanseyhan'){
+   alert(lang==='tr'?'Parola yanlış.':'Incorrect password.');
+   return;
+  }
+ } 
  $('#airportCard').classList.add('hidden');$('#landing').hidden=true;$('#workspace').hidden=false;document.body.classList.remove('world-expanded');document.body.classList.add('in-workspace');globe.show(false);window.scrollTo(0,0);
  if(!loading){$('#workspace').innerHTML=`<div style="padding:40px">${lang==='tr'?'ADB çalışma alanı yükleniyor…':'Loading ADB workspace…'}</div>`;loading=import('./workspace').then(async({Workspace})=>{const w=new Workspace($('#workspace'),lang,enterWorld);await w.init();workspace=w;return w;}).catch(err=>{console.error(err);loading=undefined;$('#workspace').innerHTML=`<div style="padding:40px"><p>${lang==='tr'?'Çalışma alanı yüklenemedi. Bağlantıyı kontrol edip tekrar deneyin.':'The workspace could not load. Check your connection and retry.'}</p><button id="retryWorkspace">${lang==='tr'?'Tekrar dene':'Retry'}</button><button id="returnHome">${lang==='tr'?'Ana sayfa':'Home'}</button></div>`;$('#retryWorkspace').onclick=()=>void openWorkspace(mode,edit);$('#returnHome').onclick=showHome;throw err;});}
  try{const w=await loading;w.show(mode,edit);w.setLanguage(lang);}catch{}
