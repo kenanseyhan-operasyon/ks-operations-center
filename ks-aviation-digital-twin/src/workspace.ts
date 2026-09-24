@@ -23,6 +23,7 @@ export class Workspace {
   history!:SceneHistory;selection=new Set<string>();editing=false;mode:'airport'|'facility'='facility';
   private session!:DesignSession;private staticGround!:StaticGround;private free?:FreeCamera;private freeMode=false;private exitDialog?:Promise<boolean>;
   private scene=new THREE.Scene();private groundScene=new THREE.Scene();private device=currentDevice();private renderSize='';private contextLost=false;private library!:GSELibrary;private camera=new THREE.PerspectiveCamera(42,1,.05,30000);private renderer?:THREE.WebGLRenderer;private orbit?:OrbitControls;private transform?:TransformControls;
+  private designUnlocked=false;
   private pivot=new THREE.Group();private objects=new Map<string,THREE.Group>();private fingerprints=new Map<string,string>();private selectionBox=new THREE.Box3Helper(new THREE.Box3(),0xb7ff3c);
   private imagery=new Imagery();private plane=new MapPlane(this.imagery);private plan!:PlanMap;private stage!:HTMLElement;
   private active=true;private tool:string|undefined;private draft:[number,number][]=[];private drawingLine?:THREE.Line;
@@ -77,7 +78,7 @@ export class Workspace {
   }
   private $<T extends HTMLElement=HTMLElement>(s:string){return this.root.querySelector<T>(s)!;}
   private bind(){
-   this.root.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav!;if(n==='world'||n==='turkey'){void this.requestLeave().then(ok=>{if(ok)this.exit(n);});return;}if(n==='design'){if(!this.editing){const password=prompt(this.lang==='tr'?'Çizim / Tasarım parolası:':'Draw / Design password:');if(password===null)return;const normalized=password.toLocaleLowerCase('tr-TR').replace(/\s+/g,'');if(normalized!=='kenanseyhan'){alert(this.lang==='tr'?'Parola yanlış.':'Incorrect password.');return;}}if(this.editing&&this.$('.ws-panel').hidden){this.$('.ws-panel').hidden=false;this.resize();}else if(this.editing)void this.requestLeave();else this.setEditing(true);}else{this.navigate(n as 'airport'|'facility');}});
+   this.root.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav!;if(n==='world'||n==='turkey'){void this.requestLeave().then(ok=>{if(ok)this.exit(n);});return;}if(n==='design'){if(this.editing&&this.$('.ws-panel').hidden){this.$('.ws-panel').hidden=false;this.resize();}else if(this.editing)void this.requestLeave();else this.setEditing(true);}else{this.navigate(n as 'airport'|'facility');}});
     this.root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.onclick=()=>this.setView(b.dataset.view as '2d'|'3d'));
     this.root.querySelectorAll<HTMLButtonElement>('[data-transform]').forEach(b=>b.onclick=()=>this.setTransform(b.dataset.transform as 'translate'|'rotate'|'scale'));
     this.root.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b=>b.onclick=()=>this.action(b.dataset.action!));
@@ -99,7 +100,19 @@ export class Workspace {
   hide(){this.free?.clear();this.active=false;this.root.hidden=true;this.flight++;}
   navigate(mode:'airport'|'facility',smooth=true){this.mode=mode;this.applyGround();const c: [number,number]=mode==='airport'?[250,-1300]:FACILITY_CENTER;const aspect=Math.max(.3,this.stage.clientWidth/Math.max(1,this.stage.clientHeight));this.plan.view(c,mode==='airport'?Math.max(3150,5350*aspect):185);this.flyTo(new THREE.Vector3(c[0],0,c[1]),mode==='airport'?7150:130,smooth,mode==='airport');this.root.querySelectorAll<HTMLElement>('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===mode||(b.dataset.nav==='design'&&this.editing)));this.updateLocation();}
 
-  setEditing(enabled:boolean){this.editing=enabled;if(enabled){this.library.element.hidden=true;this.photo.element.hidden=true;if(this.services.visible)this.services.toggle();}this.$('.ws-panel').hidden=!enabled;this.root.classList.toggle('editing',enabled);this.$('[data-nav="design"]').classList.toggle('active',enabled);this.cancelTool();this.updateSelectionBox();this.renderProperties();this.updateSaveState();this.updatePad();this.resize();}
+  private unlockDesign(){
+  if(this.designUnlocked)return true;
+  const password=prompt(this.lang==='tr'?'Çizim / Tasarım parolası:':'Draw / Design password:');
+  if(password===null)return false;
+  const normalized=password.toLocaleLowerCase('tr-TR').replace(/\s+/g,'');
+  if(normalized!=='kenanseyhan'){
+    alert(this.lang==='tr'?'Parola yanlış.':'Incorrect password.');
+    return false;
+  }
+  this.designUnlocked=true;
+  return true;
+}
+  setEditing(enabled:boolean){if(enabled&&!this.unlockDesign())return;this.editing=enabled;if(enabled){this.library.element.hidden=true;this.photo.element.hidden=true;if(this.services.visible)this.services.toggle();}this.$('.ws-panel').hidden=!enabled;this.root.classList.toggle('editing',enabled);this.$('[data-nav="design"]').classList.toggle('active',enabled);this.cancelTool();this.updateSelectionBox();this.renderProperties();this.updateSaveState();this.updatePad();this.resize();}
   private setView(view:'2d'|'3d'){
     if(view==='3d'&&!this.ensure3D())view='2d';const was2d=this.plan.enabled;this.plan.enabled=view==='2d';this.plan.canvas.hidden=!this.plan.enabled;if(this.renderer)this.renderer.domElement.hidden=this.plan.enabled;
     if(this.plan.enabled&&this.orbit&&!was2d){this.free?.clear();this.plan.center=this.viewCenter();this.plan.span=Math.max(30,this.camera.position.distanceTo(this.orbit.target)*1.4);}
