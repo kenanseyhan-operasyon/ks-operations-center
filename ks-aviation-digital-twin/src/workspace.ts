@@ -77,7 +77,7 @@ export class Workspace {
   }
   private $<T extends HTMLElement=HTMLElement>(s:string){return this.root.querySelector<T>(s)!;}
   private bind(){
-    this.root.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav!;if(n==='world'||n==='turkey'){void this.requestLeave().then(ok=>{if(ok)this.exit(n);});return;}if(n==='design'){if(this.editing&&this.$('.ws-panel').hidden){this.$('.ws-panel').hidden=false;this.resize();}else if(this.editing)void this.requestLeave();else this.setEditing(true);}else{this.navigate(n as 'airport'|'facility');}});
+   this.root.querySelectorAll<HTMLButtonElement>('[data-nav]').forEach(b=>b.onclick=()=>{const n=b.dataset.nav!;if(n==='world'||n==='turkey'){void this.requestLeave().then(ok=>{if(ok)this.exit(n);});return;}if(n==='design'){if(!this.editing){const password=prompt(this.lang==='tr'?'Çizim / Tasarım parolası:':'Draw / Design password:');if(password===null)return;const normalized=password.toLocaleLowerCase('tr-TR').replace(/\s+/g,'');if(normalized!=='kenanseyhan'){alert(this.lang==='tr'?'Parola yanlış.':'Incorrect password.');return;}}if(this.editing&&this.$('.ws-panel').hidden){this.$('.ws-panel').hidden=false;this.resize();}else if(this.editing)void this.requestLeave();else this.setEditing(true);}else{this.navigate(n as 'airport'|'facility');}});
     this.root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.onclick=()=>this.setView(b.dataset.view as '2d'|'3d'));
     this.root.querySelectorAll<HTMLButtonElement>('[data-transform]').forEach(b=>b.onclick=()=>this.setTransform(b.dataset.transform as 'translate'|'rotate'|'scale'));
     this.root.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(b=>b.onclick=()=>this.action(b.dataset.action!));
