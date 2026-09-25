@@ -16,10 +16,62 @@ export class Globe {
       this.renderer=new THREE.WebGLRenderer({antialias:!currentDevice().mobile,alpha:true,powerPreference:currentDevice().mobile?'low-power':'high-performance'});this.renderer.setPixelRatio(currentDevice().pixelRatio);this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.host.prepend(this.renderer.domElement);this.canvas.hidden=true;
       this.camera.position.copy(this.point(25,20,6.2));this.controls=new OrbitControls(this.camera,this.renderer.domElement);this.controls.enableDamping=true;this.controls.enablePan=false;this.controls.minDistance=.3;this.controls.maxDistance=9;this.controls.autoRotate=true;this.controls.autoRotateSpeed=.2;this.controls.addEventListener('start',()=>{this.flight++;this.controls!.autoRotate=false;});
       const canvas=document.createElement('canvas');canvas.width=2048;canvas.height=1024;this.drawCountries(canvas,0,0,1);const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
-      const mat=new THREE.MeshStandardMaterial({map:tex,roughness:1});this.scene.add(new THREE.Mesh(new THREE.SphereGeometry(2,64,40),mat));
-      new THREE.TextureLoader().load('/textures/earth.jpg',texture=>{texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(currentDevice().mobile?2:8,this.renderer?.capabilities.getMaxAnisotropy()||1);mat.map?.dispose();mat.map=texture;mat.needsUpdate=true;},undefined,()=>{});
-      this.scene.add(new THREE.HemisphereLight(0xe7ffff,0x244052,2.6));const sun=new THREE.DirectionalLight(0xffffff,1.8);sun.position.set(5,4,5);this.scene.add(sun);
-      const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(2.06,64,40),new THREE.MeshBasicMaterial({color:0x76ddff,side:THREE.BackSide,transparent:true,opacity:.18}));this.scene.add(atmosphere);
+      const mat=new THREE.MeshStandardMaterial({
+  map:tex,
+  roughness:.92,
+  metalness:0,
+  emissive:new THREE.Color(0xffffff),
+  emissiveIntensity:.20
+});
+
+this.scene.add(
+  new THREE.Mesh(
+    new THREE.SphereGeometry(2,96,64),
+    mat
+  )
+);
+
+new THREE.TextureLoader().load(
+  '/textures/earth.jpg',
+  texture=>{
+    texture.colorSpace=THREE.SRGBColorSpace;
+
+    texture.anisotropy=this.renderer
+      ? this.renderer.capabilities.getMaxAnisotropy()
+      : 1;
+
+    mat.map?.dispose();
+    mat.map=texture;
+    mat.emissiveMap=texture;
+    mat.needsUpdate=true;
+  },
+  undefined,
+  ()=>{}
+);
+
+// Yumuşak genel aydınlatma
+this.scene.add(
+  new THREE.HemisphereLight(
+    0xf2ffff,
+    0x416273,
+    2.2
+  )
+);
+
+// Güneş ışığı: kürenin 3D hacmini korur
+const sun=new THREE.DirectionalLight(0xffffff,1.35);
+sun.position.set(5,4,5);
+this.scene.add(sun);
+      const atmosphere=new THREE.Mesh(
+  new THREE.SphereGeometry(2.06,96,64),
+  new THREE.MeshBasicMaterial({
+    color:0x76ddff,
+    side:THREE.BackSide,
+    transparent:true,
+    opacity:.11
+  })
+);
+this.scene.add(atmosphere);
       for(const a of airports){const m=new THREE.Mesh(new THREE.SphereGeometry(.008,12,8),new THREE.MeshBasicMaterial({color:a.code==='ADB'?0xb7ff3c:0x76dfff}));m.position.copy(this.point(a.lat,a.lon,2.015));this.scene.add(m);this.markers.set(a.code,m);}
       let down=[0,0];this.renderer.domElement.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);this.renderer.domElement.addEventListener('pointerup',e=>{if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>4)return;const r=this.renderer!.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.camera);const hit=ray.intersectObjects([...this.markers.values()])[0];if(hit)for(const [code,m] of this.markers)if(m===hit.object)this.select(code);});
       this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.flight++;this.controls?.dispose();this.controls=undefined;this.renderer?.domElement.remove();this.renderer=undefined;this.canvas.hidden=false;this.resize();});
