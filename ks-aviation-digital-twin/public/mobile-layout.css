@@ -1,42 +1,59 @@
-/* KS Aviation Digital Twin — centralized mobile/landscape layout.
-   The canvas/map is the primary content; controls become compact overlays. */
-@media (max-width:700px), (max-height:520px) and (max-width:1100px) {
-  html,body,#app{min-height:100%;}
-  body{overflow-x:hidden;}
-  .topbar{height:58px!important;padding:0 max(10px,env(safe-area-inset-left)) 0 max(10px,env(safe-area-inset-right))!important;gap:8px!important;}
-  .brand{grid-template-columns:34px auto!important;min-width:0}.brand span{width:30px!important;height:30px!important;font-size:20px!important}.brand b{font-size:11px!important}.brand small{font-size:6px!important}.head-actions{margin-left:auto}.head-actions .lang{padding:8px 9px!important}.head-actions .login{display:none!important}
+/* KS Aviation Digital Twin — immersive map/workspace shell.
+   The map/canvas owns the screen; controls stay out of the way until requested. */
 
-  /* Expanded globe/Türkiye: map owns the viewport. Airport cards are temporary sheets. */
-  body.world-expanded{overflow:hidden;}
-  .world-expanded #landing{height:calc(100dvh - 58px);overflow:hidden;}
-  .world-expanded #home{height:calc(100dvh - 58px)!important;min-height:0!important;padding:0!important;}
-  .world-expanded .globe-shell{height:100%!important;min-height:0!important;border:0!important;border-radius:0!important;background:#061318!important;}
-  .world-expanded .world-panel{display:none!important;}
-  .world-expanded .globe-hud{left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;padding-top:6px!important;font-size:7px!important;pointer-events:none}.world-expanded .globe-hud small{display:none!important}.world-expanded .globe-hud b{font-size:8px!important}
-  .globe-controls{left:8px!important;right:auto!important;top:8px!important;gap:5px!important;max-width:calc(100% - 16px);flex-wrap:wrap}.globe-controls button{min-height:40px;padding:7px 10px!important;font-size:11px!important;background:#071d27e8!important;backdrop-filter:blur(8px)}
-  .globe-pin{font-size:9px!important;padding:3px 5px!important;}
-  .airport-card{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;max-height:min(58dvh,430px);overflow:auto;padding:16px!important;border-radius:16px 16px 8px 8px!important;background:#0d252bf2!important}.airport-card h3{font-size:20px!important;margin:7px 0!important}.airport-card p{font-size:11px!important;margin:7px 0!important}.airport-card .card-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;margin-top:10px!important}.airport-card .card-actions button{min-width:0!important;min-height:44px!important;padding:8px!important}.airport-card .card-actions button:first-child:last-child{grid-column:1/-1}
+/* Türkiye / world view: true full-screen map on desktop and mobile. */
+body.world-expanded{overflow:hidden!important;}
+body.world-expanded .topbar{display:none!important;}
+.world-expanded #landing,.world-expanded #home{height:100dvh!important;min-height:0!important;padding:0!important;overflow:hidden!important;}
+.world-expanded .globe-shell{width:100%!important;height:100%!important;min-height:0!important;border:0!important;border-radius:0!important;background:#061318!important;}
+.world-expanded .world-panel,.world-expanded .hero-copy,.world-expanded .about{display:none!important;}
+.world-expanded .globe-hud{display:none!important;}
+.world-expanded .globe-controls{position:absolute!important;left:8px!important;top:8px!important;gap:4px!important;z-index:8!important;opacity:.42;transition:opacity .18s}.world-expanded .globe-controls:hover,.world-expanded .globe-controls:focus-within{opacity:1}.world-expanded .globe-controls button{min-height:30px!important;padding:4px 7px!important;font-size:9px!important;background:#071d27c9!important;backdrop-filter:blur(8px)}
+.world-expanded .network-panel{position:absolute!important;z-index:9!important;right:8px!important;top:8px!important;width:auto!important;max-width:min(360px,calc(100vw - 16px))!important;background:transparent!important;border:0!important;box-shadow:none!important;}
+.world-expanded .network-panel details{background:#071d27e0!important;border:1px solid #48656c88!important;border-radius:7px!important;backdrop-filter:blur(10px);overflow:hidden}.world-expanded .network-panel summary{list-style:none!important;cursor:pointer!important;padding:5px 8px!important;font-size:9px!important;line-height:1.2!important;color:#cfe1df!important;white-space:nowrap}.world-expanded .network-panel summary::-webkit-details-marker{display:none}.world-expanded .network-panel summary::before{content:'›';display:inline-block;margin-right:5px;font-size:13px;transform:rotate(0deg);transition:transform .15s}.world-expanded .network-panel details[open] summary::before{transform:rotate(90deg)}.world-expanded .network-panel details:not([open])>*:not(summary){display:none!important}.world-expanded .network-panel details[open]{width:min(340px,calc(100vw - 16px))!important}.world-expanded .network-panel details[open] summary{font-size:10px!important;padding:8px 10px!important}.world-expanded .network-panel details[open]>*:not(summary){margin-left:9px!important;margin-right:9px!important}.world-expanded .globe-pin{font-size:9px!important;padding:3px 5px!important;}
 
-  /* Workspace: scene gets full remaining viewport. Desktop side panel becomes a temporary overlay. */
-  body.in-workspace .topbar{height:58px!important;}
-  .workspace{height:calc(100dvh - 58px)!important;min-height:0!important;position:relative;overflow:hidden;}
-  .ws-nav{min-height:44px!important;padding:4px 7px!important;display:flex!important;flex-direction:row!important;align-items:center!important;gap:5px!important;overflow-x:auto!important;scrollbar-width:none}.ws-nav::-webkit-scrollbar{display:none}.ws-crumb{min-width:max-content;height:auto!important}.ws-crumb small{display:none!important}.ws-crumb strong{font-size:10px!important}.ws-tabs{width:auto!important;min-width:max-content;flex-wrap:nowrap!important;margin-left:auto}.ws-tabs button{min-height:38px!important;padding:5px 7px!important;font-size:9px!important;white-space:nowrap}
-  .ws-body{position:relative!important;display:block!important;flex:1!important;min-height:0!important;}
-  .ws-map{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;}
-  .ws-panel{position:absolute!important;z-index:12!important;left:8px!important;right:8px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;top:auto!important;width:auto!important;max-height:52dvh!important;overflow:auto!important;border:1px solid #48656c!important;border-radius:16px 16px 8px 8px!important;background:#0a1e26f5!important;box-shadow:0 -8px 35px #00151b80!important;backdrop-filter:blur(12px);}
-  .workspace:not(.editing) .ws-panel{display:none!important;}
-  .ws-section{padding:9px!important}.ws-section h3,.ws-section summary{font-size:10px!important}.ws-row>button{min-height:40px!important}
-  .ws-toolbar{top:6px!important;left:6px!important;right:6px!important;gap:4px!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none}.ws-toolbar::-webkit-scrollbar{display:none}.ws-toolbar button{min-width:40px;min-height:40px;padding:5px 7px!important;font-size:9px!important;white-space:nowrap}.ws-toolbar .ws-check,.ws-ground-choice{min-height:40px!important;white-space:nowrap}
-  .ws-hud{left:7px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;max-width:65%!important;padding:6px 8px!important}.ws-hud span,.ws-hud small{display:none!important}.ws-hud strong{font-size:10px!important}
-  .ws-zoom{right:7px!important;bottom:calc(62px + env(safe-area-inset-bottom))!important}.ws-zoom button{width:44px!important;height:44px!important;}
-  .ws-animations{right:7px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;flex-direction:row!important;max-width:45%;overflow-x:auto}.ws-animations button{min-width:40px;min-height:40px;padding:5px!important;font-size:9px!important}
-  .ws-credit{display:none!important;}
-  .ws-service-panel,.ws-photo-panel,.ws-library,.workspace.editing .ws-service-panel,.workspace.editing .ws-photo-panel{position:absolute!important;z-index:14!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:none!important;max-height:68dvh!important;padding:11px!important;border-radius:16px 16px 8px 8px!important;overflow:auto!important;background:#0c232bf7!important;}
+/* Workspace: remove website chrome. Scene is the screen. */
+body.in-workspace{overflow:hidden!important;}
+body.in-workspace .topbar{display:none!important;}
+body.in-workspace .workspace{height:100dvh!important;min-height:0!important;position:relative!important;overflow:hidden!important;}
+body.in-workspace .ws-body{position:absolute!important;inset:0!important;display:block!important;min-height:0!important;}
+body.in-workspace .ws-map{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;}
+body.in-workspace .ws-credit{display:none!important;}
+
+/* Navigation becomes a small reveal strip. Hover/focus/tap reveals the commands. */
+body.in-workspace .ws-nav{position:absolute!important;z-index:30!important;left:7px!important;top:7px!important;width:30px!important;height:30px!important;min-height:30px!important;padding:0!important;overflow:hidden!important;border:1px solid #48656c99!important;border-radius:7px!important;background:#071d27df!important;backdrop-filter:blur(9px);transition:width .18s,height .18s,padding .18s!important;}
+body.in-workspace .ws-nav::before{content:'›';position:absolute;left:10px;top:3px;color:#dff3ef;font-size:18px;line-height:22px;pointer-events:none;transition:transform .18s}
+body.in-workspace .ws-nav:hover,body.in-workspace .ws-nav:focus-within{width:min(620px,calc(100vw - 14px))!important;height:auto!important;min-height:42px!important;padding:4px 7px 4px 34px!important;overflow-x:auto!important;}
+body.in-workspace .ws-nav:hover::before,body.in-workspace .ws-nav:focus-within::before{transform:rotate(90deg)}
+body.in-workspace .ws-nav .ws-crumb,body.in-workspace .ws-nav .ws-tabs{visibility:hidden!important;opacity:0!important;transition:opacity .12s!important;white-space:nowrap!important}
+body.in-workspace .ws-nav:hover .ws-crumb,body.in-workspace .ws-nav:hover .ws-tabs,body.in-workspace .ws-nav:focus-within .ws-crumb,body.in-workspace .ws-nav:focus-within .ws-tabs{visibility:visible!important;opacity:1!important}
+body.in-workspace .ws-nav .ws-crumb small{display:none!important}body.in-workspace .ws-nav .ws-tabs{display:flex!important;gap:4px!important;flex-wrap:nowrap!important}body.in-workspace .ws-nav button{min-height:32px!important;padding:4px 7px!important;font-size:9px!important;white-space:nowrap!important}
+
+/* Main drawing toolbar is also tucked away as a tiny arrow/tab. */
+body.in-workspace .ws-toolbar{position:absolute!important;z-index:29!important;left:7px!important;top:44px!important;right:auto!important;width:30px!important;height:30px!important;padding:0!important;overflow:hidden!important;display:flex!important;gap:4px!important;flex-wrap:nowrap!important;border:1px solid #48656c99!important;border-radius:7px!important;background:#071d27df!important;backdrop-filter:blur(9px);transition:width .18s,height .18s,padding .18s!important;}
+body.in-workspace .ws-toolbar::before{content:'›';flex:0 0 30px;text-align:center;color:#dff3ef;font-size:18px;line-height:28px;pointer-events:none}
+body.in-workspace .ws-toolbar>*{visibility:hidden!important;opacity:0!important;flex:0 0 auto!important}
+body.in-workspace .ws-toolbar:hover,body.in-workspace .ws-toolbar:focus-within{width:min(900px,calc(100vw - 14px))!important;height:auto!important;min-height:38px!important;padding:3px!important;overflow-x:auto!important;}
+body.in-workspace .ws-toolbar:hover>*,body.in-workspace .ws-toolbar:focus-within>*{visibility:visible!important;opacity:1!important}
+body.in-workspace .ws-toolbar button{min-height:32px!important;padding:4px 7px!important;font-size:9px!important;white-space:nowrap!important}body.in-workspace .ws-toolbar .ws-check,body.in-workspace .ws-ground-choice{min-height:32px!important;white-space:nowrap!important}
+
+/* Editor/popup tools remain overlays only when they are actually opened. */
+body.in-workspace .ws-panel{position:absolute!important;z-index:20!important;left:8px!important;bottom:8px!important;top:auto!important;width:min(340px,calc(100vw - 16px))!important;max-height:72dvh!important;overflow:auto!important;border:1px solid #48656c!important;border-radius:12px!important;background:#0a1e26f5!important;box-shadow:0 -8px 35px #00151b80!important;backdrop-filter:blur(12px)}
+body.in-workspace .workspace:not(.editing) .ws-panel{display:none!important;}
+body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library{z-index:24!important;max-height:75dvh!important;}
+body.in-workspace .ws-hud{left:7px!important;bottom:7px!important;max-width:48%!important;padding:5px 7px!important;opacity:.62!important}body.in-workspace .ws-hud span,body.in-workspace .ws-hud small{display:none!important}body.in-workspace .ws-hud strong{font-size:9px!important}
+body.in-workspace .ws-zoom{right:7px!important;bottom:7px!important;gap:4px!important}body.in-workspace .ws-zoom button{width:36px!important;height:36px!important;font-size:18px!important}.ws-animations{right:50px!important;bottom:7px!important}
+
+@media (max-width:700px), (max-height:520px) and (max-width:1100px){
+  .airport-card{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;max-height:min(58dvh,430px);overflow:auto;padding:14px!important;border-radius:14px!important;background:#0d252bf2!important}.airport-card h3{font-size:18px!important;margin:6px 0!important}.airport-card p{font-size:10px!important;margin:6px 0!important}.airport-card .card-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important}.airport-card .card-actions button{min-width:0!important;min-height:40px!important;padding:7px!important}
+  .world-expanded .globe-controls{left:5px!important;top:5px!important}.world-expanded .network-panel{right:5px!important;top:5px!important}
+  body.in-workspace .ws-nav{left:5px!important;top:5px!important}body.in-workspace .ws-toolbar{left:5px!important;top:41px!important}
+  body.in-workspace .ws-panel{left:6px!important;right:6px!important;bottom:calc(6px + env(safe-area-inset-bottom))!important;width:auto!important;max-height:62dvh!important}
+  body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library,body.in-workspace .workspace.editing .ws-service-panel,body.in-workspace .workspace.editing .ws-photo-panel{position:absolute!important;z-index:24!important;left:6px!important;right:6px!important;top:auto!important;bottom:calc(6px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:none!important;max-height:68dvh!important;padding:10px!important;border-radius:12px!important;overflow:auto!important;background:#0c232bf7!important}
+  body.in-workspace .ws-hud{display:none!important}.ws-credit{display:none!important}
 }
 
-/* Phone landscape: every vertical pixel belongs to the map/3D scene unless a tool is explicitly opened. */
 @media (orientation:landscape) and (max-height:520px) and (max-width:1100px){
-  .topbar{height:46px!important}.brand small{display:none!important}.brand span{width:28px!important;height:28px!important}.head-actions .lang{padding:6px 8px!important}
-  .world-expanded #landing,.world-expanded #home{height:calc(100dvh - 46px)!important}.world-expanded .globe-hud{display:none!important}.globe-controls{top:5px!important}.globe-controls button{min-height:36px!important;padding:5px 8px!important}
-  body.in-workspace .topbar{display:none!important}.workspace{height:100dvh!important}.ws-nav{position:absolute!important;z-index:20!important;left:5px!important;right:5px!important;top:5px!important;width:auto!important;min-height:38px!important;border:0!important;border-radius:7px!important;background:#071d27d9!important;backdrop-filter:blur(8px);padding:3px 5px!important}.ws-tabs button{min-height:34px!important;padding:4px 6px!important}.ws-toolbar{top:48px!important;right:auto!important;max-width:calc(100% - 12px)}.ws-panel{left:auto!important;right:7px!important;bottom:7px!important;width:min(340px,48vw)!important;max-height:calc(100dvh - 58px)!important;border-radius:12px!important}.ws-service-panel,.ws-photo-panel,.ws-library,.workspace.editing .ws-service-panel,.workspace.editing .ws-photo-panel{left:auto!important;right:7px!important;bottom:7px!important;width:min(360px,52vw)!important;max-height:calc(100dvh - 14px)!important;border-radius:12px!important}.ws-hud{display:none!important}.ws-zoom{bottom:7px!important}.ws-animations{bottom:7px!important;right:58px!important}.airport-card{left:auto!important;right:8px!important;width:min(390px,54vw)!important;max-height:calc(100dvh - 62px)!important}
+  .airport-card{left:auto!important;right:6px!important;width:min(370px,52vw)!important;max-height:calc(100dvh - 12px)!important}
+  body.in-workspace .ws-panel,body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library{left:auto!important;right:6px!important;bottom:6px!important;width:min(340px,48vw)!important;max-height:calc(100dvh - 12px)!important}
 }
