@@ -23,3 +23,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+Optimized map derivatives (September 2026):
+earth-2048.webp and earth-4096.webp are reduced-resolution versions of the existing earth.jpg in this project.
+earth-turkey.webp is an exact equirectangular crop (20–49 E, 31–46 N) of that same image.
+No coastlines or coordinates were redrawn. Blue-water presentation is applied by the renderer.
