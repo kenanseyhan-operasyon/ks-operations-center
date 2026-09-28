@@ -2,7 +2,7 @@ import * as THREE from 'three';
 export const EARTH_RADIUS=2;
 export const CAMERA_FLOOR=2.055;
 export const TURKEY_BOUNDS={west:24.1,east:45,north:43,south:34.2};
-export const DETAIL_BOUNDS={west:20,east:49,north:46,south:31};
+export const DETAIL_BOUNDS={west:17,east:53,north:50,south:28};
 export type GeoPoint={lat:number;lon:number};
 export function earthPoint(lat:number,lon:number,r=EARTH_RADIUS){
  const p=THREE.MathUtils.degToRad(lat),l=THREE.MathUtils.degToRad(lon);

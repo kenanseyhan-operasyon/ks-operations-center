@@ -95,7 +95,7 @@ export class Globe{
  private loadDetail(){
   if(this.loadingDetail)return;this.loadingDetail=true;const image=new Image();
   image.onload=()=>{this.detailPixels=this.pixels(image);const t=new THREE.Texture(image);t.colorSpace=THREE.SRGBColorSpace;t.needsUpdate=true;t.anisotropy=Math.min(8,this.renderer?.capabilities.getMaxAnisotropy()||1);this.uniforms.ksDetail.value.dispose();this.uniforms.ksDetail.value=t;this.uniforms.ksDetailReady.value=1;this.dirty=true;};
-  image.onerror=()=>{this.loadingDetail=false;};image.src='/textures/earth-turkey.webp';
+  image.onerror=()=>{this.loadingDetail=false;};image.src='/textures/earth-turkey-detail.webp';
  }
  private pixels(source:HTMLImageElement|HTMLCanvasElement):Pixels{
   const c=document.createElement('canvas');c.width=source instanceof HTMLImageElement?source.naturalWidth:source.width;c.height=source instanceof HTMLImageElement?source.naturalHeight:source.height;
@@ -124,8 +124,9 @@ export class Globe{
    const lon=Math.atan2(-pz,px)*180/Math.PI,lat=Math.asin(Math.max(-1,Math.min(1,py/2)))*180/Math.PI;
    let tex=base,u=(lon+180)/360,v=(90-lat)/180;
    if(this.detailPixels&&lon>DETAIL_BOUNDS.west&&lon<DETAIL_BOUNDS.east&&lat>DETAIL_BOUNDS.south&&lat<DETAIL_BOUNDS.north){tex=this.detailPixels;u=(lon-DETAIL_BOUNDS.west)/(DETAIL_BOUNDS.east-DETAIL_BOUNDS.west);v=(DETAIL_BOUNDS.north-lat)/(DETAIL_BOUNDS.north-DETAIL_BOUNDS.south);}
-   const s=(Math.min(tex.height-1,Math.floor(v*tex.height))*tex.width+Math.min(tex.width-1,Math.floor(u*tex.width)))*4,i=(y*w+x)*4;
-   p.data[i]=tex.data[s];p.data[i+1]=tex.data[s+1];p.data[i+2]=tex.data[s+2];p.data[i+3]=255;
+   const i=(y*w+x)*4,sx=Math.max(0,Math.min(tex.width-1,u*tex.width-.5)),sy=Math.max(0,Math.min(tex.height-1,v*tex.height-.5)),ix=Math.floor(sx),iy=Math.floor(sy),s=(iy*tex.width+ix)*4;
+   if(!this.flight&&!(this.autoRotate&&this.mode==='world')){const xx=Math.min(tex.width-1,ix+1),yy=Math.min(tex.height-1,iy+1),fx=sx-ix,fy=sy-iy,b=(iy*tex.width+xx)*4,c=(yy*tex.width+ix)*4,d=(yy*tex.width+xx)*4;for(let k=0;k<3;k++)p.data[i+k]=(tex.data[s+k]*(1-fx)+tex.data[b+k]*fx)*(1-fy)+(tex.data[c+k]*(1-fx)+tex.data[d+k]*fx)*fy;}
+   else{p.data[i]=tex.data[s];p.data[i+1]=tex.data[s+1];p.data[i+2]=tex.data[s+2];}p.data[i+3]=255;
   }}
   g.putImageData(p,0,0);const radius=h/2/tan*2/Math.sqrt(d*d-4);
   g.globalCompositeOperation='destination-over';const halo=g.createRadialGradient(w/2,h/2,radius*.94,w/2,h/2,radius*1.065);halo.addColorStop(0,'rgba(140,216,255,0)');halo.addColorStop(.45,'rgba(166,228,255,.52)');halo.addColorStop(1,'rgba(144,209,255,0)');g.fillStyle=halo;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';
@@ -174,7 +175,7 @@ export class Globe{
  }
  private drawRoutes(now:number){
   this.routeSvg.setAttribute('viewBox',`0 0 ${this.width} ${this.height}`);
-  const routes=this.routes.map((r,i)=>{const a=this.project(r.from),b=this.project(r.to);if(!a.visible||!b.visible)return'';const x=(a.x+b.x)/2,y=(a.y+b.y)/2-Math.min(45,Math.hypot(a.x-b.x,a.y-b.y)*.18),t=((now/10000)+i*.07)%1,c=r.type==='sea'?'#76ddff':'#ffce79',px=(1-t)**2*a.x+2*(1-t)*t*x+t*t*b.x,py=(1-t)**2*a.y+2*(1-t)*t*y+t*t*b.y;return`<path d="M${a.x},${a.y}Q${x},${y} ${b.x},${b.y}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="${r.type==='sea'?'5 4':'0'}"/><circle cx="${px}" cy="${py}" r="3.5" fill="${c}"/>`;}).join('');
+  const routes=this.routes.map((r,i)=>{const a=this.project(r.from),b=this.project(r.to);if(!a.visible||!b.visible)return'';const x=(a.x+b.x)/2,y=(a.y+b.y)/2-Math.min(65,Math.max(45,Math.hypot(a.x-b.x,a.y-b.y)*.20)),t=((now/10000)+i*.07)%1,c=r.type==='sea'?'#76ddff':'#ffce79',px=(1-t)**2*a.x+2*(1-t)*t*x+t*t*b.x,py=(1-t)**2*a.y+2*(1-t)*t*y+t*t*b.y;return`<path d="M${a.x},${a.y}Q${x},${y} ${b.x},${b.y}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="${r.type==='sea'?'5 4':'0'}"/><circle cx="${px}" cy="${py}" r="3.5" fill="${c}"/>`;}).join('');
   const leaders=this.points.map(p=>{const b=this.labels.get(p.code)!;if(b.hidden||b.dataset.offset!=='true')return'';const s=this.project(p),x=parseFloat(b.style.left),y=parseFloat(b.style.top);return`<path d="M${s.x},${s.y}L${x},${y}" stroke="#dceffa" stroke-opacity=".6" stroke-width="1"/><circle cx="${s.x}" cy="${s.y}" r="2.2" fill="#dceffa"/>`;}).join('');
   this.routeSvg.innerHTML=leaders+routes;
  }
