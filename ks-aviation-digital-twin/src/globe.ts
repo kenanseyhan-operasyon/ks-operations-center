@@ -11,6 +11,9 @@ const OCEAN_SHADER=`
  float ksOcean=smoothstep(1.10,1.7,diffuseColor.b/max(diffuseColor.r,0.0003))
   *smoothstep(1.04,1.5,diffuseColor.b/max(diffuseColor.g,0.0003))
   *(1.0-smoothstep(0.10,0.30,max(diffuseColor.r,max(diffuseColor.g,diffuseColor.b))));
+ float ksCoastal=(1.0-smoothstep(0.006,0.018,max(diffuseColor.r,max(diffuseColor.g,diffuseColor.b))))
+  *(1.0-smoothstep(0.12,0.35,diffuseColor.r/max(diffuseColor.g,0.0003)));
+ ksOcean=max(ksOcean,ksCoastal);
  diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.014,0.15,0.34),ksOcean*0.86);
 `;
 export class Globe{
@@ -104,7 +107,7 @@ export class Globe{
   // Same blue-ocean treatment as the 3D material; geographic pixels stay in place.
   const linear=Array.from({length:256},(_,v)=>{const x=v/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
   const srgb=(x:number)=>Math.round(255*(x<=.0031308?x*12.92:1.055*x**(1/2.4)-.055));
-  for(let i=0;i<p.data.length;i+=4){const r=linear[p.data[i]],g=linear[p.data[i+1]],b=linear[p.data[i+2]],w=smooth(1.1,1.7,b/Math.max(r,.0003))*smooth(1.04,1.5,b/Math.max(g,.0003))*(1-smooth(.1,.3,Math.max(r,g,b)))*.86;if(w>.01){p.data[i]=srgb(r*(1-w)+.014*w);p.data[i+1]=srgb(g*(1-w)+.15*w);p.data[i+2]=srgb(b*(1-w)+.34*w);}}
+  for(let i=0;i<p.data.length;i+=4){const r=linear[p.data[i]],g=linear[p.data[i+1]],b=linear[p.data[i+2]],ocean=smooth(1.1,1.7,b/Math.max(r,.0003))*smooth(1.04,1.5,b/Math.max(g,.0003))*(1-smooth(.1,.3,Math.max(r,g,b))),coastal=(1-smooth(.006,.018,Math.max(r,g,b)))*(1-smooth(.12,.35,r/Math.max(g,.0003))),w=Math.max(ocean,coastal)*.86;if(w>.01){p.data[i]=srgb(r*(1-w)+.014*w);p.data[i+1]=srgb(g*(1-w)+.15*w);p.data[i+2]=srgb(b*(1-w)+.34*w);}}
   return {width:c.width,height:c.height,data:p.data};
  }
  private drawCountries(c:HTMLCanvasElement){
