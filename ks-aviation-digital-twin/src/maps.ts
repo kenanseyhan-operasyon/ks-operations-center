@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { screenDeltaToWorld } from './airport-view';
 import { boundedView, type StaticGround } from './static-ground';
 import { currentDevice, retainedTiles, pinchView } from './device';
 import { geographic, tileOf, tileCorner, TILE_URL } from './geo';
@@ -50,7 +51,7 @@ export class MapPlane {
 }
 export type MapHooks={ ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
-  canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;enabled=false;private ctx:CanvasRenderingContext2D;
+  canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;bearing=0;enabled=false;private ctx:CanvasRenderingContext2D;
   private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
   private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean;box:boolean;extend:boolean};
   draft:[number,number][]=[];
@@ -71,7 +72,7 @@ export class PlanMap {
       const old=[...this.points.values()];const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);
       if(this.points.size===2){
         const next=[...this.points.values()],mid=(p:[number,number][]):[number,number]=>[(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2],distance=(p:[number,number][])=>Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
-        const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));this.center=v.center;this.span=v.span;this.limit();this.draw();return;
+        const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));const delta=screenDeltaToWorld(v.center[0]-this.center[0],v.center[1]-this.center[1],this.bearing);this.center=[this.center[0]+delta[0],this.center[1]+delta[1]];this.span=v.span;this.limit();this.draw();return;
       }
       const p=this.pointer;if(!p||this.multi)return;const dx=x-p.cx,dy=y-p.cz;
       if(!p.move&&Math.hypot(x-p.x,y-p.y)<6)return;p.move=true;
@@ -79,19 +80,20 @@ export class PlanMap {
       // Drawing uses taps; a moving finger still pans the map.
       if(!p.pan&&!this.hooks.drawing()){
         if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);this.hooks.dragStart();p.drag=true;}
-        this.hooks.drag(dx/this.pixels,dy/this.pixels);
-      }else{this.center[0]-=dx/this.pixels;this.center[1]-=dy/this.pixels;this.limit();this.draw();}
+        this.hooks.drag(...screenDeltaToWorld(dx/this.pixels,dy/this.pixels,this.bearing));
+      }else{const delta=screenDeltaToWorld(dx/this.pixels,dy/this.pixels,this.bearing);this.center[0]-=delta[0];this.center[1]-=delta[1];this.limit();this.draw();}
       p.cx=x;p.cz=y;
     });
     const up=(e:PointerEvent)=>{this.points.delete(e.pointerId);const p=this.pointer;this.pointer=undefined;
-      if(p?.box&&p.move&&e.type!=='pointercancel'){const a=this.toWorld(p.x,p.y),b=this.toWorld(p.cx,p.cz);this.hooks.boxSelect?.(this.hooks.entities().filter(o=>o.position[0]>=Math.min(a[0],b[0])&&o.position[0]<=Math.max(a[0],b[0])&&o.position[2]>=Math.min(a[1],b[1])&&o.position[2]<=Math.max(a[1],b[1])).map(o=>o.id),p.extend);}else if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);
+      if(p?.box&&p.move&&e.type!=='pointercancel'){this.hooks.boxSelect?.(this.hooks.entities().filter(o=>{const [x,y]=this.toScreen(o.position[0],o.position[2]);return x>=Math.min(p.x,p.cx)&&x<=Math.max(p.x,p.cx)&&y>=Math.min(p.y,p.cz)&&y<=Math.max(p.y,p.cz);}).map(o=>o.id),p.extend);}else if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);
       if(!this.points.size)this.multi=false;this.refresh();};
     this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',up);
     this.canvas.addEventListener('wheel',e=>{e.preventDefault();const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
   private limit(){const v=boundedView(this.center,this.span);this.center=v.center;this.span=v.span;}
   get pixels(){return (this.host.clientWidth||800)/this.span;}
-  toWorld(x:number,y:number):[number,number]{return [this.center[0]+(x-this.host.clientWidth/2)/this.pixels,this.center[1]+(y-this.host.clientHeight/2)/this.pixels];}
+  toWorld(x:number,y:number):[number,number]{const d=screenDeltaToWorld((x-this.host.clientWidth/2)/this.pixels,(y-this.host.clientHeight/2)/this.pixels,this.bearing);return [this.center[0]+d[0],this.center[1]+d[1]];}
+  toScreen(x:number,z:number):[number,number]{const dx=x-this.center[0],dz=z-this.center[1],c=Math.cos(this.bearing),s=Math.sin(this.bearing);return [this.host.clientWidth/2+(c*dx-s*dz)*this.pixels,this.host.clientHeight/2+(s*dx+c*dz)*this.pixels];}
   view(center:[number,number],span:number){this.center=[...center];this.span=span;this.refresh();}
   refresh(){this.limit();if(this.enabled)this.imagery.update(this.center[0],this.center[1],this.span);this.draw();this.hooks.change();}
   pick(x:number,z:number){
@@ -106,7 +108,7 @@ export class PlanMap {
   draw(){if(this.drawPending||!this.enabled)return;this.drawPending=true;requestAnimationFrame(()=>{this.drawPending=false;this.paint();});}
   private paint(){
     if(!this.enabled)return;const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;const d=currentDevice().pixelRatio;if(this.canvas.width!==Math.round(w*d))this.canvas.width=Math.round(w*d);if(this.canvas.height!==Math.round(h*d))this.canvas.height=Math.round(h*d);const c=this.ctx;c.setTransform(d,0,0,d,0,0);c.fillStyle='#223a3a';c.fillRect(0,0,w,h);
-    const p=this.pixels;c.save();c.translate(w/2,h/2);c.scale(p,p);c.translate(-this.center[0],-this.center[1]);
+    const p=this.pixels;c.save();c.translate(w/2,h/2);c.scale(p,p);c.rotate(this.bearing);c.translate(-this.center[0],-this.center[1]);
     if(this.imagery.enabled)for(const t of this.imagery.active)if(t.ready)c.drawImage(t.image,t.x,t.z,t.size+.02,t.size+.02);
     if(!this.imagery.enabled||!this.imagery.active.some(t=>t.ready)){c.lineWidth=1/p;c.strokeStyle='#496366';const step=this.span>500?100:10;for(let x=Math.floor((this.center[0]-this.span)/step)*step;x<this.center[0]+this.span;x+=step){c.beginPath();c.moveTo(x,this.center[1]-this.span);c.lineTo(x,this.center[1]+this.span);c.stroke();}for(let z=Math.floor((this.center[1]-this.span)/step)*step;z<this.center[1]+this.span;z+=step){c.beginPath();c.moveTo(this.center[0]-this.span,z);c.lineTo(this.center[0]+this.span,z);c.stroke();}}
     this.hooks.ground?.()?.draw(c);

@@ -2,7 +2,7 @@
 export function deviceProfile(width:number,height:number,coarse=false,touches=0,dpr=1){
   const compact=width<=700||(height<=520&&width<=1100);
   const mobile=compact||(coarse&&touches>0);
-  return {compact,mobile,pixelRatio:Math.min(dpr,mobile?1.25:1.6),initialView:mobile?'2d' as const:'3d' as const};
+  return {compact,mobile,pixelRatio:Math.min(dpr,mobile?1.25:1.6),initialView:'3d' as const};
 }
 export function currentDevice(){return deviceProfile(innerWidth,innerHeight,matchMedia('(pointer: coarse)').matches,navigator.maxTouchPoints,devicePixelRatio||1);}
 /** Hold the existing, painted map until its replacements have all arrived. */

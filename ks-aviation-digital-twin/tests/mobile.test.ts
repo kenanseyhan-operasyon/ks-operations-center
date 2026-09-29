@@ -3,7 +3,7 @@ import { deviceProfile,retainedTiles,pinchView } from '../src/device';
 import { groundModes,validateScene,SceneHistory } from '../src/scene-data';
 import { Imagery,MapPlane,PlanMap } from '../src/maps';
 import { DEFAULT_PHOTO } from '../src/photo-ground';
-assert.equal(deviceProfile(393,780,true,5,3).initialView,'2d');
+assert.equal(deviceProfile(393,780,true,5,3).initialView,'3d');
 assert.equal(deviceProfile(844,390,true,5,3).compact,true);
 assert.equal(deviceProfile(1440,900,false,0,2).initialView,'3d');
 assert.equal(deviceProfile(393,780,false,0,2).pixelRatio,1.25);
@@ -50,3 +50,12 @@ handlers.pointerdown(mouse(100,300,'pointerdown',{shiftKey:true}));handlers.poin
 handlers.pointerdown(mouse(156,400,'pointerdown',{ctrlKey:true}));handlers.pointerup(mouse(156,400,'pointerup',{ctrlKey:true}));assert.equal(extendSeen,true);
 handlers.pointerdown(mouse(156,400,'pointerdown'));handlers.pointermove(mouse(176,400,'pointermove'));handlers.pointerup(mouse(176,400,'pointerup'));assert.ok(delta>0,'Drag the selected set without selecting again');
 console.log('PASS: Shift rectangle, Ctrl selection and selected-object drag input paths.');
+// Camera rotation must rotate inputs with the map, never move the ground or objects.
+editor.bearing=Math.PI/2;editor.center=[0,0];editor.span=180;
+const screen=editor.toScreen(-20,0),world=editor.toWorld(...screen);assert.ok(Math.abs(world[0]+20)<1e-6&&Math.abs(world[1])<1e-6);
+const pixels=editor.pixels;handlers.pointerdown(mouse(screen[0],screen[1],'pointerdown'));let rotatedDx=0,rotatedDz=0;
+(editor as any).hooks.drag=(dx:number,dz:number)=>{rotatedDx=dx;rotatedDz=dz;};
+handlers.pointermove(mouse(screen[0]+20,screen[1],'pointermove'));handlers.pointerup(mouse(screen[0]+20,screen[1],'pointerup'));
+assert.ok(Math.abs(rotatedDx)<1e-6);assert.ok(Math.abs(rotatedDz+20/pixels)<1e-6,'Screen drag follows rotated world coordinates');
+editor.view([30000,30000],180);assert.deepEqual(editor.center,[1750,1250],'Rotated views still clamp in world coordinates');
+console.log('PASS: rotated map picking and drag preserve surveyed object positions.');

@@ -1,0 +1,51 @@
+/* Explicit menu buttons; opening a menu never invokes navigation. */
+body.in-workspace{overflow:hidden!important}
+body.in-workspace .topbar{display:none!important}
+body.in-workspace .workspace{--edge-x:calc(12px + env(safe-area-inset-left,0px));--edge-y:calc(12px + env(safe-area-inset-top,0px));--menu-size:40px;height:100dvh!important;min-height:0!important;position:relative!important;overflow:hidden!important}
+body.in-workspace .ws-body,body.in-workspace .ws-map,body.in-workspace #wsStage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;min-height:0!important}
+body.in-workspace .ws-credit{display:none!important}
+body.in-workspace .ws-menu-toggle{position:absolute;z-index:51;left:var(--edge-x);width:var(--menu-size);height:var(--menu-size);min-height:var(--menu-size);padding:0;display:grid;place-items:center;font:25px/1 system-ui;border:1px solid #bed7d66b;border-radius:9px;background:#08212cb8;backdrop-filter:blur(10px);touch-action:manipulation}
+body.in-workspace .ws-nav-toggle{top:var(--edge-y)}
+body.in-workspace .ws-tools-toggle{top:calc(var(--edge-y) + var(--menu-size) + 8px)}
+body.in-workspace .ws-menu-toggle[aria-expanded="true"]{background:#244958e6;border-color:#b5e2eb}
+body.in-workspace .ws-nav,body.in-workspace .ws-toolbar{position:absolute!important;z-index:50!important;left:calc(var(--edge-x) + var(--menu-size) + 8px)!important;right:auto!important;width:max-content!important;max-width:calc(100% - var(--edge-x) - var(--menu-size) - 76px)!important;height:auto!important;min-height:var(--menu-size)!important;padding:6px!important;display:flex!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important;overflow:auto!important;pointer-events:auto!important;border:1px solid #aac9d45c!important;border-radius:10px!important;background:#0a2532cc!important;backdrop-filter:blur(12px);box-sizing:border-box;max-height:calc(100dvh - var(--edge-y) - 112px)}
+body.in-workspace .ws-nav[hidden],body.in-workspace .ws-toolbar[hidden]{display:none!important}
+body.in-workspace .ws-nav{top:var(--edge-y)!important;max-width:min(720px,calc(100% - var(--edge-x) - var(--menu-size) - 76px))!important}
+body.in-workspace .ws-toolbar{top:calc(var(--edge-y) + var(--menu-size) + 8px)!important;max-width:min(850px,calc(100% - var(--edge-x) - var(--menu-size) - 28px))!important}
+body.in-workspace .ws-crumb{display:flex!important;height:auto!important;margin:0 5px}.ws-crumb strong{white-space:nowrap}
+body.in-workspace .ws-crumb small{display:none!important}
+body.in-workspace .ws-tabs{display:flex!important;flex-wrap:wrap!important;width:auto!important;overflow:visible!important;gap:5px!important}
+body.in-workspace .ws-nav button,body.in-workspace .ws-toolbar button{display:block!important;min-height:36px!important;padding:7px 9px!important;font-size:11px!important;white-space:normal!important;flex:0 1 auto!important}
+body.in-workspace .ws-toolbar>*{pointer-events:auto;min-width:0;max-width:100%;order:0!important}
+body.in-workspace .ws-toolbar .ws-ground-choice{display:flex;flex-wrap:wrap;min-height:36px;max-width:100%;white-space:normal;gap:4px}
+body.in-workspace .ws-ground-choice select{max-width:100%;min-width:0;font-size:11px}
+body.in-workspace .ws-savebar{position:absolute;z-index:26;left:var(--edge-x);right:12px;bottom:54px;border:1px solid #59835b;border-radius:8px}
+body.in-workspace .ws-panel{position:absolute!important;z-index:24!important;left:8px!important;bottom:108px!important;top:auto!important;width:min(340px,calc(100vw - 16px))!important;max-height:65dvh!important;overflow:auto!important;border:1px solid #48656c!important;border-radius:12px!important;background:#0a1e26f5!important;backdrop-filter:blur(12px)}
+body.in-workspace .workspace:not(.editing) .ws-panel{display:none!important}
+body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library{z-index:24!important;max-height:75dvh!important}
+body.in-workspace .ws-hud{left:12px!important;bottom:12px!important;max-width:48%!important;padding:5px 7px!important;opacity:.75!important}body.in-workspace .ws-hud span,body.in-workspace .ws-hud small{display:none!important}body.in-workspace .ws-hud strong{font-size:10px!important}
+body.in-workspace .ws-zoom{right:calc(12px + env(safe-area-inset-right))!important;bottom:calc(12px + env(safe-area-inset-bottom))!important;gap:5px!important}body.in-workspace .ws-zoom button{width:40px!important;height:40px!important;font-size:21px!important}
+body.in-workspace .ws-animations{right:62px!important;bottom:12px!important}
+body.in-workspace #wsFallback{left:calc(var(--edge-x) + var(--menu-size) + 12px);right:65px;top:var(--edge-y);max-width:400px;z-index:5}
+@media(max-width:700px),(max-height:520px) and (max-width:1100px){
+ body.in-workspace .workspace{--menu-size:44px}
+ .airport-card{left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;max-height:min(58dvh,430px);overflow:auto;padding:14px!important;border-radius:14px!important;background:#0d252bf2!important}.airport-card h3{font-size:18px!important;margin:6px 0!important}.airport-card .card-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important}.airport-card .card-actions button{min-width:0!important;min-height:44px!important;padding:7px!important}
+ body.in-workspace .ws-nav,body.in-workspace .ws-toolbar{font-size:11px!important;overscroll-behavior:contain}
+ body.in-workspace .ws-nav button,body.in-workspace .ws-toolbar button{min-height:44px!important;font-size:11px!important}
+ body.in-workspace .ws-panel{left:8px!important;right:8px!important;bottom:125px!important;width:auto!important;max-height:55dvh!important}
+ body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library,body.in-workspace .workspace.editing .ws-service-panel,body.in-workspace .workspace.editing .ws-photo-panel{position:absolute!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:none!important;max-height:65dvh!important;padding:10px!important;border-radius:12px!important;overflow:auto!important;background:#0c232bf7!important}
+ body.in-workspace .ws-hud{display:none!important}
+}
+@media(max-width:700px) and (orientation:portrait){
+ body.in-workspace .ws-nav,body.in-workspace .ws-toolbar{left:var(--edge-x)!important;top:calc(var(--edge-y) + 2*var(--menu-size) + 16px)!important;width:calc(100% - var(--edge-x) - 12px - env(safe-area-inset-right))!important;max-width:none!important;max-height:calc(100dvh - var(--edge-y) - 2*var(--menu-size) - 100px);display:grid!important;grid-template-columns:1fr 1fr;align-items:stretch!important;overflow-x:hidden!important;overflow-y:auto!important}
+ body.in-workspace .ws-nav .ws-crumb,body.in-workspace .ws-nav .ws-tabs{grid-column:1/-1}
+ body.in-workspace .ws-tabs{display:grid!important;grid-template-columns:1fr 1fr!important}
+ body.in-workspace .ws-toolbar .ws-ground-choice{grid-column:1/-1}
+ body.in-workspace .ws-toolbar button{width:100%;text-align:left}
+ body.in-workspace .ws-animations{max-width:calc(100% - 80px)!important;flex-direction:column!important;align-items:flex-end}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:1100px){
+ .airport-card{left:auto!important;right:8px!important;width:min(370px,52vw)!important;max-height:calc(100dvh - 16px)!important}
+ body.in-workspace .ws-panel,body.in-workspace .ws-service-panel,body.in-workspace .ws-photo-panel,body.in-workspace .ws-library{left:auto!important;right:8px!important;bottom:8px!important;width:min(340px,48vw)!important;max-height:calc(100dvh - 16px)!important}
+ body.in-workspace .ws-nav .ws-crumb{display:none!important}
+}

@@ -43,7 +43,7 @@ export class Globe{
   this.canvas.className='globe-fallback';this.canvas.setAttribute('aria-label','Dünya ve Türkiye haritası');
   this.host.appendChild(this.canvas);this.routeSvg.classList.add('network-routes-map');this.routeSvg.setAttribute('aria-hidden','true');this.host.appendChild(this.routeSvg);
   for(const p of points){
-   const b=document.createElement('button');b.className='globe-pin';b.dataset.kind=p.code==='ADB'?'primary':p.category||'airports';
+   const b=document.createElement('button');b.className='globe-pin notranslate';b.translate=false;b.dataset.kind=p.code==='ADB'?'primary':p.category||'airports';
    b.textContent=this.short(p.code);b.title=p.city||p.code;b.setAttribute('aria-label',`${p.code} ${p.city||''}`.trim());b.onclick=e=>{e.stopPropagation();this.select(p.code)};
    this.host.appendChild(b);this.labels.set(p.code,b);
   }
