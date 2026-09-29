@@ -1,3 +1,4 @@
+import { globeInteraction } from '../src/globe-geometry';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CAMERA_FLOOR, TURKEY_BOUNDS, earthPoint, flightPosition, regionDistance, worldDistance, onVisibleHemisphere } from '../src/globe-geometry';
@@ -17,3 +18,5 @@ for(const [width,height] of [[1363,936],[393,740],[320,740],[844,390]]){
  assert.equal(onVisibleHemisphere(earthPoint(-39,-145.45),camera.position),false);
 }
 console.log('Globe camera: world → Türkiye framing, safe spherical flights, portrait/landscape and rear marker occlusion passed.');
+
+for(const mobile of [true,false]){const t=globeInteraction('turkey',2.6,mobile?740:900,mobile),world=globeInteraction('world',2.6,900,mobile);assert.ok(t.rotateSpeed<world.rotateSpeed/8);assert.ok(t.degreesPerPixel*100<3,'100px drag stays within a few degrees');assert.equal(t.enableDamping,false,'Regional drag has no continuing spin');assert.ok(globeInteraction('turkey',2.1,740,mobile).rotateSpeed<t.rotateSpeed,'Zooming closer slows drag further');}

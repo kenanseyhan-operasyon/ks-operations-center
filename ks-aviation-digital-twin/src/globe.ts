@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { feature } from 'topojson-client';
 import atlas from 'world-atlas/countries-110m.json';
 import { currentDevice } from './device';
-import { CAMERA_FLOOR, DETAIL_BOUNDS, EARTH_RADIUS, TURKEY_BOUNDS, earthPoint, flightPosition, onVisibleHemisphere, regionDistance, worldDistance } from './globe-geometry';
+import { CAMERA_FLOOR, DETAIL_BOUNDS, EARTH_RADIUS, TURKEY_BOUNDS, earthPoint, flightPosition, onVisibleHemisphere, globeInteraction, regionDistance, worldDistance } from './globe-geometry';
 type Route={id:string;type:string;from:Point;to:Point};
 type Point={code:string;lat:number;lon:number;city?:string;category?:string};
 type Pixels={width:number;height:number;data:Uint8ClampedArray};
@@ -56,7 +56,7 @@ export class Globe{
    requestAnimationFrame(frame);if(!this.visible||document.hidden||now-last<(currentDevice().mobile?32:16))return;
    const dt=Math.min(.05,(now-last)/1000);last=now;
    if(this.flight){const k=Math.min(1,(now-this.flight.time)/1450),q=k*k*(3-2*k);this.camera.position.copy(flightPosition(this.flight.start,this.flight.end,q));this.camera.lookAt(0,0,0);this.dirty=true;if(k===1){this.flight=undefined;if(this.controls)this.controls.enabled=true;}}
-   else if(this.controls){this.controls.autoRotate=this.autoRotate&&this.mode==='world';this.controls.update();}
+   else if(this.controls){this.tuneControls();this.controls.autoRotate=this.autoRotate&&this.mode==='world';this.controls.update();}
    else if(this.autoRotate&&this.mode==='world'){this.camera.position.applyAxisAngle(new THREE.Vector3(0,1,0),dt*.009);this.camera.lookAt(0,0,0);this.dirty=true;}
    if(this.camera.position.length()<CAMERA_FLOOR)this.camera.position.setLength(CAMERA_FLOOR);
    this.camera.updateMatrixWorld();
@@ -137,12 +137,13 @@ export class Globe{
  private bindFallback(){
   const c=this.canvas;
   c.addEventListener('pointerdown',e=>{this.cancelFlight();c.setPointerCapture(e.pointerId);this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});this.drag={id:e.pointerId,x:e.clientX,y:e.clientY};if(this.pointers.size===2){const [a,b]=[...this.pointers.values()];this.pinch=Math.hypot(a.x-b.x,a.y-b.y);}});
-  c.addEventListener('pointermove',e=>{if(!this.pointers.has(e.pointerId))return;this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(this.pointers.size===2){const[a,b]=[...this.pointers.values()],v=Math.hypot(a.x-b.x,a.y-b.y);if(this.pinch>0)this.zoomBy(this.pinch/v);this.pinch=v;}else if(this.drag){const n=this.camera.position.clone().normalize(),lat=Math.asin(n.y)*180/Math.PI,lon=Math.atan2(-n.z,n.x)*180/Math.PI,s=Math.min(.18,(this.camera.position.length()-2)*.10);this.camera.position.copy(earthPoint(Math.max(-84,Math.min(84,lat+(e.clientY-this.drag.y)*s)),lon-(e.clientX-this.drag.x)*s,this.camera.position.length()));this.camera.lookAt(0,0,0);this.dirty=true;}this.drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
+  c.addEventListener('pointermove',e=>{if(!this.pointers.has(e.pointerId))return;this.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(this.pointers.size===2){const[a,b]=[...this.pointers.values()],v=Math.hypot(a.x-b.x,a.y-b.y);if(this.pinch>0)this.zoomBy(this.pinch/v);this.pinch=v;}else if(this.drag){const n=this.camera.position.clone().normalize(),lat=Math.asin(n.y)*180/Math.PI,lon=Math.atan2(-n.z,n.x)*180/Math.PI,s=globeInteraction(this.mode,this.camera.position.length(),this.height,currentDevice().mobile).degreesPerPixel;this.camera.position.copy(earthPoint(Math.max(-84,Math.min(84,lat+(e.clientY-this.drag.y)*s)),lon-(e.clientX-this.drag.x)*s,this.camera.position.length()));this.camera.lookAt(0,0,0);this.dirty=true;}this.drag={id:e.pointerId,x:e.clientX,y:e.clientY};});
   const end=(e:PointerEvent)=>{this.pointers.delete(e.pointerId);this.drag=undefined;this.pinch=0;};c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
   c.addEventListener('wheel',e=>{e.preventDefault();this.cancelFlight();this.zoomBy(Math.exp(e.deltaY*.001));},{passive:false});
  }
  private zoomBy(factor:number){this.camera.position.setLength(Math.max(CAMERA_FLOOR,Math.min(25,2+(this.camera.position.length()-2)*factor)));this.dirty=true;if(this.camera.position.length()<4)this.loadDetail();}
- private cancelFlight(){this.flight=undefined;this.autoRotate=false;this.userMoved=true;if(this.controls){this.controls.enabled=true;this.controls.autoRotate=false;}}
+ private tuneControls(){if(!this.controls)return;const t=globeInteraction(this.mode,this.camera.position.length(),this.height,currentDevice().mobile);this.controls.rotateSpeed=t.rotateSpeed;this.controls.zoomSpeed=t.zoomSpeed;this.controls.enableDamping=t.enableDamping;}
+ private cancelFlight(){this.tuneControls();this.flight=undefined;this.autoRotate=false;this.userMoved=true;if(this.controls){this.controls.enabled=true;this.controls.autoRotate=false;}}
  setLayers(c:Set<string>){this.visibleCodes=c;this.placeLabels();}
  setRoutes(routes:Route[]){this.routes=routes;this.placeLabels();this.drawRoutes(performance.now());}
  show(v:boolean){this.visible=v;if(!v){this.flight=undefined;if(this.controls)this.controls.enabled=true;}else this.resize();}
@@ -152,7 +153,7 @@ export class Globe{
   const center=mode==='world'?{lat:26,lon:24}:this.focusPoint;
   const bounds=mode==='airport'?{west:center.lon-5,east:center.lon+5,north:center.lat+3,south:center.lat-3}:TURKEY_BOUNDS;
   const distance=mode==='world'?worldDistance(aspect):regionDistance(aspect,center,bounds);
-  if(this.controls){this.controls.enabled=false;this.controls.autoRotate=false;this.controls.target.set(0,0,0);this.controls.enableDamping=false;this.controls.update();this.controls.enableDamping=true;}
+  if(this.controls){this.controls.enabled=false;this.controls.autoRotate=false;this.controls.target.set(0,0,0);this.controls.enableDamping=false;this.controls.update();this.tuneControls();}
   this.flight={start:this.camera.position.clone(),end:earthPoint(center.lat,center.lon,distance),time:performance.now()};
   if(mode!=='world')this.loadDetail();this.dirty=true;
  }

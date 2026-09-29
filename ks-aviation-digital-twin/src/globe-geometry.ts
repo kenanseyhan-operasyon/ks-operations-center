@@ -1,4 +1,11 @@
 import * as THREE from 'three';
+
+/** Regional navigation follows altitude and stops immediately when the finger lifts. */
+export function globeInteraction(mode:'world'|'turkey'|'airport',distance:number,height:number,mobile:boolean){
+ const regional=mode!=='world';
+ const rotateSpeed=regional?THREE.MathUtils.clamp((distance-2)/distance*.22,.008,.055)*(mobile?.72:1):.5;
+ return {rotateSpeed,zoomSpeed:regional?.42:.8,enableDamping:!regional,degreesPerPixel:360/Math.max(240,height)*rotateSpeed};
+}
 export const EARTH_RADIUS=2;
 export const CAMERA_FLOOR=2.055;
 export const TURKEY_BOUNDS={west:24.1,east:45,north:43,south:34.2};

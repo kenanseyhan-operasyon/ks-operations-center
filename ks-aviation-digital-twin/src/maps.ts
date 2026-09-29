@@ -49,9 +49,9 @@ export class MapPlane {
     this.imagery.active.forEach((t,i)=>{const m=this.meshes.get(t.key);if(m)m.renderOrder=i+1;});
   }
 }
-export type MapHooks={ ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
+export type MapHooks={ running?:()=>ReadonlySet<string>; ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
-  canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;bearing=0;enabled=false;private ctx:CanvasRenderingContext2D;
+  canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;bearing=0;night=false;enabled=false;private ctx:CanvasRenderingContext2D;
   private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
   private pointer?:{x:number;y:number;cx:number;cz:number;world:[number,number];hit?:string;drag:boolean;move:boolean;pan:boolean;box:boolean;extend:boolean};
   draft:[number,number][]=[];
@@ -113,6 +113,7 @@ export class PlanMap {
     if(!this.imagery.enabled||!this.imagery.active.some(t=>t.ready)){c.lineWidth=1/p;c.strokeStyle='#496366';const step=this.span>500?100:10;for(let x=Math.floor((this.center[0]-this.span)/step)*step;x<this.center[0]+this.span;x+=step){c.beginPath();c.moveTo(x,this.center[1]-this.span);c.lineTo(x,this.center[1]+this.span);c.stroke();}for(let z=Math.floor((this.center[1]-this.span)/step)*step;z<this.center[1]+this.span;z+=step){c.beginPath();c.moveTo(this.center[0]-this.span,z);c.lineTo(this.center[0]+this.span,z);c.stroke();}}
     this.hooks.ground?.()?.draw(c);
     this.hooks.photo()?.draw(c);
+    if(this.night){c.save();c.setTransform(d,0,0,d,0,0);c.fillStyle='rgba(3,12,29,.76)';c.fillRect(0,0,w,h);c.restore();}
     for(const o of [...this.hooks.entities()].sort((a,b)=>Number(b.kind==='ground')-Number(a.kind==='ground'))){
       const selected=this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
@@ -122,7 +123,7 @@ export class PlanMap {
         c.fillStyle='#345866';if(s.type==='bus'){c.fillRect(-W*.42,-L*.46,W*.84,L*.07);c.fillRect(-W*.28,-L*.14,W*.56,L*.22);}else if(s.type==='tractor'){c.fillRect(-W*.42,-.62,W*.84,1.2);}else if(s.type==='belt'){c.fillStyle='#34494f';c.fillRect(.2,-3.73,.6,7.46);c.fillStyle='#7395a4';c.fillRect(-1.08,-2.34,.95,1.3);}else{c.fillStyle='#223a3a';c.fillRect(-W/2,-L/2,W,L-3);c.fillStyle='#a9bdc2';c.fillRect(-.04,-L/2,.08,L-3);if(s.loaded){c.fillStyle='#b69b6c';for(let row=0;row<4;row++)for(const x of [-.62,.06])c.fillRect(x,L/2-2.86+row*.69,.56,.59);}}
       }
       else{c.rect(-o.width/2,-o.length/2,o.width,o.length);c.fill();if(o.kind==='vehicle'){c.fillStyle='#4d8498';c.fillRect(-o.width*.43,-o.length*.46,o.width*.86,o.length*.16);}}
-      c.stroke();if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
+      c.stroke();if(o.preset==='R14'&&this.hooks.running?.().has(o.id)){if(this.night){const glow=c.createRadialGradient(0,-o.length/2-3,0,0,-o.length/2-3,6);glow.addColorStop(0,'rgba(255,235,175,.65)');glow.addColorStop(1,'rgba(255,235,175,0)');c.fillStyle=glow;c.fillRect(-6,-o.length/2-9,12,12);}c.fillStyle='#fff1ba';c.fillRect(-o.width*.4,-o.length/2,.35,.3);c.fillRect(o.width*.4-.35,-o.length/2,.35,.3);c.fillStyle='#ffba38';for(const side of [-1,1])for(let z=-o.length*.3;z<o.length*.45;z+=2)c.fillRect(side*o.width/2-.1,z,.2,.2);}if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }
     for(const marker of this.hooks.markers()){c.beginPath();c.arc(marker.x,marker.z,(marker.selected?7:5)/p,0,Math.PI*2);c.fillStyle=marker.selected?'#ffffff':marker.color;c.fill();c.strokeStyle='#10232b';c.lineWidth=2/p;c.stroke();if(marker.selected){c.font=`${12/p}px system-ui`;const textWidth=c.measureText(marker.label).width;c.fillStyle='#071c25ee';c.fillRect(marker.x+9/p,marker.z-17/p,textWidth+8/p,19/p);c.fillStyle='#fff';c.fillText(marker.label,marker.x+13/p,marker.z-3/p);}}
     if(this.draft.length){c.beginPath();this.draft.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.strokeStyle='#b7ff3c';c.lineWidth=3/p;c.stroke();for(const [x,z] of this.draft){c.beginPath();c.arc(x,z,4/p,0,Math.PI*2);c.fillStyle='#b7ff3c';c.fill();}}

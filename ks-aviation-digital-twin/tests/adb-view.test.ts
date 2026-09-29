@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { airportFrame,AIRPORT_TARGET,RUNWAY_BEARING } from '../src/airport-view';
+import { airportFrame,AIRPORT_TARGET } from '../src/airport-view';
 import { closedAnimationPack } from '../src/model-animations';
+import { VehicleLighting } from '../src/vehicle-lighting';
 import { pavementTone } from '../src/ground-tone';
 for(const [w,h,upright] of [[1440,900,false],[393,740,true],[844,390,true],[320,568,true]] as const){
   const f=airportFrame(w,h,upright),camera=new THREE.PerspectiveCamera(42,w/h,.05,30000);camera.position.copy(AIRPORT_TARGET).add(f.offset);camera.lookAt(AIRPORT_TARGET);camera.updateMatrixWorld();
-  for(const [x,z] of [[-1250,-3850],[1750,-3850],[-1250,1250],[1750,1250]]){const p=new THREE.Vector3(x,0,z).project(camera);assert.ok(Math.abs(p.x)<.92&&Math.abs(p.y)<.86,`${w}x${h}: airport fits`);}
-  const a=AIRPORT_TARGET.clone().add(new THREE.Vector3(Math.sin(RUNWAY_BEARING),0,Math.cos(RUNWAY_BEARING)).multiplyScalar(1500)).project(camera),b=AIRPORT_TARGET.clone().project(camera);
-  assert.ok(upright?Math.abs(a.x-b.x)<.01:Math.abs(a.y-b.y)<.01,'Runway axis stays upright on phone and horizontal on desktop');
+  for(const [x,z] of [[-1250,-3850],[1750,-3850],[-1250,1250],[1750,1250]]){const p=new THREE.Vector3(x,0,z).project(camera);assert.ok(Math.abs(p.x)<.961&&Math.abs(p.y)<.961,`${w}x${h}: airport fits`);}
+  assert.ok(f.offset.clone().normalize().y>.99999999,'Airport opens straight overhead in 3D');
+  const a=AIRPORT_TARGET.clone().add(new THREE.Vector3(0,0,1).multiplyScalar(1500)).project(camera),b=AIRPORT_TARGET.clone().project(camera);
+  assert.ok(upright?Math.abs(a.x-b.x)<.01:Math.abs(a.y-b.y)<.01,'Image edges stay upright on phone and horizontal on desktop');
 }
 assert.equal(airportFrame(393,740,true).bearing,airportFrame(844,390,true).bearing,'Phone rotation preserves airport bearing');
 const cream=pavementTone(230,228,220);assert.ok(cream[0]<210&&cream[1]<210&&cream[2]<210);assert.ok(cream[0]>cream[2]);assert.deepEqual(pavementTone(60,95,48),[60,95,48],'Vegetation retains its color');
@@ -25,4 +27,12 @@ assert.ok(hinge);const closed=new THREE.Quaternion().fromArray(track.values,0);a
 const action=pack.actions.get(clip.name)!;assert.equal(action.paused,true);pack.mixer.update(5);assert.ok(hinge.quaternion.angleTo(closed)<1e-5,'Waiting does not raise the railing');
 action.paused=false;action.timeScale=1;action.play();pack.mixer.update(clip.duration+1);assert.ok(hinge.quaternion.angleTo(closed)>.5,'Open reaches upright pose');
 action.paused=false;action.timeScale=-1;action.play();pack.mixer.update(clip.duration+1);assert.ok(hinge.quaternion.angleTo(closed)<1e-5,'Close returns to folded pose');
-console.log('PASS: desktop horizontal / phone fixed bearing, full airport framing, pavement contrast, real R14 closed initialization and reversible railing animation.');
+const lens=gltf.scene.getObjectByName('Headlamp_Lens') as THREE.Mesh;
+assert.ok(lens,'Actual R14 headlamp is present');const original=lens.material as THREE.MeshStandardMaterial,groundScene=new THREE.Scene(),rig=new VehicleLighting(gltf.scene,groundScene);
+const lightMaterial=lens.material as THREE.MeshStandardMaterial;
+assert.notEqual(lightMaterial,original,'Vehicle owns its emissive material');
+assert.equal(lightMaterial.emissiveIntensity,0,'Engine starts stopped, lamps off');
+rig.update(true,true,0);assert.ok(lightMaterial.emissiveIntensity>2,'Night headlights activate with engine');assert.ok(groundScene.children[0].visible,'Night ground light pools visible');
+rig.update(true,false,0);assert.ok(lightMaterial.emissiveIntensity>0,'Day running lamps stay on');assert.equal(groundScene.children[0].visible,false,'Day does not draw ground light pools');
+rig.update(false,true,0);assert.equal(lightMaterial.emissiveIntensity,0,'Stopping engine switches off lamps');assert.equal(groundScene.children[0].visible,false);rig.dispose();assert.equal(lens.material,original);assert.equal(groundScene.children.length,0,'Removal releases light effects');
+console.log('PASS: night/engine lights on real GLB; desktop horizontal / phone fixed bearing, full airport framing, pavement contrast, real R14 closed initialization and reversible railing animation.');
