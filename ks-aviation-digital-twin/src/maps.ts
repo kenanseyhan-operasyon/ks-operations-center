@@ -1,3 +1,4 @@
+import { portraitInput } from './portrait-lock';
 import * as THREE from 'three';
 import { screenDeltaToWorld } from './airport-view';
 import { boundedView, type StaticGround } from './static-ground';
@@ -58,16 +59,17 @@ export class PlanMap {
   constructor(public host:HTMLElement,public imagery:Imagery,private hooks:MapHooks){
     this.canvas.className='plan-map';this.canvas.setAttribute('aria-label','ADB 2D harita ve çizim alanı');this.ctx=this.canvas.getContext('2d')!;host.appendChild(this.canvas);
     new ResizeObserver(()=>this.draw()).observe(host);
-    this.canvas.addEventListener('contextmenu',e=>e.preventDefault());
-    const coords=(e:PointerEvent):[number,number]=>{const r=this.canvas.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
-    this.canvas.addEventListener('pointerdown',e=>{
+    const input=portraitInput(this.canvas);
+    input.addEventListener('contextmenu',e=>e.preventDefault());
+    const coords=(e:PointerEvent):[number,number]=>{const r=input.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+    input.addEventListener('pointerdown',e=>{
       if(e.button!==0&&e.button!==2)return;
       const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);this.canvas.setPointerCapture(e.pointerId);
       if(this.points.size>1){if(this.pointer?.drag)this.hooks.dragEnd();this.pointer=undefined;this.multi=true;return;}
       this.multi=false;const w=this.toWorld(x,y),hit=this.pick(w[0],w[1]);
       this.pointer={x,y,cx:x,cz:y,world:w,hit,drag:false,move:false,box:e.shiftKey&&e.button===0&&this.hooks.editable()&&!this.hooks.drawing(),extend:e.ctrlKey||e.metaKey,pan:e.button===2||!hit||!this.hooks.editable()||!this.hooks.selection().has(hit)};
     });
-    this.canvas.addEventListener('pointermove',e=>{
+    input.addEventListener('pointermove',e=>{
       if(!this.points.has(e.pointerId))return;
       const old=[...this.points.values()];const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);
       if(this.points.size===2){
@@ -87,8 +89,8 @@ export class PlanMap {
     const up=(e:PointerEvent)=>{this.points.delete(e.pointerId);const p=this.pointer;this.pointer=undefined;
       if(p?.box&&p.move&&e.type!=='pointercancel'){this.hooks.boxSelect?.(this.hooks.entities().filter(o=>{const [x,y]=this.toScreen(o.position[0],o.position[2]);return x>=Math.min(p.x,p.cx)&&x<=Math.max(p.x,p.cx)&&y>=Math.min(p.y,p.cz)&&y<=Math.max(p.y,p.cz);}).map(o=>o.id),p.extend);}else if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);
       if(!this.points.size)this.multi=false;this.refresh();};
-    this.canvas.addEventListener('pointerup',up);this.canvas.addEventListener('pointercancel',up);
-    this.canvas.addEventListener('wheel',e=>{e.preventDefault();const r=this.canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
+    input.addEventListener('pointerup',up);input.addEventListener('pointercancel',up);
+    input.addEventListener('wheel',e=>{e.preventDefault();const r=input.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
   private limit(){const v=boundedView(this.center,this.span);this.center=v.center;this.span=v.span;}
   get pixels(){return (this.host.clientWidth||800)/this.span;}

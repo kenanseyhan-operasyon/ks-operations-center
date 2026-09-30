@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "KS Aviation Digital Twin",
+  "short_name": "KS Aviation",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#061318",
+  "theme_color": "#061318",
+  "icons": [{"src":"/ks-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

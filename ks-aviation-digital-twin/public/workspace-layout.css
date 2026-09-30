@@ -51,3 +51,19 @@ body.in-workspace #wsFallback{left:calc(var(--edge-x) + var(--menu-size) + 12px)
 }
 
 @media(max-width:600px){body.in-workspace .ws-animations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:min(320px,calc(100% - 80px))!important;gap:5px}body.in-workspace .ws-animations button{min-width:0;min-height:42px;font-size:11px;white-space:normal;padding:6px}}
+
+/* Airport phone view keeps a portrait layout even when the device is sideways. */
+body.airport-portrait #app{position:fixed!important;left:50%!important;top:50%!important;width:var(--airport-width)!important;height:var(--airport-height)!important;transform:translate(-50%,-50%) rotate(var(--airport-turn));transform-origin:center;overflow:hidden}
+body.in-workspace.airport-portrait .workspace{height:100%!important;width:100%!important;--menu-size:44px}
+body.in-workspace.airport-portrait .ws-nav,body.in-workspace.airport-portrait .ws-toolbar{left:var(--edge-x)!important;top:calc(var(--edge-y) + 2*var(--menu-size) + 16px)!important;width:calc(100% - var(--edge-x) - 12px - env(safe-area-inset-right))!important;max-width:none!important;max-height:calc(var(--airport-height) - var(--edge-y) - 2*var(--menu-size) - 100px)!important;display:grid!important;grid-template-columns:1fr 1fr;align-items:stretch!important;overflow-x:hidden!important;overflow-y:auto!important}
+body.in-workspace.airport-portrait .ws-nav[hidden],body.in-workspace.airport-portrait .ws-toolbar[hidden]{display:none!important}
+body.in-workspace.airport-portrait .ws-nav .ws-crumb,body.in-workspace.airport-portrait .ws-nav .ws-tabs,body.in-workspace.airport-portrait .ws-toolbar .ws-ground-choice{grid-column:1/-1}
+body.in-workspace.airport-portrait .ws-nav .ws-crumb{display:flex!important}
+body.in-workspace.airport-portrait .ws-tabs{display:grid!important;grid-template-columns:1fr 1fr!important}
+body.in-workspace.airport-portrait .ws-toolbar button{width:100%;text-align:left}
+body.in-workspace.airport-portrait .ws-animations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:min(320px,calc(100% - 80px))!important;gap:5px}
+body.in-workspace.airport-portrait .ws-animations button{min-width:0;min-height:42px;font-size:11px;white-space:normal;padding:6px}
+body.in-workspace.airport-portrait .ws-panel,body.in-workspace.airport-portrait .ws-service-panel,body.in-workspace.airport-portrait .ws-photo-panel,body.in-workspace.airport-portrait .ws-library{left:8px!important;right:8px!important;width:auto!important;max-width:none!important;max-height:calc(var(--airport-height)*.65)!important}
+body.in-workspace.airport-portrait .ws-hud{display:none!important}
+
+.fullscreen-help{position:fixed;z-index:100;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(360px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:22px;border:1px solid #7995a1;border-radius:14px;background:#0a202bf5;color:#e9f6f5;font:14px/1.5 system-ui;box-shadow:0 0 0 100vmax #00131c99}.fullscreen-help strong{font-size:18px}.fullscreen-help ol{padding-left:20px}.fullscreen-help li{margin:9px 0}.fullscreen-help button{min-height:44px;width:100%;background:#b7ff3c;color:#142316;border:0;border-radius:7px;font:700 14px system-ui}

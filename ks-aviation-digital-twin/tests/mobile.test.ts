@@ -30,7 +30,7 @@ const arrivals=images.slice(49);arrivals[0].onerror();arrivals.slice(1).forEach(
 for(const mesh of plane.meshes.values()){assert.equal((mesh.material as any).depthTest,false);assert.equal((mesh.material as any).depthWrite,false);}
 imagery.enabled=false;imagery.update(0,0,1);assert.equal(plane.meshes.size,0);
 // Real pointer handlers: a pinch never places or moves an object; taps still select.
-const handlers:any={},ctx:any={};const canvas:any={className:'',setAttribute(){},getContext(){return ctx;},addEventListener(n:string,f:any){handlers[n]=f;},setPointerCapture(){},getBoundingClientRect(){return{left:0,top:0};}};
+const handlers:any={},ctx:any={};const canvas:any={clientWidth:400,clientHeight:800,className:'',setAttribute(){},getContext(){return ctx;},addEventListener(n:string,f:any){handlers[n]=f;},setPointerCapture(){},getBoundingClientRect(){return{left:0,top:0,width:400,height:800};}};
 (globalThis as any).document={createElement(){return canvas;}};
 (globalThis as any).ResizeObserver=class{observe(){}};
 (globalThis as any).requestAnimationFrame=()=>1;
