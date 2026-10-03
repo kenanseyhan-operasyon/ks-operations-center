@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import type { Signal } from './vehicle-motion';
 
-type Lamp={material:THREE.MeshStandardMaterial;color:THREE.Color;beacon:boolean;phase:number};
+type Lamp={material:THREE.MeshStandardMaterial;color:THREE.Color;beacon:boolean;phase:number;indicator:boolean;side:'left'|'right';red:boolean;reverse:boolean};
 /** R14's named lenses are the light sources. Each vehicle owns its materials/state. */
 export class VehicleLighting{
   private lamps:Lamp[]=[];
@@ -15,17 +16,18 @@ export class VehicleLighting{
   private groundY=0;
   constructor(private model:THREE.Object3D,groundScene:THREE.Scene){
     model.updateWorldMatrix(true,true);
+    const middle=model.worldToLocal(new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3())).z;
     const headlights:THREE.Vector3[]=[];
     model.traverse(n=>{
       if(!(n instanceof THREE.Mesh))return;
       const name=n.name,isBeacon=/Beacon_Amber_Lens|Beacon_Rounded_Top/.test(name);
       const white=/Headlamp_Lens|Fog_Lamp|Panel_Worklight_Lens|Manometer_Dial|Meter_Display|Meter_Backlit/.test(name);
-      const red=/Rear_Position_Lamp/.test(name),amber=/Side_Marker_Amber|Amber_Indicator|Rear_Indicator/.test(name);
-      if(!isBeacon&&!white&&!red&&!amber)return;
+      const red=/Rear_Position_Lamp|Brake_Lamp/.test(name),amber=/Side_Marker_Amber|Amber_Indicator|Rear_Indicator/.test(name),indicator=/Amber_Indicator|Rear_Indicator/.test(name),reverse=/Reverse_Lamp|Reversing_Lamp/.test(name);
+      if(!isBeacon&&!white&&!red&&!amber&&!reverse)return;
       this.originals.push({mesh:n,material:n.material});
       const anchor=model.worldToLocal(new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3()));
       const color=new THREE.Color(red?0xff2620:isBeacon||amber?0xff9c16:0xfff1d0),phase=anchor.z>0?0:3;
-      const clone=(m:THREE.Material)=>{const copy=m.clone();if(copy instanceof THREE.MeshStandardMaterial){copy.emissive.set(0);copy.emissiveIntensity=0;this.lamps.push({material:copy,color,beacon:isBeacon,phase});}return copy;};
+      const clone=(m:THREE.Material)=>{const copy=m.clone();if(copy instanceof THREE.MeshStandardMaterial){copy.emissive.set(0);copy.emissiveIntensity=0;this.lamps.push({material:copy,color,beacon:isBeacon,phase,indicator,side:anchor.z>middle?'left':'right',red,reverse});}return copy;};
       n.material=Array.isArray(n.material)?n.material.map(clone):clone(n.material);
       if(/Headlamp_Lens/.test(name))headlights.push(anchor);
       if(/Panel_Worklight_Lens/.test(name))this.panel.copy(anchor);
@@ -41,8 +43,8 @@ export class VehicleLighting{
     for(let i=0;i<2;i++){const beam=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:this.texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false,blending:THREE.AdditiveBlending}));beam.rotation.x=-Math.PI/2;beam.renderOrder=1100;beam.raycast=()=>{};this.beams.push(beam);this.pools.add(beam);}
     groundScene.add(this.pools);this.update(false,false,0);
   }
-  update(running:boolean,night:boolean,time:number){
-    for(const lamp of this.lamps){const flash=!lamp.beacon||((Math.floor(time/160)+lamp.phase)%6<2);lamp.material.emissive.copy(lamp.beacon&&Math.floor(time/960)%2?new THREE.Color(0xf3f7ff):lamp.color);lamp.material.emissiveIntensity=running&&flash?(night?3.2:1.3):0;}
+  update(running:boolean,night:boolean,time:number,signal:Signal='off',braking=false,reversing=false){
+    for(const lamp of this.lamps){const flash=lamp.indicator?(signal==='hazard'||signal===lamp.side)&&Math.floor(time/400)%2===0:!lamp.beacon||((Math.floor(time/160)+lamp.phase)%6<2);const active=lamp.indicator?(running||signal==='hazard'):lamp.reverse?running&&reversing:running;lamp.material.emissive.copy(lamp.beacon&&Math.floor(time/960)%2?new THREE.Color(0xf3f7ff):lamp.color);lamp.material.emissiveIntensity=active&&flash?(lamp.red&&braking?6:night?3.2:1.3):0;}
     this.spot.intensity=running&&night?65:0;this.work.intensity=running&&night?14:0;this.pools.visible=running&&night;
     if(!this.pools.visible)return;
     this.model.updateWorldMatrix(true,false);
