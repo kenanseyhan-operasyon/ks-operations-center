@@ -22,8 +22,18 @@ In route settings choose an aircraft, set cruise/approach speeds and approach di
 
 The R14 paired tyre meshes are split at runtime into six wheel pivots. Only front pivots steer. Wheel rotation follows signed travel and measured radius. Existing front and rear indicators flash independently; rear position lamps brighten under braking. Night headlamps and platform animations remain supported. Cab heading now matches the plan-view heading.
 
+## Continue a saved route on another device
+
+Choose **Sürüşü kaydet / Save drive** while driving or paused. This stops the vehicle and uses the existing explicit local/cloud save flow. Wait for **İnternete kaydedildi / Saved online** before changing devices; a local-only or pending message does not mean the other device has received the scene.
+
+On the other device sign in to the same application account, use **Buluttaki sahneyi aç / Open cloud scene** if local work prevents automatic loading, select R14 and open **Sürüş / Güzergâh**. The vehicle opens paused at the saved position, heading and route distance. Start the engine, then choose **Devam / Resume**. It accelerates from rest and follows the remaining original path, including the approach zone. A completed route stays parked.
+
+The optional `driving` scene field saves each vehicle's original start pose, current pose, progress, signed wheel travel, wheelbase, scale and a route fingerprint. The existing `VehicleMotion` engine rebuilds and verifies the original path; there is no replacement driving algorithm. The saved wheelbase is retained even while the new device is still loading the model. Moving/scaling the vehicle or changing its route invalidates the old checkpoint without preventing the scene from opening. Manual driving and resetting clear automatic resume state. Legacy scenes remain readable. JSON exports also include paused drive progress.
+
+Save remains explicit. Pausing, closing the panel or hiding the tab captures the current progress in the working scene; press Save for persistence. This is not background auto-sync, and movement does not continue on an inactive device.
+
 This is a route rehearsal foundation. It does not yet implement automatic aircraft/obstacle collision checking, verified wing clearances, bonding, hose connections, fuel transfer, or manufacturer-approved operating limits. Speed settings are user-defined rehearsal values. Platform, railing and gate must be closed before driving; moving vehicles cannot operate those animations.
 
 ## Verification
 
-`npm test` tests geometry and lamps using the actual R14 GLB, drive/reverse/brake behaviour, equipment interlocks, route arrival and approach speed at different frame rates, data round trips, and cloud-client version conflicts with independent simulated clients. `npm run build` typechecks and produces the Render deployment. Real database authorization and cross-device cloud verification must be performed after activation. Cloud browser WebGL availability determines whether live visual checks can include the 3D model or only the map/UI.
+`npm test` tests geometry and lamps using the actual R14 GLB, drive/reverse/brake behaviour, equipment interlocks, route arrival and approach speed at different frame rates, data round trips, and cloud-client version conflicts with independent simulated clients. Checkpoint regression tests cover saving on a curve, repeated PC/phone transfers with isolated storage, reloading, paused/complete states, invalid checkpoints and model-loading order. `npm run build` typechecks and produces the Render deployment. Real database authorization and cross-device cloud verification must be performed after activation. Cloud browser WebGL availability determines whether live visual checks can include the 3D model or only the map/UI. Simulated device/client tests and transaction-only database tests are not a physical phone/browser login test.

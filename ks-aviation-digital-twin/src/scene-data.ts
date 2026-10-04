@@ -4,6 +4,7 @@ import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { FLEET_SPECS } from './fleet-specs';
 import { GSE_SPECS } from './gse-specs';
 import { validateRoutes, type DriveRoute } from './vehicle-motion';
+import { validateDriveCheckpoints, type DriveCheckpoint } from './drive-checkpoint';
 export type Kind = 'tank' | 'wall' | 'ground' | 'tree' | 'structure' | 'aircraft' | 'vehicle';
 export type Entity = {
   id: string; name: string; kind: Kind; preset: string; color: string;
@@ -13,7 +14,7 @@ export type Entity = {
 };
 export type GroundMode='ortho'|'photo'|'satellite'|'overlay'|'plan';
 export function groundModes(value:any):{airport:GroundMode;facility:GroundMode}{const allowed=['photo','satellite','overlay','plan'];return {airport:allowed.includes(value?.airport)?value.airport:'photo',facility:allowed.includes(value?.facility)?value.facility:'satellite'};}
-export type SceneData = { schema: 'KS_DIGITAL_TWIN_V1'; airport: 'ADB'; entities: Entity[]; groups: { id: string; name: string }[]; source: string; updatedAt?: string; routes?:DriveRoute[]; groundPhoto?:GroundPhoto; sharedGround?:GroundMode; groundModes?:{airport:GroundMode;facility:GroundMode} };
+export type SceneData = { schema: 'KS_DIGITAL_TWIN_V1'; airport: 'ADB'; entities: Entity[]; groups: { id: string; name: string }[]; source: string; updatedAt?: string; routes?:DriveRoute[]; driving?:DriveCheckpoint[]; groundPhoto?:GroundPhoto; sharedGround?:GroundMode; groundModes?:{airport:GroundMode;facility:GroundMode} };
 export const id = () => crypto.randomUUID();
 const finite = (n: unknown, fallback = 0) => typeof n === 'number' && Number.isFinite(n) ? n : fallback;
 const str = (s: unknown, fallback = '') => typeof s === 'string' ? s.slice(0, 180) : fallback;
@@ -30,7 +31,8 @@ export function validateScene(value: unknown): SceneData {
     return { id: str(o.id), name: str(o.name, o.kind), kind: o.kind, preset: str(o.preset), color: color(o.color), position: [...o.position], heading: finite(o.heading), scale: Math.max(.02, Math.min(100, finite(o.scale,1))), groupId: str(o.groupId) || undefined, width: Math.max(.05, finite(o.width, 2)), length: Math.max(.05, finite(o.length,2)), height: Math.max(.05, finite(o.height,2)), radius: Math.max(.05,finite(o.radius,2)), thickness: Math.max(.02,finite(o.thickness,.2)), points: o.points?.map(p=>[...p]), wallStyle: str(o.wallStyle), flag: str(o.flag), doorSide: str(o.doorSide) };
   });
   for(const o of entities){const fleet=FLEET_SPECS[o.preset];if(fleet&&o.kind==='aircraft'){o.width=fleet.span;o.length=fleet.length;o.height=fleet.height;}const gse=GSE_SPECS[o.preset];if(gse){o.width=gse.width;o.length=gse.length;o.height=gse.height;}const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
-  return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, routes:validateRoutes(d.routes), groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), sharedGround:['ortho','photo','plan'].includes(d.sharedGround||'')?d.sharedGround:'ortho', groundPhoto:validatePhoto(d.groundPhoto),groundModes:groundModes(d.groundModes) };
+  const routes=validateRoutes(d.routes),driving=validateDriveCheckpoints(d.driving,entities,routes);
+  return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, routes, ...(driving.length?{driving}:{}), groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), sharedGround:['ortho','photo','plan'].includes(d.sharedGround||'')?d.sharedGround:'ortho', groundPhoto:validatePhoto(d.groundPhoto),groundModes:groundModes(d.groundModes) };
 }
 export function importScene(input: any): SceneData {
   if (input?.schema === 'KS_DIGITAL_TWIN_V1') return validateScene(input);
