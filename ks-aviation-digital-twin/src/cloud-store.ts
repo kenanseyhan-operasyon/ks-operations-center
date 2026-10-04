@@ -9,7 +9,7 @@ export const sceneContent=(scene:SceneData)=>JSON.stringify({...scene,updatedAt:
 /** Only a publishable/anon key enters the browser. All scene access is protected by Supabase Auth + RLS. */
 export class CloudStore{
   config?:CloudConfig;session?:Session;revision=0;private refreshing?:Promise<void>;
-  constructor(private request:typeof fetch=fetch,private storage:Storage=localStorage){}
+  constructor(private request:typeof fetch=(...args)=>fetch(...args),private storage:Storage=localStorage){}
   get email(){return this.session?.user.email||'';}
   get userId(){return this.session?.user.id;}
   async init(){
@@ -27,8 +27,8 @@ export class CloudStore{
   }
   private async api(path:string,init:RequestInit={},authenticated=true){
     if(!this.config)throw new Error('Bulut bağlantısı henüz etkin değil.');
-    const token=authenticated?await this.token():this.config.anonKey;
-    const response=await this.request(this.config.url+path,{...init,signal:AbortSignal.timeout(20000),headers:{apikey:this.config.anonKey,Authorization:`Bearer ${token}`,'Content-Type':'application/json',...init.headers}});
+    const authHeaders:Record<string,string>=authenticated?{Authorization:`Bearer ${await this.token()}`}:{ };
+    const response=await this.request(this.config.url+path,{...init,signal:AbortSignal.timeout(20000),headers:{apikey:this.config.anonKey,...authHeaders,'Content-Type':'application/json',...init.headers}});
     const body=await response.json().catch(()=>null);
     if(!response.ok){if(body?.code==='40001')throw new CloudConflict('Başka cihaz bulut kaydını değiştirdi. Önce güncel bulut sahnesini açın; yerel çalışmanız korunuyor.');throw new Error(body?.msg||body?.message||body?.error_description||`Bulut bağlantı hatası (${response.status}).`);}
     return body;
