@@ -40,88 +40,44 @@ export async function generateTripoSR(bytes,type,{signal,onProgress=()=>{},token
   signal?.addEventListener('abort',abort,{once:true});
   try{
     onProgress('Üretim servisine bağlanılıyor…');
-    client=await Client.connect(space,{hf_token:token||undefined,events:['status','data']});
+    client=await Client.connect(space,{token:token||undefined,events:['status','data']});
     if(signal?.aborted)throw new Error('aborted');
     const api=await client.view_api();
     if(!api.named_endpoints?.['/preprocess']||!api.named_endpoints?.['/generate'])throw new Error('Üretim API sözleşmesi değişti.');
     onProgress('Fotoğrafın arka planı hazırlanıyor…');
-    submission=client.submit('/preprocess',[handle_file(new Blob([bytes],{type})),true,0.85]);
+    submission=client.submit('/preprocess',[handle_file(Buffer.from(bytes)),true,0.85]);
     let prepared;
     for await(const event of submission){if(signal?.aborted)throw new Error('aborted');if(event.type==='data')prepared=event.data?.[0];if(event.type==='status'&&event.stage==='error')throw new Error(event.message||'preprocess failed');}
     if(!prepared)throw new Error('Ön işlem sonucu alınamadı.');
     onProgress('GPU sırası bekleniyor…');
     submission=client.submit('/generate',[prepared,256]);
     let output;
-    for await(const event of submission){
-      if(signal?.aborted)throw new Error('aborted');
-      if(event.type==='status'){
-        if(event.stage==='error')throw new Error(event.message||'generation failed');
-        onProgress(event.stage==='pending'?'GPU sırası bekleniyor…':'3D yüzey oluşturuluyor…');
-      }
-      if(event.type==='data')output=event.data?.[1];
-    }
+    for await(const event of submission){if(signal?.aborted)throw new Error('aborted');if(event.type==='status'){if(event.stage==='error')throw new Error(event.message||'generation failed');onProgress(event.stage==='pending'?'GPU sırası bekleniyor…':'3D yüzey oluşturuluyor…');}if(event.type==='data')output=event.data?.[1];}
     if(!output?.url)throw new Error('Üretim servisi GLB döndürmedi.');
-    onProgress('GLB doğrulanıyor…');
-    return await downloadModel(output.url,signal);
+    onProgress('GLB doğrulanıyor…');return await downloadModel(output.url,signal);
   }finally{signal?.removeEventListener('abort',abort);try{client?.close();}catch{}}
 }
-
 export async function generateTripoSG(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN}={}){
   let client,submission;
   const abort=()=>{try{submission?.cancel();}catch{}try{client?.close();}catch{}};
   signal?.addEventListener('abort',abort,{once:true});
-  async function call(endpoint,payload,message){
-    if(signal?.aborted)throw new Error('aborted');onProgress(message);
-    submission=client.submit(endpoint,payload);let data;
-    for await(const event of submission){
-      if(signal?.aborted)throw new Error('aborted');
-      if(event.type==='status'&&event.stage==='error')throw new Error(event.message||'generation failed');
-      if(event.type==='status')onProgress(message+(typeof event.queue_size==='number'?' · Sıra: '+event.queue_size:''));
-      if(event.type==='data')data=event.data;
-    }
-    if(!data)throw new Error('Üretim adımı tamamlanamadı.');return data;
-  }
-  try{
-    onProgress('TripoSG servisine bağlanılıyor…');
-    client=await Client.connect('VAST-AI/TripoSG',{hf_token:token||undefined,events:['status','data']});
-    const api=await client.view_api();
-    if(!api.named_endpoints?.['/run_segmentation']||!api.named_endpoints?.['/image_to_3d'])throw new Error('TripoSG API sözleşmesi değişti.');
-    if(api.named_endpoints['/start_session'])await call('/start_session',[],'Üretim oturumu açılıyor…');
-    const prepared=await call('/run_segmentation',[handle_file(new Blob([bytes],{type}))],'Fotoğrafın arka planı hazırlanıyor…');
-    const outputs=await call('/image_to_3d',[prepared[0],0,30,7,true,50000],'TripoSG ile 3D yüzey oluşturuluyor…');
-    if(!outputs[0]?.url)throw new Error('TripoSG GLB döndürmedi.');
-    onProgress('GLB doğrulanıyor…');return await downloadModel(outputs[0].url,signal);
-  }finally{signal?.removeEventListener('abort',abort);try{client?.close();}catch{}}
+  async function call(endpoint,payload,message){if(signal?.aborted)throw new Error('aborted');onProgress(message);submission=client.submit(endpoint,payload);let data;for await(const event of submission){if(signal?.aborted)throw new Error('aborted');if(event.type==='status'&&event.stage==='error')throw new Error(event.message||'generation failed');if(event.type==='status')onProgress(message+(typeof event.queue_size==='number'?' · Sıra: '+event.queue_size:''));if(event.type==='data')data=event.data;}if(!data)throw new Error('Üretim adımı tamamlanamadı.');return data;}
+  try{onProgress('TripoSG servisine bağlanılıyor…');client=await Client.connect('VAST-AI/TripoSG',{token:token||undefined,events:['status','data']});const api=await client.view_api();if(!api.named_endpoints?.['/run_segmentation']||!api.named_endpoints?.['/image_to_3d'])throw new Error('TripoSG API sözleşmesi değişti.');if(api.named_endpoints['/start_session'])await call('/start_session',[],'Üretim oturumu açılıyor…');const prepared=await call('/run_segmentation',[handle_file(Buffer.from(bytes))],'Fotoğrafın arka planı hazırlanıyor…');const outputs=await call('/image_to_3d',[prepared[0],0,30,7,true,50000],'TripoSG ile 3D yüzey oluşturuluyor…');if(!outputs[0]?.url)throw new Error('TripoSG GLB döndürmedi.');onProgress('GLB doğrulanıyor…');return await downloadModel(outputs[0].url,signal);}finally{signal?.removeEventListener('abort',abort);try{client?.close();}catch{}}
 }
-export async function generateModel(bytes,type,options={}){
-  if(process.env.MODEL_ENGINE==='triposg')return generateTripoSG(bytes,type,options);
-  if(process.env.MODEL_ENGINE==='triposr')return generateTripoSR(bytes,type,options);
-  return generateTrellis2(bytes,type,options);
-}
-
-export async function generateTrellis2(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN,connect=Client.connect}={}){
+export async function generateModel(bytes,type,options={}){if(process.env.MODEL_ENGINE==='triposg')return generateTripoSG(bytes,type,options);if(process.env.MODEL_ENGINE==='triposr')return generateTripoSR(bytes,type,options);return generateTrellis2(bytes,type,options);}
+export async function generateTrellis2(bytes,type,{signal,onProgress=()=>{},token=process.env.HF_TOKEN,connect=(app,options)=>Client.connect(app,options)}={}){
   if(!token)throw new Error('Hugging Face token required');
   let client,submission;
   const abort=()=>{try{submission?.cancel();}catch{}try{client?.close();}catch{}};
   signal?.addEventListener('abort',abort,{once:true});
-  async function call(endpoint,payload,message){
-    if(signal?.aborted)throw new Error('aborted');
-    onProgress(message);submission=client.submit(endpoint,payload);let data;
-    for await(const event of submission){
-      if(signal?.aborted)throw new Error('aborted');
-      if(event.type==='status'&&event.stage==='error')throw new Error([event.title,event.message].filter(Boolean).join(': ')||'generation failed');
-      if(event.type==='status'&&Number.isFinite(event.position))onProgress(message+' · Sıra: '+(event.position+1));
-      if(event.type==='data')data=event.data;
-    }
-    if(!data)throw new Error('Üretim adımı tamamlanamadı.');return data;
-  }
+  async function call(endpoint,payload,message){if(signal?.aborted)throw new Error('aborted');onProgress(message);submission=client.submit(endpoint,payload);let data;for await(const event of submission){if(signal?.aborted)throw new Error('aborted');if(event.type==='status'&&event.stage==='error')throw new Error([event.title,event.message].filter(Boolean).join(': ')||'generation failed');if(event.type==='status'&&Number.isFinite(event.position))onProgress(message+' · Sıra: '+(event.position+1));if(event.type==='data')data=event.data;}if(!data)throw new Error('Üretim adımı tamamlanamadı.');return data;}
   try{
     onProgress('TRELLIS.2 servisine bağlanılıyor…');
-    client=await connect('microsoft/TRELLIS.2',{hf_token:token,events:['status','data']});
+    client=await connect('microsoft/TRELLIS.2',{token,events:['status','data']});
     const api=await client.view_api();
     for(const name of ['/start_session','/preprocess_image','/image_to_3d','/extract_glb'])if(!api.named_endpoints?.[name])throw new Error('TRELLIS.2 API sözleşmesi değişti.');
     await call('/start_session',[],'Üretim oturumu açılıyor…');
-    const prepared=await call('/preprocess_image',[handle_file(new Blob([bytes],{type}))],'Fotoğraf hazırlanıyor…');
+    const prepared=await call('/preprocess_image',[handle_file(Buffer.from(bytes))],'Fotoğraf hazırlanıyor…');
     await call('/image_to_3d',[prepared[0],0,'512',7.5,0.7,12,5,7.5,0.5,12,3,1,0,12,3],'TRELLIS.2 ile şekil ve doku üretiliyor…');
     const outputs=await call('/extract_glb',[500000,1024],'Model GLB dosyasına dönüştürülüyor…');
     const url=typeof outputs[0]==='string'?outputs[0]:outputs[0]?.url;
