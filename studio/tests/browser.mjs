@@ -15,7 +15,9 @@ try{
  await page.goto(base);assert.ok(page.url().endsWith('/login'));
  await page.locator('#email').fill('owner@example.test');await page.locator('#password').fill('test-only-password');
  await page.locator('button[type=submit]').click();await page.waitForURL(base+'/');
- assert.equal(await page.locator('.engine-panel').isHidden(),true,'Unverified remote generator must stay hidden');
+ // The TRELLIS.2 generator is now a verified feature and should be visible, but generation stays disabled until HF is connected and a photo/consent are present.
+ assert.equal(await page.locator('.engine-panel').isVisible(),true,'Verified remote generator must be visible');
+ assert.equal(await page.locator('#generate').isDisabled(),true,'Generate must remain disabled before engine/photo/consent readiness');
  await page.evaluate(bytes=>{const transfer=new DataTransfer();transfer.items.add(new File([new Uint8Array(bytes)],'test-ekipman.glb',{type:'model/gltf-binary'}));document.getElementById('canvas-wrap').dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));},[...fixtureGLB()]);
  await page.waitForFunction(()=>document.getElementById('part-count').textContent==='2');
  await page.getByRole('option',{name:'Tank',exact:true}).click();
@@ -39,5 +41,5 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Mobile horizontal overflow');
  page.once('dialog',dialog=>dialog.accept());await page.locator('#logout').click();await page.waitForURL(base+'/login');
  const noAccess=await page.request.get(base+'/api/session');assert.equal(noAccess.status(),401);
- console.log('BROWSER_TESTS_PASS: login gate, GLB drag-drop, transforms, metadata package, merge, export round trip, mobile layout, logout');
+ console.log('BROWSER_TESTS_PASS: login gate, verified TRELLIS panel guard, GLB drag-drop, transforms, metadata package, merge, export round trip, mobile layout, logout');
 }finally{await browser?.close();app.closeAllConnections();await new Promise(r=>app.close(r));}
