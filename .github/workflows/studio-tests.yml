@@ -1,7 +1,7 @@
 name: KS 3D Studio tests
 on:
   push:
-    branches: [ks-3d-studio, ks-3d-studio-verify]
+    branches: [ks-3d-studio, ks-3d-studio-verify, ks-3d-trellis2-test]
     paths: ['studio/**', '.github/workflows/studio-tests.yml']
   pull_request:
     paths: ['studio/**', '.github/workflows/studio-tests.yml']
@@ -24,7 +24,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
   engine-and-live:
-    if: github.ref == 'refs/heads/ks-3d-studio-verify'
+    if: github.ref == 'refs/heads/ks-3d-studio-verify' || github.ref == 'refs/heads/ks-3d-trellis2-test'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     defaults:
@@ -39,4 +39,4 @@ jobs:
       - run: node scripts/live-check.mjs
       - run: npm run probe:engine
         env:
-          MODEL_ENGINE: triposg
+          MODEL_ENGINE: trellis2
