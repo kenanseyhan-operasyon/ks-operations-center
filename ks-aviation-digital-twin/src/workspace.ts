@@ -21,6 +21,7 @@ import { VehicleLighting } from './vehicle-lighting';
 import { VehicleRig } from './vehicle-rig';
 import { DrivingPanel } from './driving-panel';
 import { CloudPanel } from './cloud-panel';
+import type { AuthCallback } from './auth-callback';
 import './driving.css';
 import { portraitInput,syncPortraitLock } from './portrait-lock';
 type Lang='tr'|'en';
@@ -45,7 +46,7 @@ export class Workspace {
   private l=(key:string)=>labels[key]?.[this.lang==='tr'?0:1]||key;
   private say=(tr:string,en:string)=>this.lang==='tr'?tr:en;
   constructor(private root:HTMLElement,private lang:Lang,private exit:(where:'world'|'turkey')=>void){}
-  async init(){
+  async init(authCallback?:AuthCallback){
     this.root.innerHTML=`<button class="ws-menu-toggle ws-nav-toggle" data-menu="nav" aria-controls="wsNavigation" aria-expanded="false" type="button">›</button><button class="ws-menu-toggle ws-tools-toggle" data-menu="tools" aria-controls="wsTools" aria-expanded="false" type="button">›</button><div class="ws-nav" id="wsNavigation" hidden><div class="ws-crumb"><span class="ws-dot"></span><strong>ADB / LTBJ</strong><small id="wsSource"></small></div><div class="ws-tabs">${['world','turkey','airport','facility','design'].map(k=>`<button data-nav="${k}" data-label="${k}"></button>`).join('')}</div></div>
     <div class="ws-savebar" hidden><span id="wsSaveState"></span><button data-action="save" data-label="save" class="ws-primary"></button><button data-action="discard" data-label="discard"></button><button data-action="finishEdit" data-label="finishEdit"></button></div><div class="ws-body"><aside class="ws-panel" hidden><button class="ws-close-editor" data-action="closePanel" data-label="closePanel"></button><div class="ws-section"><h3 data-label="add"></h3><div class="ws-row ws-categories"><button data-category="all">Tümü / All</button><button data-category="aircraft">Uçak / Aircraft</button><button data-category="vehicle">Araç / GSE</button><button data-category="structure">Tesis / Facility</button><button data-category="tree">Ağaç / Trees</button></div><select id="wsCatalog" aria-label="Nesne türü">${Object.entries(CATALOG).map(([k,v])=>`<option value="${k}">${this.lang==='tr'?v.tr:v.en}</option>`).join('')}</select><div class="ws-row"><button data-action="place" data-label="place"></button><button data-action="center" data-label="center"></button></div><div id="wsDrawing" hidden><button data-action="finish" data-label="finish"></button><button data-action="cancel" data-label="cancel"></button><small id="wsPointCount"></small></div></div>
     <div class="ws-section"><div class="ws-row ws-triple">${['translate','rotate','scale'].map(k=>`<button data-transform="${k}" data-label="${k}"></button>`).join('')}</div><div class="ws-row">${['undo','redo','copy','paste','duplicate','remove','ground'].map(k=>`<button data-action="${k}" data-label="${k}"></button>`).join('')}</div><div class="ws-nudge"><button data-nudge="0,-.5" aria-label="Kuzeye 0,5 m">↑</button><button data-nudge="-.5,0" aria-label="Batıya 0,5 m">←</button><span>0,5 m</span><button data-nudge=".5,0" aria-label="Doğuya 0,5 m">→</button><button data-nudge="0,.5" aria-label="Güneye 0,5 m">↓</button><button data-turn="-5" aria-label="Sola 5 derece">↶ 5°</button><button data-turn="5" aria-label="Sağa 5 derece">5° ↷</button></div></div>
@@ -83,7 +84,7 @@ export class Workspace {
     this.imagery.onChange=()=>{this.plane.sync();this.plan.draw();this.updateGroundStatus();};
     this.bind();this.setLanguage(this.lang);this.syncObjects();new ResizeObserver(()=>this.resize()).observe(this.stage);this.resize();window.addEventListener('resize',()=>this.resize());document.addEventListener('fullscreenchange',()=>this.resize());screen.orientation?.addEventListener('change',()=>this.resize());
     const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;this.driving?.tick(dt);for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer);}if(this.driving?.active)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}};frame();
-    void this.cloud.init();
+    void this.cloud.init(authCallback);
     if(this.storageWarning)this.notify(this.say('Yerel kayıt okunamadı; kaynak sahne açıldı.','Local save could not be read; source scene opened.'));
   }
   private ensure3D(){

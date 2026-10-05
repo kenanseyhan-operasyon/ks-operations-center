@@ -34,6 +34,6 @@ const fakeFetch=(async(url:string,options?:RequestInit)=>{
 }) as typeof fetch;
 const storage=()=>{const map=new Map<string,string>();return {getItem:(k:string)=>map.get(k)||null,setItem:(k:string,v:string)=>map.set(k,v),removeItem:(k:string)=>map.delete(k)} as Storage;};
 const a=new CloudStore(fakeFetch,storage()),b=new CloudStore(fakeFetch,storage());await a.init();await b.init();await a.signIn('test@example.test','not-a-real-password');await b.signIn('test@example.test','not-a-real-password');
-assert.equal(await a.read(),undefined);assert.equal((await a.save(scene)).revision,1);const loaded=await b.read();assert.deepEqual(loaded?.payload.routes,scene.routes);b.revision=loaded!.revision;await a.save(scene);await assert.rejects(()=>b.save(scene),CloudConflict);assert.equal(revision,2);b.signOut();await assert.rejects(()=>b.read(),/giriş/);
+assert.equal(await a.read(),undefined);assert.equal((await a.save(scene)).revision,1);const loaded=await b.read();assert.deepEqual(loaded?.payload.routes,scene.routes);b.revision=loaded!.revision;await a.save(scene);await assert.rejects(()=>b.save(scene),CloudConflict);assert.equal(revision,2);b.signOut();await assert.rejects(()=>b.read(),{code:'not_signed_in'});
 const offline=new CloudStore((async()=>{throw new TypeError('network offline');}) as typeof fetch,storage());await assert.rejects(()=>offline.init());
 console.log('PASS: acceleration/braking/reverse/interlocks; smooth feasible routes, approach speed, exact stops at 20/60 FPS; route persistence; separate-device cloud conflict and sign-out checks.');

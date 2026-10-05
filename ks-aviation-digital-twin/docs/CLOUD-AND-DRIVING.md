@@ -14,6 +14,18 @@ Scenes and the last 30 saved revisions belong to `auth.uid()`. Public visitors c
 
 Local scenes are retained before any cloud request. Existing local work is never silently replaced by a different cloud scene. Opening a cloud scene keeps a device backup accessible from the Cloud dialog. Offline failures do not report cloud success. No service worker or offline synchronization is implied.
 
+## Account and email flows
+
+**Giriş yap / Sign in** and **Hesap oluştur / Create account** are separate tabs. Registration requires two matching passwords of at least 12 characters. Existing users can still sign in with their existing password; the new-password rule does not reject older login credentials. Every password input has its own accessible show/hide button. Messages follow the current TR/EN language; raw Auth and database diagnostics are never displayed.
+
+- Registration without an immediate session opens **E-posta doğrulaması bekleniyor / Email verification pending**. It includes **Doğrulama e-postasını tekrar gönder / Resend verification email** and a route back to sign-in. Supabase's anti-enumeration responses are respected: an accepted request does not prove an account was created or an email was delivered.
+- **Şifremi unuttum / Forgot password** sends the existing Supabase `/recover` request. No password changes until the user opens the email link and submits two matching new passwords. The recovery UI also survives a page refresh.
+- Confirmation and recovery use the existing client-only implicit Auth flow. Supabase returns credentials in the URL fragment; startup removes them immediately, opens the account screen, and validates the access token with Auth `/user` before retaining a session. It never trusts URL user IDs or decoded JWT claims. Invalid links produce a safe translated message.
+- Signup, resend and recovery all send `redirect_to` for the current site root. In Supabase **Authentication → URL Configuration**, the production **Site URL** and allowed redirect must include `https://ks-aviation-digital-twin.onrender.com/`. Never disable email confirmation to work around email delivery problems.
+- Auth email success means the sending request was accepted, not inbox delivery. Check spam, Auth logs, SMTP sender configuration and rate limits. Supabase's default SMTP is restricted; production delivery to arbitrary users may require custom SMTP. The UI also explains unauthorized recipient and rate-limit responses. No SMTP secrets belong in this static site.
+
+The existing `KS_ADT_CLOUD_AUTH_V1` session key, scene storage keys, ownership policies, save RPC and revision conflict checks are retained. No migration or user deletion is involved. The automated Auth transport tests use isolated fake accounts and storage; they do not prove real email delivery or physical PC/phone testing. Finish live acceptance with a user-controlled mailbox and password, then save on PC and open the same account's cloud scene on the phone.
+
 ## Driving and route rehearsal
 
 Select R14, then **Sürüş / Güzergâh**. Start the engine. Hold W/up to accelerate, S/down to brake then reverse, A/D to steer, Space to brake. Q/E select turn signals and H selects hazards. On-screen controls support simultaneous touch steering/throttle. Pointer cancellation, tab hiding and blur release inputs and stop the rehearsal.
