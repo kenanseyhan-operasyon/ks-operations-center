@@ -1,3 +1,4 @@
+import { isRefueller } from './refueller-series';
 import * as THREE from 'three';
 import { FLEET_SPECS } from './fleet-specs';
 import { makeFleetAircraft } from './fleet-model';
@@ -48,7 +49,7 @@ export function makeObject(o: Entity) {
     if(o.preset==='CYPRESS')cyl(W*.43,H*.85,0,H*.56,0,o.color,.04);
     else{const m=sphere(W*.5,0,H*.68,0);m.scale.y=H*.38/(W*.5);}
   } else if(o.kind==='vehicle'){
-    if(o.preset==='R14'){
+    if(isRefueller(o.preset)){
       const m=box(W,H,L,0,H/2);m.material=new THREE.MeshStandardMaterial({color:'#b7ff3c',wireframe:true,transparent:true,opacity:.22});g.userData.modelPending=true;
     }else{
       box(W*.88,.35,L*.95,0,.75,0,'#344347');box(W,H*.58,L*.19,0,H*.45,-L*.36);

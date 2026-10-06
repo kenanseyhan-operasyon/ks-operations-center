@@ -12,8 +12,8 @@ const poseEqual = (a:VehicleMotion,b:VehicleMotion) => {
   assert.ok(Math.abs(Math.atan2(Math.sin(a.pose.heading-b.pose.heading),Math.cos(a.pose.heading-b.pose.heading)))<1e-8,'Resume preserves heading');
 };
 function snapshot(m:VehicleMotion,r:DriveRoute=route):SceneData {
-  const truck=newEntity('R14',m.pose.x,m.pose.z);truck.id=r.vehicleId;truck.heading=m.pose.heading*180/Math.PI;truck.trailerAngle=m.trailerAngle;
-  return validateScene(JSON.parse(JSON.stringify({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities:[truck],groups:[],source:'checkpoint-test',routes:[r],driving:[captureDriveCheckpoint(truck.id,m,truck.scale)]})));
+  const truck=newEntity('R14',m.pose.x,m.pose.z);truck.id=r.vehicleId;truck.heading=m.pose.heading*180/Math.PI;truck.trailerAngle=m.trailerAngle;truck.fuelLitres=17500;truck.name='3002';
+  return validateScene(JSON.parse(JSON.stringify({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities:[truck],groups:[],fleetNumbers:{2000:2004,3000:3007},source:'checkpoint-test',routes:[r],driving:[captureDriveCheckpoint(truck.id,m,truck.scale)]})));
 }
 function reopen(scene:SceneData):VehicleMotion {
   const truck=scene.entities[0],m=new VehicleMotion({x:truck.position[0],z:truck.position[2],heading:truck.heading*Math.PI/180});
@@ -29,6 +29,10 @@ const saved=snapshot(original),resumed=reopen(saved);
 assert.equal(resumed.mode,'paused');assert.equal(resumed.wheelbase,original.wheelbase);
 assert.deepEqual(resumed.path,original.path,'Rebuild from original start and heading');
 assert.equal(resumed.progress,original.progress);assert.equal(resumed.distance,original.distance);poseEqual(original,resumed);
+const updatedModel=new VehicleMotion(statePose(saved));Object.assign(updatedModel,r14Dimensions());
+assert.ok(restoreDriveCheckpoint(updatedModel,{...saved.driving![0],trailer:{...saved.driving![0].trailer!,wheelbase:5.952,hitchOffset:.6285}},route));
+assert.equal(updatedModel.trailerWheelbase,r14Dimensions().trailerWheelbase,'Old saves use the current model coupling geometry');
+assert.equal(updatedModel.progress,original.progress);poseEqual(updatedModel,original);
 for(let i=0;i<200;i++)resumed.step(.05);
 poseEqual(original,resumed);assert.equal(resumed.progress,original.progress,'Restored drive must wait for Resume');
 original.stop();original.mode='route';resumed.mode='route';
@@ -89,10 +93,13 @@ const deviceStorage=()=>{const values=new Map<string,string>();return {getItem:(
 const pcStorage=deviceStorage(),phoneStorage=deviceStorage(),pc=new CloudStore(request,pcStorage),phone=new CloudStore(request,phoneStorage);
 await pc.init();await phone.init();await pc.signIn('test@example.test','test-only');await phone.signIn('test@example.test','test-only');
 await pc.save(saved);const onPhone=(await phone.read())!;phone.revision=onPhone.revision;
+assert.equal(onPhone.payload.entities[0].fuelLitres,17500);assert.equal(onPhone.payload.entities[0].name,'3002');assert.deepEqual(onPhone.payload.fleetNumbers,{2000:2004,3000:3007});
 const phoneDrive=reopen(onPhone.payload);poseEqual(phoneDrive,reopen(saved));phoneDrive.mode='route';for(let i=0;i<200;i++)phoneDrive.step(.05);
 const phoneSave=snapshot(phoneDrive);await phone.save(phoneSave);
 await assert.rejects(()=>pc.save(saved),CloudConflict);
 const reloadPC=new CloudStore(request,pcStorage);await reloadPC.init();const backOnPC=(await reloadPC.read())!;
 const pcDrive=reopen(backOnPC.payload);assert.equal(pcDrive.progress,phoneDrive.progress);poseEqual(pcDrive,phoneDrive);
 assert.equal(backOnPC.revision,2);assert.notEqual(backOnPC.payload.driving![0].progress,saved.driving![0].progress);
+assert.equal(backOnPC.payload.entities[0].fuelLitres,17500);assert.deepEqual(backOnPC.payload.fleetNumbers,saved.fleetNumbers);
 console.log('PASS: curved halfway save/reopen/resume; unloaded model; repeated PC/phone transfers; slow approach/completion; invalid and legacy data; cloud conflict preserves latest drive.');
+function statePose(scene:SceneData){const e=scene.entities[0];return {x:e.position[0],z:e.position[2],heading:e.heading*Math.PI/180};}

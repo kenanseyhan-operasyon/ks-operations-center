@@ -1,3 +1,4 @@
+import { isRefueller } from './refueller-series';
 import { VehicleMotion, type DriveRoute, type Pose } from './vehicle-motion';
 import { R14 } from './r14-spec';
 
@@ -48,9 +49,9 @@ export function validateDriveCheckpoints(value: unknown, entities: SavedEntity[]
       || !finite(state.wheelbase) || state.wheelbase < 0.05 || state.wheelbase > 1000
       || !finite(state.scale) || state.scale < 0.02 || state.scale > 100
       || !['paused', 'complete'].includes(state.status) || (state.trailer!==undefined&&!validTrailer(state.trailer))) continue;
-    const entity = entities.find(e => e.id === state.vehicleId && e.preset === 'R14');
+    const entity = entities.find(e => e.id === state.vehicleId && isRefueller(e.preset));
     const route = routes.find(r => r.id === state.routeId && r.vehicleId === state.vehicleId);
-    if (!entity || !route || entity.scale !== state.scale || state.routeKey !== routeKey(route)
+    if (!entity || (entity.preset==='R14_2000'&&state.trailer) || !route || entity.scale !== state.scale || state.routeKey !== routeKey(route)
       || !samePose(state.pose, {x:entity.position[0], z:entity.position[2], heading:entity.heading*Math.PI/180})
       || (state.trailer&&Math.abs(state.trailer.angle-(entity.trailerAngle||0))>.0001)) continue;
     used.add(state.vehicleId);
@@ -84,9 +85,10 @@ export function restoreDriveCheckpoint(motion: VehicleMotion, state: DriveCheckp
     motion.route = route;
     motion.progress = state.progress;
     motion.distance = state.distance;
-    // The GLB may still be loading on the other device. Preserve the geometry of this run.
+    // Keep the original tractor path. Prefer the current model's coupling geometry,
+    // which is available before its GLB loads; older standalone callers use the save.
     motion.wheelbase = state.wheelbase;
-    if(state.trailer){motion.trailerAngle=state.trailer.angle;motion.routeStartTrailerAngle=state.trailer.startAngle;motion.trailerWheelbase=state.trailer.wheelbase;motion.hitchOffset=state.trailer.hitchOffset;}
+    if(state.trailer){motion.trailerAngle=state.trailer.angle;motion.routeStartTrailerAngle=state.trailer.startAngle;if(!motion.trailerWheelbase){motion.trailerWheelbase=state.trailer.wheelbase;motion.hitchOffset=state.trailer.hitchOffset;}}
     motion.articulationBlocked=false;
     motion.speed = 0;
     motion.steer = 0;

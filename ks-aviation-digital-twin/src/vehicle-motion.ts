@@ -46,6 +46,7 @@ export function buildDrivePath(points:Point[],heading:number,wheelbase=7):PathSa
 export class VehicleMotion{
   pose:Pose;speed=0;steer=0;distance=0;signal:Signal='off';braking=false;
   trailerAngle=0;routeStartTrailerAngle=0;trailerWheelbase=0;hitchOffset=0;articulationBlocked=false;
+  maxTrailerAngle:number=R14.maxArticulation;
   mode:'manual'|'route'|'paused'|'complete'='manual';path:PathSample[]=[];progress=0;route?:DriveRoute;
   throttle=0;turn=0;brake=false;maxKmh=8;wheelbase=7;
   constructor(pose:Pose){this.pose={...pose};}
@@ -93,7 +94,9 @@ export class VehicleMotion{
     }
     if(travel&&this.trailerWheelbase>0){
       const trailerAngle=followHitch(oldPose,this.pose,this.trailerAngle,this.hitchOffset,this.trailerWheelbase);
-      if(Math.abs(trailerAngle)>R14.maxArticulation){
+      // Keep legacy parked angles, while allowing only straightening when an old
+      // checkpoint starts outside the current model's equipment clearance.
+      if(Math.abs(trailerAngle)>this.maxTrailerAngle&&Math.abs(trailerAngle)>=Math.abs(this.trailerAngle)-1e-9){
         this.pose=oldPose;this.progress=oldProgress;this.mode=oldMode;this.stop();this.articulationBlocked=true;return 0;
       }
       this.trailerAngle=trailerAngle;this.articulationBlocked=false;
