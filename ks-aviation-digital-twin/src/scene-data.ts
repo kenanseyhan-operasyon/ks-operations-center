@@ -16,6 +16,7 @@ export type Entity = {
   /** Trailer heading relative to the tractor, in radians. Absent in legacy scenes. */
   trailerAngle?: number;
   fuelLitres?: number;
+  gateOpen?: boolean;
 };
 export type GroundMode='ortho'|'photo'|'satellite'|'overlay'|'plan';
 export function groundModes(value:any):{airport:GroundMode;facility:GroundMode}{const allowed=['photo','satellite','overlay','plan'];return {airport:allowed.includes(value?.airport)?value.airport:'photo',facility:allowed.includes(value?.facility)?value.facility:'satellite'};}
@@ -40,6 +41,7 @@ export function validateScene(value: unknown): SceneData {
     if(['R14','R14 · 38.000 L','R14 · 38,000 L'].includes(o.name))o.name=String(refuellerSeries(o.preset));
     if(d.entities[i].fuelLitres!==undefined)o.fuelLitres=Math.max(0,Math.min(38000,finite(d.entities[i].fuelLitres)));
   }
+  for(const [i,o] of entities.entries())if(o.kind==='wall'&&(o.wallStyle==='gate'||o.preset==='MAIN_GATE')&&typeof d.entities[i].gateOpen==='boolean')o.gateOpen=d.entities[i].gateOpen;
   const routes=validateRoutes(d.routes),driving=validateDriveCheckpoints(d.driving,entities,routes),fleetNumbers=validateFleetNumbers(d.fleetNumbers,entities);
   return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, routes, ...(driving.length?{driving}:{}), ...(Object.keys(fleetNumbers).length?{fleetNumbers}:{}), groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), sharedGround:['ortho','photo','plan'].includes(d.sharedGround||'')?d.sharedGround:'ortho', groundPhoto:validatePhoto(d.groundPhoto),groundModes:groundModes(d.groundModes) };
 }

@@ -12,5 +12,5 @@ export function r14Dimensions(length=13.5, scale=1) {
   const s=length/R14.length*scale;
   return {wheelbase:(R14.tractorAxle-R14.frontAxle)*s,
     trailerWheelbase:(R14.trailerAxle-R14.hitchX)*s,
-    hitchOffset:(R14.centreX-R14.hitchX)*s,maxTrailerAngle:R14.drivingArticulation};
+    hitchOffset:(R14.centreX-R14.hitchX)*s,frontAxleOffset:(R14.centreX-R14.frontAxle)*s,maxTrailerAngle:R14.drivingArticulation};
 }

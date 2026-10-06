@@ -29,9 +29,18 @@ export function makeObject(o: Entity) {
       if(len<.01)continue;
       const seg=new THREE.Group();seg.position.set((a[0]+b[0])/2,0,(a[1]+b[1])/2);seg.rotation.y=Math.atan2(dx,dz);g.add(seg);
       const add=(w:number,h:number,l:number,x:number,y:number,z:number,c=o.color)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),mat(c));m.position.set(x,y,z);m.castShadow=true;seg.add(m);};
-      if(o.wallStyle==='fence'||o.wallStyle==='gate'){
+      if(o.wallStyle==='gate'||o.preset==='MAIN_GATE'){
+        for(const z of [-len/2,len/2])add(.16,H+.12,.16,0,(H+.12)/2,z,'#687a7c');
+        for(const side of [-1,1]){
+          const leaf=new THREE.Group();leaf.name='FACILITY_GATE_LEAF';leaf.position.z=side*len/4;leaf.userData.closedZ=leaf.position.z;leaf.userData.gateTravel=side*(len/2+.2);seg.add(leaf);
+          const bar=(w:number,h:number,l:number,x:number,y:number,z:number)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),mat());m.position.set(x,y,z);m.castShadow=true;leaf.add(m);};
+          for(const y of [.18,H*.5,H*.94])bar(.06,.055,len/2-.12,0,y,0);
+          const count=Math.ceil(len/2/1.1);for(let j=0;j<=count;j++)bar(.06,H-.2,.06,0,H/2,-len/4+.08+(len/2-.16)*j/count);
+          const panel=new THREE.Mesh(new THREE.PlaneGeometry(len/2-.16,H-.3),new THREE.MeshStandardMaterial({color:o.color,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false}));panel.rotation.y=Math.PI/2;panel.position.y=H/2;leaf.add(panel);
+        }
+      }else if(o.wallStyle==='fence'){
         add(.16,.18,len,0,.09,0,'#9da7a5');
-        const count=Math.ceil(len/(o.wallStyle==='gate'?1.1:2.5));
+        const count=Math.ceil(len/2.5);
         for(let j=0;j<=count;j++)add(.065,H,.065,0,H/2,-len/2+len*j/count);
         for(const y of [.3,H*.5,H*.94])add(.045,.035,len,0,y,0);
         // Fine transparent mesh panels keep long fence runs inexpensive.

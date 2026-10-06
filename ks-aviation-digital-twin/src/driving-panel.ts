@@ -1,10 +1,12 @@
+import {analyzeRoute,improveRoutePoint,pathPoints,routeStart,type RouteDisplay,type RouteAnalysis} from './route-planning';
 import type { r14Dimensions } from './r14-spec';
 import type { Entity } from './scene-data';
-import { VehicleMotion, buildDrivePath, clamp, type DriveRoute, type Point, type Signal } from './vehicle-motion';
+import { VehicleMotion, clamp, type DriveRoute, type Point, type Signal } from './vehicle-motion';
 import { captureDriveCheckpoint, restoreDriveCheckpoint, type DriveCheckpoint } from './drive-checkpoint';
-type Hooks={entities:()=>Entity[];routes:()=>DriveRoute[];driveStates:()=>DriveCheckpoint[];retainDrive:(id:string,state?:DriveCheckpoint)=>void;save:()=>void;saveRoute:(r:DriveRoute)=>void;checkpoint:()=>void;changed:()=>void;running:(id:string)=>boolean;engine:(id:string,on:boolean)=>void;blocked:(id:string)=>boolean;wheelbase:(id:string)=>number;articulation:(id:string)=>ReturnType<typeof r14Dimensions>;move:(id:string,m:VehicleMotion,follow:boolean)=>void;path:(points:Point[])=>void;notify:(s:string)=>void;focus:()=>void};
+type Hooks={entities:()=>Entity[];routes:()=>DriveRoute[];driveStates:()=>DriveCheckpoint[];retainDrive:(id:string,state?:DriveCheckpoint)=>void;save:()=>void;saveRoute:(r:DriveRoute)=>void;checkpoint:()=>void;changed:()=>void;running:(id:string)=>boolean;engine:(id:string,on:boolean)=>void;blocked:(id:string)=>boolean;wheelbase:(id:string)=>number;articulation:(id:string)=>ReturnType<typeof r14Dimensions>;move:(id:string,m:VehicleMotion,follow:boolean)=>void;path:(display:RouteDisplay)=>void;gateWaiting:(e:Entity,m:VehicleMotion)=>string|undefined;openGate:(id:string)=>void;notify:(s:string)=>void;focus:()=>void};
 export class DrivingPanel{
   element:HTMLElement;motion?:VehicleMotion;vehicleId?:string;drawing=false;points:Point[]=[];private keys=new Set<string>();private checkpointed=false;private routeId='';private start?:{position:Entity['position'];heading:number;trailerAngle:number};private lang:'tr'|'en'='tr';private follow=true;private status?:HTMLElement;
+  private draftReference?:'front-axle';private draftHeading=0;private draftTrailerAngle=0;private editingRouteId='';private selectedPoint=1;private draftUndo:Point[][]=[];private analysis?:RouteAnalysis;private waitingGate='';
   constructor(host:HTMLElement,private hooks:Hooks){this.element=document.createElement('section');this.element.className='ws-driving';this.element.hidden=true;host.append(this.element);window.addEventListener('blur',()=>this.pause());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.pause();});}
   get active(){return !this.element.hidden;}
   private say(tr:string,en:string){return this.lang==='tr'?tr:en;}
@@ -21,11 +23,11 @@ export class DrivingPanel{
     }else if(saved){this.hooks.retainDrive(entity.id);this.hooks.notify(this.say('Sahne veya güzergâh değişmiş; araç kayıtlı konumunda kaldı.','Scene or route changed; the vehicle remains at its saved position.'));}
     this.element.hidden=false;this.render();this.showRoute();this.hooks.focus();
   }
-  close(){this.pause();this.element.hidden=true;this.drawing=false;this.points=[];this.hooks.path([]);this.motion=undefined;this.vehicleId=undefined;this.start=undefined;this.routeId='';}
+  close(){this.waitingGate='';this.pause();this.element.hidden=true;this.drawing=false;this.points=[];this.hooks.path({points:[]});this.motion=undefined;this.vehicleId=undefined;this.start=undefined;this.routeId='';}
   private remember(){if(this.vehicleId&&this.motion)this.hooks.retainDrive(this.vehicleId,captureDriveCheckpoint(this.vehicleId,this.motion,this.entity?.scale));}
   pause(){this.keys.clear();this.motion?.stop();this.remember();if(this.checkpointed){this.hooks.changed();this.checkpointed=false;}this.updateStatus();}
   private begin(){if(!this.checkpointed){this.hooks.checkpoint();this.checkpointed=true;}}
-  key(key:string,down:boolean){if(!this.active||!this.motion)return false;key=key.toLowerCase();if(!['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' ','q','e','h','escape'].includes(key))return false;
+  key(key:string,down:boolean){if(!this.active||!this.motion)return false;key=key.toLowerCase();if(this.drawing){if(down&&key==='escape')this.action('cancel');if(down&&(key==='delete'||key==='backspace'))this.action('delete-point');return ['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' ','escape','delete','backspace'].includes(key);}if(!['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright',' ','q','e','h','escape'].includes(key))return false;
     if(down){if(!this.keys.has(key)){if(key==='q'||key==='e'||key==='h')this.signal(({q:'left',e:'right',h:'hazard'} as const)[key]);if(key==='escape')this.pause();}this.keys.add(key);}else this.keys.delete(key);
     if(down&&['w','s','arrowup','arrowdown'].includes(key)&&this.motion.mode!=='manual'){this.motion.stop();this.motion.mode='manual';this.remember();}
     return true;
@@ -36,15 +38,60 @@ export class DrivingPanel{
     const value=(id:string,fallback:number)=>Number((this.element.querySelector(`[data-value="${id}"]`) as HTMLInputElement)?.value)||fallback;
     return {speedKmh:clamp(value('speed',8),1,25),approachKmh:clamp(value('approach',2),1,5),approachDistance:clamp(value('distance',20),5,100),aircraftId:(this.element.querySelector('[data-value="aircraft"]') as HTMLSelectElement)?.value||undefined};
   }
-  private showRoute(){const r=this.route();if(!r){this.hooks.path([]);return;}if(this.motion?.route?.id===r.id&&this.motion.path.length){this.hooks.path(this.motion.path.map(p=>[p.x,p.z]));return;}try{const heading=this.entity!.heading*Math.PI/180;this.hooks.path(buildDrivePath(r.points,heading,this.motion?.wheelbase).map(p=>[p.x,p.z]));}catch{this.hooks.path(r.points);}}
-  click(x:number,z:number){if(!this.drawing)return false;const last=this.points.at(-1)!;if(Math.hypot(x-last[0],z-last[1])<1)return true;if(this.points.length>=500)return true;this.points.push([x,z]);this.hooks.path(this.points);this.updateStatus();return true;}
+  private routeHeading(r:DriveRoute){return r.startHeading??this.hooks.driveStates().find(s=>s.routeId===r.id)?.start.heading??this.entity!.heading*Math.PI/180;}
+  private showRoute(){
+    const r=this.route();if(!r){this.hooks.path({points:[]});return;}
+    if(this.motion?.route?.id===r.id&&this.motion.path.length){this.hooks.path({points:pathPoints(this.motion.path)});return;}
+    const result=analyzeRoute(r.points,this.routeHeading(r),this.motion!,r.reference);
+    this.hooks.path({points:result.path.length?pathPoints(result.path):r.points,danger:result.danger});
+  }
+  private editRoute(r?:DriveRoute){
+    this.pause();const e=this.entity!,m=this.motion!;this.drawing=true;this.editingRouteId=r?.id||'';
+    this.draftReference=r?r.reference:'front-axle';this.draftHeading=r?this.routeHeading(r):m.pose.heading;
+    this.draftTrailerAngle=r?this.hooks.driveStates().find(s=>s.routeId===r.id)?.trailer?.startAngle??(m.route?.id===r.id?m.routeStartTrailerAngle:m.trailerAngle):m.trailerAngle;
+    const offset=this.draftReference==='front-axle'?m.frontAxleOffset:0;
+    this.points=r?r.points.map(p=>[...p]):[[e.position[0]+Math.sin(m.pose.heading)*offset,e.position[2]-Math.cos(m.pose.heading)*offset]];
+    this.draftUndo=[];this.selectedPoint=this.points.length>1?1:0;this.render();this.previewDraft();
+  }
+  private keepDraft(){this.draftUndo.push(this.points.map(p=>[...p]));if(this.draftUndo.length>30)this.draftUndo.shift();}
+  private draftGeometry(){return {...this.hooks.articulation(this.vehicleId!),trailerAngle:this.draftTrailerAngle};}
+  private previewDraft(){
+    if(!this.drawing)return;this.analysis=analyzeRoute(this.points,this.draftHeading,this.draftGeometry(),this.draftReference);
+    this.hooks.path({points:this.analysis.path.length?pathPoints(this.analysis.path):this.points,danger:this.analysis.danger,handles:this.points,nodes:this.analysis.nodes,selected:this.selectedPoint});
+    this.updateDraftStatus();this.updateStatus();
+  }
+  private updateDraftStatus(){
+    const el=this.element.querySelector<HTMLElement>('[data-route-feedback]');if(!el)return;
+    const bad=this.analysis?.issues||[],numbers=(this.analysis?.nodes||[]).map(i=>i+1).join(', ');
+    el.dataset.invalid=String(this.drawing&&bad.length>0);
+    el.textContent=!this.drawing?this.say('Yeni çizgi ön tekerleklerin orta noktasını izler.','New routes follow the midpoint of the front wheels.'):this.points.length<2?this.say('Aracın önüne tıklayarak noktalar ekleyin.','Tap ahead of the vehicle to add points.'):bad.length?this.say(`Kırmızı bölüm: ${numbers} numaralı noktaları kontrol edin. Noktayı tutup sürükleyin veya seçili virajı düzeltin.`,`Red section: check points ${numbers}. Drag a point or adjust the selected bend.`):this.say('Güzergâh uygun. Noktaları sürükleyebilir, ardından çizimi bitirebilirsiniz.','Route is feasible. Drag points if needed, then finish.');
+    const legacy=this.drawing?!!this.editingRouteId&&!this.draftReference:!!this.route()&&!this.route()!.reference;
+    if(legacy)el.textContent=this.say('Bu eski rota araç merkezini izler. Ön aks için “Yeni çiz” kullanın. ','This legacy route follows the vehicle centre. Use Draw new for a front-axle route. ')+(this.drawing?el.textContent:'');
+    const selected=this.element.querySelector('[data-selected-point]');if(selected)selected.textContent=this.drawing?this.say(`Seçili nokta: ${this.selectedPoint+1}${this.selectedPoint===0?' (başlangıç sabit)':''}`,`Selected point: ${this.selectedPoint+1}${this.selectedPoint===0?' (start locked)':''}`):'';
+    for(const name of ['fix-point','delete-point','undo-point']){const button=this.element.querySelector<HTMLButtonElement>(`[data-drive="${name}"]`);if(button)button.disabled=!this.drawing||(name==='undo-point'?!this.draftUndo.length:this.selectedPoint<=0)||(name==='fix-point'&&this.selectedPoint>=this.points.length-1);}
+  }
+  beginPointDrag(index:number){if(!this.drawing||index<0||index>=this.points.length)return false;this.selectedPoint=index;this.keepDraft();this.previewDraft();return true;}
+  movePoint(index:number,x:number,z:number){if(!this.drawing||index<=0||index>=this.points.length||![x,z].every(n=>Number.isFinite(n)&&Math.abs(n)<=50000))return;this.points[index]=[x,z];this.previewDraft();}
+  endPointDrag(cancel=false){if(cancel){const old=this.draftUndo.pop();if(old)this.points=old;}this.previewDraft();}
+  click(x:number,z:number){
+    if(!this.drawing)return false;if(this.points.length>=500)return true;this.keepDraft();
+    if(this.editingRouteId&&this.points.length>1){
+      let index=1,best=Infinity;
+      for(let i=1;i<this.points.length;i++){const a=this.points[i-1],b=this.points[i],dx=b[0]-a[0],dz=b[1]-a[1],t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1),0,1),d=Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t);if(d<best){best=d;index=i;}}
+      this.points.splice(index,0,[x,z]);this.selectedPoint=index;
+    }else{const last=this.points.at(-1)!;if(Math.hypot(x-last[0],z-last[1])<.6){this.draftUndo.pop();return true;}this.points.push([x,z]);this.selectedPoint=this.points.length-1;}
+    this.previewDraft();return true;
+  }
   tick(dt:number){
-    const m=this.motion,e=this.entity;if(!this.active||!m||!e)return;
+    const m=this.motion,e=this.entity;if(!this.active||!m||!e||this.drawing)return;
     const k=(...keys:string[])=>keys.some(key=>this.keys.has(key));m.throttle=Number(k('w','arrowup'))-Number(k('s','arrowdown'));m.turn=Number(k('d','arrowright'))-Number(k('a','arrowleft'));m.brake=k(' ');m.maxKmh=this.readSettings().speedKmh;
     const wantsMove=!!m.throttle||m.mode==='route'||Math.abs(m.speed)>.001;
     if(wantsMove&&!this.hooks.running(e.id)){this.keys.clear();m.stop();this.hooks.notify(this.say('Önce aracı çalıştırın.','Start the engine first.'));}
     else if(wantsMove&&this.hooks.blocked(e.id)){this.keys.clear();m.stop();this.hooks.notify(this.say('Sürüş için platformu, korkuluğu ve platform kapısını kapatın.','Close platform, railing and platform gate before driving.'));}
-    else if(wantsMove)this.begin();
+    else if(wantsMove){
+      const gate=this.hooks.gateWaiting(e,m);if(gate){m.speed=0;m.braking=true;if(this.waitingGate!==gate)this.hooks.notify(this.say('Kapı açılıyor. Araç geçiş için bekliyor.','Gate opening. Vehicle is waiting for passage.'));this.waitingGate=gate;this.updateStatus();return;}
+      this.waitingGate='';this.begin();
+    }else this.waitingGate='';
     const wasBlocked=m.articulationBlocked,oldMode=m.mode,travel=m.step(dt,this.hooks.running(e.id),this.hooks.blocked(e.id));
     if(m.articulationBlocked&&!wasBlocked){this.keys.clear();this.hooks.notify(this.say('Çekici–tank dönüş sınırına ulaşıldı. Direksiyonu düzeltip daha geniş dönün; geri giderken önce ileri alarak düzeltin.','Tractor–trailer turn limit reached. Straighten the steering and widen the turn; when reversing, pull forward to straighten.'));}
     if(travel){this.hooks.move(e.id,m,this.follow);}
@@ -54,34 +101,51 @@ export class DrivingPanel{
   }
   private render(){
     const m=this.motion!,r=this.route(),settings=r||{speedKmh:8,approachKmh:2,approachDistance:20};
-    this.element.innerHTML=`<header><b data-vehicle-name></b><button data-drive="close" aria-label="${this.say('Sürüş panelini kapat','Close driving panel')}">×</button></header><output aria-live="off"></output><div class="drive-row"><button data-drive="engine"></button><button data-drive="pause">${this.say('Durdur','Stop')}</button><button data-drive="follow">${this.say('Kamera takip','Follow camera')}</button></div><div class="drive-row"><button data-signal="left">◀ ${this.say('Sol','Left')}</button><button data-signal="hazard">△</button><button data-signal="right">${this.say('Sağ','Right')} ▶</button></div><div class="drive-pad"><button data-key="w" aria-label="${this.say('İleri gaz','Forward throttle')}">↑</button><button data-key="a" aria-label="${this.say('Sola direksiyon','Steer left')}">←</button><button data-key=" " aria-label="${this.say('Fren','Brake')}">${this.say('FREN','BRAKE')}</button><button data-key="d" aria-label="${this.say('Sağa direksiyon','Steer right')}">→</button><button data-key="s" aria-label="${this.say('Geri gaz','Reverse throttle')}">↓</button></div><small>W/A/S/D · ${this.say('Boşluk: fren · Q/E: sinyal','Space: brake · Q/E: signal')}</small><details><summary>${this.say('Güzergâh ve yaklaşma','Route and approach')}</summary><label>${this.say('Kayıtlı güzergâh','Saved route')}<select data-value="route"><option value="">${this.say('Yeni güzergâh','New route')}</option></select></label><label>${this.say('Hedef uçak','Target aircraft')}<select data-value="aircraft"><option value="">${this.say('Seçilmedi','Not selected')}</option></select></label><div class="drive-row"><label>${this.say('Hız (km/sa)','Speed (km/h)')}<input data-value="speed" type="number" min="1" max="25" value="${settings.speedKmh}"></label><label>${this.say('Yaklaşma (km/sa)','Approach (km/h)')}<input data-value="approach" type="number" min="1" max="5" value="${settings.approachKmh}"></label></div><label>${this.say('Yavaşlama bölgesi (m)','Approach zone (m)')}<input data-value="distance" type="number" min="5" max="100" value="${settings.approachDistance}"></label><div class="drive-row"><button data-drive="draw">${this.say('Güzergâh çiz','Draw route')}</button><button data-drive="finish">${this.say('Çizimi bitir','Finish route')}</button><button data-drive="cancel">${this.say('Vazgeç','Cancel')}</button></div><div class="drive-row"><button data-drive="play">${this.say('Güzergâhı başlat','Start route')}</button><button data-drive="resume">${this.say('Devam','Resume')}</button><button data-drive="reset">${this.say('Başlangıca geri al','Reset to start')}</button></div><small>${this.say('İlk nokta araç konumu. Aracın önünden başlayarak yolu tıklayın; son nokta park yeridir. Hızlar prova ayarıdır. Otomatik çarpışma / kanat açıklığı kontrolü henüz yok.','First point is the vehicle position. Tap a path ahead; last point is parking. Speeds are rehearsal settings. Automatic collision / wing-clearance checking is not yet available.')}</small></details>`;
+    this.element.innerHTML=`<header><b data-vehicle-name></b><button data-drive="close" aria-label="${this.say('Sürüş panelini kapat','Close driving panel')}">×</button></header><output aria-live="off"></output><div class="drive-row"><button data-drive="engine"></button><button data-drive="pause">${this.say('Durdur','Stop')}</button><button data-drive="follow">${this.say('Kamera takip','Follow camera')}</button></div><div class="drive-row"><button data-signal="left">◀ ${this.say('Sol','Left')}</button><button data-signal="hazard">△</button><button data-signal="right">${this.say('Sağ','Right')} ▶</button></div><div class="drive-pad"><button data-key="w" aria-label="${this.say('İleri gaz','Forward throttle')}">↑</button><button data-key="a" aria-label="${this.say('Sola direksiyon','Steer left')}">←</button><button data-key=" " aria-label="${this.say('Fren','Brake')}">${this.say('FREN','BRAKE')}</button><button data-key="d" aria-label="${this.say('Sağa direksiyon','Steer right')}">→</button><button data-key="s" aria-label="${this.say('Geri gaz','Reverse throttle')}">↓</button></div><small>W/A/S/D · ${this.say('Boşluk: fren · Q/E: sinyal','Space: brake · Q/E: signal')}</small><div class="drive-row"><button data-drive="gate">${this.say('Yakın tesis kapısını aç','Open nearby facility gate')}</button></div><details><summary>${this.say('Güzergâh ve yaklaşma','Route and approach')}</summary><label>${this.say('Kayıtlı güzergâh','Saved route')}<select data-value="route"><option value="">${this.say('Yeni güzergâh','New route')}</option></select></label><label>${this.say('Hedef uçak','Target aircraft')}<select data-value="aircraft"><option value="">${this.say('Seçilmedi','Not selected')}</option></select></label><div class="drive-row"><label>${this.say('Hız (km/sa)','Speed (km/h)')}<input data-value="speed" type="number" min="1" max="25" value="${settings.speedKmh}"></label><label>${this.say('Yaklaşma (km/sa)','Approach (km/h)')}<input data-value="approach" type="number" min="1" max="5" value="${settings.approachKmh}"></label></div><label>${this.say('Yavaşlama bölgesi (m)','Approach zone (m)')}<input data-value="distance" type="number" min="5" max="100" value="${settings.approachDistance}"></label><div class="drive-row"><button data-drive="draw">${this.say('Yeni çiz','Draw new')}</button><button data-drive="edit-route">${this.say('Düzenle','Edit route')}</button><button data-drive="finish">${this.say('Çizimi bitir','Finish route')}</button><button data-drive="cancel">${this.say('Vazgeç','Cancel')}</button></div><p data-route-feedback role="status"></p><span data-selected-point></span><div class="drive-row"><button data-drive="fix-point">${this.say('Seçili virajı düzelt','Adjust selected bend')}</button><button data-drive="delete-point">${this.say('Noktayı sil','Delete point')}</button><button data-drive="undo-point">${this.say('Geri al','Undo edit')}</button></div><div class="drive-row"><button data-drive="play">${this.say('Güzergâhı başlat','Start route')}</button><button data-drive="resume">${this.say('Devam','Resume')}</button><button data-drive="reset">${this.say('Başlangıca geri al','Reset to start')}</button></div><small>${this.say('Yeni çizginin son noktası ön aksın park yeridir. Düzenlerken çizgiye tıklayın: araya nokta eklenir. Noktayı tutup sürükleyin; yalnız seçtiğiniz nokta değişir. Kırmızı: direksiyon veya tank dönüş sınırı. Çevredeki engeller ve uçak kanadı ayrıca kontrol edilmelidir.','The endpoint is the front axle parking position. In Edit, tap near a section to insert a point; drag a point to move only that control point. Red means steering or trailer limit. Check surrounding obstacles and aircraft clearance separately.')}</small></details>`;
     this.element.querySelector('[data-vehicle-name]')!.textContent=`${this.entity!.name} · ${this.say('38.000 L','38,000 L')}`;
     this.status=this.element.querySelector('output')!;
     const save=document.createElement('button');save.type='button';save.dataset.drive='save';save.textContent=this.say('Sürüşü kaydet','Save drive');save.style.width='100%';this.status.after(save);
-    if(m.mode==='paused'&&m.path.length)this.element.querySelector('details')!.open=true;
-    const select=this.element.querySelector('[data-value="route"]') as HTMLSelectElement;for(const route of this.hooks.routes().filter(r=>r.vehicleId===this.vehicleId))select.add(new Option(route.name,route.id));select.value=this.routeId;select.onchange=()=>{this.pause();this.routeId=select.value;m.mode='manual';m.path=[];m.route=undefined;this.remember();this.hooks.changed();this.render();this.showRoute();};
+    if(this.drawing||(m.mode==='paused'&&m.path.length))this.element.querySelector('details')!.open=true;
+    const select=this.element.querySelector('[data-value="route"]') as HTMLSelectElement;for(const route of this.hooks.routes().filter(r=>r.vehicleId===this.vehicleId))select.add(new Option(route.name,route.id));select.value=this.routeId;select.onchange=()=>{this.drawing=false;this.points=[];this.pause();this.routeId=select.value;m.mode='manual';m.path=[];m.route=undefined;this.remember();this.hooks.changed();this.render();this.showRoute();};
     const aircraft=this.element.querySelector('[data-value="aircraft"]') as HTMLSelectElement;for(const e of this.hooks.entities().filter(e=>e.kind==='aircraft'))aircraft.add(new Option(e.name,e.id));aircraft.value=r?.aircraftId||'';
     this.element.querySelectorAll<HTMLButtonElement>('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);this.key(b.dataset.key!,true);};const release=()=>this.key(b.dataset.key!,false);b.onpointerup=release;b.onpointercancel=release;b.onlostpointercapture=release;});
     this.element.querySelectorAll<HTMLButtonElement>('[data-signal]').forEach(b=>b.onclick=()=>this.signal(b.dataset.signal as Signal));
-    this.element.querySelectorAll<HTMLButtonElement>('[data-drive]').forEach(b=>b.onclick=()=>{try{this.action(b.dataset.drive!);}catch(e){this.hooks.notify((e as Error).message);}});this.updateStatus();
+    this.element.querySelectorAll<HTMLButtonElement>('[data-drive]').forEach(b=>b.onclick=()=>{try{this.action(b.dataset.drive!);}catch(e){this.hooks.notify((e as Error).message);}});this.updateStatus();this.updateDraftStatus();
   }
   private action(action:string){
     const e=this.entity,m=this.motion;if(!e||!m)return;
+    if(this.drawing&&['save','play','resume','reset'].includes(action)){this.hooks.notify(this.say('Önce çizimi bitirin veya Vazgeç’e basın.','Finish editing or press Cancel first.'));return;}
     if(action==='close'){this.close();return;}if(action==='pause'){this.pause();return;}
     if(action==='save'){this.pause();this.hooks.save();return;}
     if(action==='engine'){const on=!this.hooks.running(e.id);this.hooks.engine(e.id,on);if(!on)this.pause();}
     if(action==='follow')this.follow=!this.follow;
-    if(action==='draw'){this.pause();this.drawing=true;this.points=[[e.position[0],e.position[2]]];this.hooks.path(this.points);this.hooks.notify(this.say('Yolu haritaya tıklayarak çizin. Son nokta araç merkezinin park konumu olacak.','Tap the route on the map. The last point is the parking position of the vehicle centre.'));}
-    if(action==='cancel'){this.drawing=false;this.points=[];this.showRoute();}
+    if(action==='gate'){this.hooks.openGate(e.id);return;}
+    if(action==='draw'){this.editRoute();return;}
+    if(action==='edit-route'){const r=this.route();if(r)this.editRoute(r);else this.hooks.notify(this.say('Önce güzergâh seçin veya yeni çizin.','Select a route or draw a new one.'));return;}
+    if(action==='cancel'){this.drawing=false;this.points=[];this.render();this.showRoute();return;}
+    if(action==='undo-point'){const old=this.draftUndo.pop();if(old){this.points=old;this.selectedPoint=Math.min(this.selectedPoint,this.points.length-1);this.previewDraft();}return;}
+    if(action==='delete-point'){if(this.drawing&&this.selectedPoint>0){this.keepDraft();this.points.splice(this.selectedPoint,1);this.selectedPoint=Math.min(this.selectedPoint,this.points.length-1);this.previewDraft();}return;}
+    if(action==='fix-point'){
+      if(!this.drawing)return;const improved=improveRoutePoint(this.points,this.selectedPoint,this.draftHeading,this.draftGeometry(),this.draftReference);
+      if(improved){this.keepDraft();this.points=improved;this.previewDraft();}else this.hooks.notify(this.say('Bu noktayı tek başına otomatik düzeltmek mümkün olmadı. Kırmızı bölümdeki noktayı sürükleyin; gerekirse yakınına nokta ekleyin.','This point alone could not be adjusted automatically. Drag a point in the red section or add a nearby point.'));return;
+    }
     if(action==='finish'){
-      if(!this.drawing)return;const settings=this.readSettings();m.wheelbase=this.hooks.wheelbase(e.id);const path=buildDrivePath(this.points,m.pose.heading,m.wheelbase);
-      const target=this.hooks.entities().find(e=>e.id===settings.aircraftId),route:DriveRoute={id:crypto.randomUUID(),name:`${e.name} → ${target?.name||this.say('Park','Parking')}`,vehicleId:e.id,points:this.points.map(p=>[...p]),...settings};this.hooks.saveRoute(route);this.routeId=route.id;this.drawing=false;m.mode='manual';m.path=[];m.route=undefined;this.remember();this.hooks.path(path.map(p=>[p.x,p.z]));this.render();this.hooks.notify(this.say('Güzergâh hazır. Kalıcı tutmak için Kaydet’e basın.','Route ready. Press Save to keep it.'));
+      if(!this.drawing)return;this.previewDraft();if(this.analysis?.issues.length){this.selectedPoint=this.analysis.nodes[0]??1;this.previewDraft();return;}
+      const settings=this.readSettings(),target=this.hooks.entities().find(e=>e.id===settings.aircraftId),old=this.hooks.routes().find(r=>r.id===this.editingRouteId);
+      const route:DriveRoute={id:old?.id||crypto.randomUUID(),name:old?.name||`${e.name} → ${target?.name||this.say('Park','Parking')}`,vehicleId:e.id,points:this.points.map(p=>[...p]),...settings,...(this.draftReference?{reference:this.draftReference}:{}),startHeading:this.draftHeading};
+      this.hooks.saveRoute(route);this.routeId=route.id;this.drawing=false;m.mode='manual';m.path=[];m.route=undefined;this.remember();
+      const pose=routeStart(route.points,this.draftHeading,route.reference==='front-axle'?m.frontAxleOffset:0);this.start={position:[pose.x,e.position[1],pose.z],heading:pose.heading*180/Math.PI,trailerAngle:this.draftTrailerAngle};
+      this.showRoute();this.render();this.hooks.notify(this.say('Güzergâh hazır. Kalıcı tutmak için Kaydet’e basın.','Route ready. Press Save to keep it.'));return;
     }
     if(action==='play'){
+      if(this.drawing){this.hooks.notify(this.say('Önce çizimi bitirin.','Finish editing first.'));return;}
       if(!this.hooks.running(e.id))throw new Error(this.say('Önce aracı çalıştırın.','Start the engine first.'));
       if(this.hooks.blocked(e.id))throw new Error(this.say('Platform, korkuluk ve kapı kapalı olmalı.','Platform, railing and gate must be closed.'));
       const r=this.route();if(!r)throw new Error(this.say('Önce güzergâh çizin.','Draw a route first.'));
-      const updated={...r,...this.readSettings()};m.wheelbase=this.hooks.wheelbase(e.id);m.startRoute(updated);this.start={position:[...e.position],heading:e.heading,trailerAngle:m.trailerAngle};this.hooks.saveRoute(updated);this.remember();this.hooks.path(m.path.map(p=>[p.x,p.z]));this.begin();
+      const updated={...r,...this.readSettings()};m.wheelbase=this.hooks.wheelbase(e.id);
+      const analysis=analyzeRoute(r.points,this.routeHeading(r),{...this.hooks.articulation(e.id),trailerAngle:m.trailerAngle},r.reference);
+      if(analysis.issues.length){this.editRoute(r);this.selectedPoint=analysis.nodes[0]??1;this.previewDraft();return;}
+      m.startRoute(updated);this.start={position:[...e.position],heading:e.heading,trailerAngle:m.trailerAngle};this.hooks.saveRoute(updated);this.remember();this.hooks.path({points:pathPoints(m.path)});this.begin();
     }
     if(action==='resume'&&m.mode==='paused'&&m.path.length){
       if(!this.hooks.running(e.id))throw new Error(this.say('Önce aracı çalıştırın.','Start the engine first.'));
@@ -93,10 +157,11 @@ export class DrivingPanel{
   }
   private updateStatus(){
     if(!this.active||!this.status||!this.motion)return;const m=this.motion;
-    const state=this.drawing?this.say(`Çizim · ${this.points.length} nokta`,`Drawing · ${this.points.length} points`):m.mode==='complete'?this.say('Park edildi','Parked'):m.mode==='paused'?this.say(`Duraklatıldı · ${m.remaining.toFixed(1)} m`,`Paused · ${m.remaining.toFixed(1)} m`):m.mode==='route'?this.say(`Güzergâh · ${m.remaining.toFixed(1)} m`,`Route · ${m.remaining.toFixed(1)} m`):this.say('Elle sürüş','Manual driving');
-    const text=`${Math.abs(m.speed*3.6).toFixed(1)} km/sa · ${m.speed<-.01?'R':'D'} · ${state}`;if(this.status.textContent!==text)this.status.textContent=text;
+    const state=this.waitingGate?this.say('Kapı açılması bekleniyor','Waiting for gate'):this.drawing?this.say(`Çizim · ${this.points.length} nokta`,`Drawing · ${this.points.length} points`):m.mode==='complete'?this.say('Park edildi','Parked'):m.mode==='paused'?this.say(`Duraklatıldı · ${m.remaining.toFixed(1)} m`,`Paused · ${m.remaining.toFixed(1)} m`):m.mode==='route'?this.say(`Güzergâh · ${m.remaining.toFixed(1)} m`,`Route · ${m.remaining.toFixed(1)} m`):this.say('Elle sürüş','Manual driving');
+    const text=`${Math.abs(m.speed*3.6).toFixed(1)} ${this.say('km/sa','km/h')} · ${m.speed<-.01?'R':'D'} · ${state}`;if(this.status.textContent!==text)this.status.textContent=text;
     this.element.querySelectorAll<HTMLButtonElement>('[data-signal]').forEach(b=>b.classList.toggle('active',b.dataset.signal===m.signal));
-    const resume=this.element.querySelector<HTMLButtonElement>('[data-drive="resume"]');if(resume)resume.disabled=m.mode!=='paused'||!m.path.length;
+    const resume=this.element.querySelector<HTMLButtonElement>('[data-drive="resume"]');if(resume)resume.disabled=this.drawing||m.mode!=='paused'||!m.path.length;
+    for(const action of ['play','reset']){const b=this.element.querySelector<HTMLButtonElement>(`[data-drive="${action}"]`);if(b)b.disabled=this.drawing;}
     const engine=this.element.querySelector('[data-drive="engine"]')!;engine.textContent=this.hooks.running(this.vehicleId!)?this.say('Motoru durdur','Stop engine'):this.say('Aracı çalıştır','Start engine');this.element.querySelector('[data-drive="follow"]')?.classList.toggle('active',this.follow);
   }
 }

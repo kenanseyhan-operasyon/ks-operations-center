@@ -15,12 +15,13 @@ export type DriveCheckpoint = {
   progress: number;
   distance: number;
   wheelbase: number;
+  frontAxleOffset?: number;
   scale: number;
   status: 'paused' | 'complete';
   trailer?: TrailerCheckpoint;
 };
 type SavedEntity = { id: string; preset: string; position: [number, number, number]; heading: number; scale: number; trailerAngle?:number };
-const routeKey = (route: DriveRoute) => JSON.stringify([route.vehicleId, route.points, route.speedKmh, route.approachKmh, route.approachDistance]);
+const routeKey = (route: DriveRoute) => JSON.stringify([route.vehicleId, route.points, route.speedKmh, route.approachKmh, route.approachDistance,...(route.reference||route.startHeading!==undefined?[route.reference||'center',route.startHeading??null]:[])]);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const validTrailer=(t:any):t is TrailerCheckpoint=>!!t&&finite(t.angle)&&Math.abs(t.angle)<=R14.maxArticulation&&finite(t.startAngle)&&Math.abs(t.startAngle)<=R14.maxArticulation&&finite(t.wheelbase)&&t.wheelbase>=.05&&t.wheelbase<=1000&&finite(t.hitchOffset)&&Math.abs(t.hitchOffset)<=1000;
 const validPose = (value: any): value is Pose => !!value && finite(value.x) && finite(value.z) && finite(value.heading) && Math.abs(value.x) <= 50000 && Math.abs(value.z) <= 50000;
@@ -33,6 +34,7 @@ export function captureDriveCheckpoint(vehicleId: string, motion: VehicleMotion,
     version: 1, vehicleId, routeId: motion.route.id, routeKey: routeKey(motion.route),
     start: {x:first.x, z:first.z, heading:first.heading}, pose: {...motion.pose},
     progress: motion.progress, distance: motion.distance, wheelbase: motion.wheelbase, scale,
+    ...(motion.route.reference==='front-axle'?{frontAxleOffset:motion.frontAxleOffset}:{}),
     status: motion.mode === 'complete' ? 'complete' : 'paused',
     ...(motion.trailerWheelbase>0?{trailer:{angle:motion.trailerAngle,startAngle:motion.routeStartTrailerAngle,wheelbase:motion.trailerWheelbase,hitchOffset:motion.hitchOffset}}:{}),
   };
@@ -51,7 +53,7 @@ export function validateDriveCheckpoints(value: unknown, entities: SavedEntity[]
       || !['paused', 'complete'].includes(state.status) || (state.trailer!==undefined&&!validTrailer(state.trailer))) continue;
     const entity = entities.find(e => e.id === state.vehicleId && isRefueller(e.preset));
     const route = routes.find(r => r.id === state.routeId && r.vehicleId === state.vehicleId);
-    if (!entity || (entity.preset==='R14_2000'&&state.trailer) || !route || entity.scale !== state.scale || state.routeKey !== routeKey(route)
+    if ((route?.reference==='front-axle'&&(!finite(state.frontAxleOffset)||state.frontAxleOffset<=0||state.frontAxleOffset>1000)) || !entity || (entity.preset==='R14_2000'&&state.trailer) || !route || entity.scale !== state.scale || state.routeKey !== routeKey(route)
       || !samePose(state.pose, {x:entity.position[0], z:entity.position[2], heading:entity.heading*Math.PI/180})
       || (state.trailer&&Math.abs(state.trailer.angle-(entity.trailerAngle||0))>.0001)) continue;
     used.add(state.vehicleId);
@@ -59,13 +61,14 @@ export function validateDriveCheckpoints(value: unknown, entities: SavedEntity[]
       start:{x:state.start.x,z:state.start.z,heading:state.start.heading},
       pose:{x:state.pose.x,z:state.pose.z,heading:state.pose.heading}, progress:state.progress, distance:state.distance,
       wheelbase:state.wheelbase, scale:state.scale, status:state.status,
+      ...(route.reference==='front-axle'?{frontAxleOffset:state.frontAxleOffset}:{}),
       ...(state.trailer?{trailer:{angle:state.trailer.angle,startAngle:state.trailer.startAngle,wheelbase:state.trailer.wheelbase,hitchOffset:state.trailer.hitchOffset}}:{})});
   }
   return result;
 }
 
 export function restoreDriveCheckpoint(motion: VehicleMotion, state: DriveCheckpoint, route: DriveRoute): boolean {
-  if (state.version !== 1 || state.vehicleId !== route.vehicleId || state.routeId !== route.id
+  if ((route.reference==='front-axle'&&(!finite(state.frontAxleOffset)||state.frontAxleOffset<=0||state.frontAxleOffset>1000)) || state.version !== 1 || state.vehicleId !== route.vehicleId || state.routeId !== route.id
     || state.routeKey !== routeKey(route) || !validPose(state.start) || !validPose(state.pose)
     || !samePose(motion.pose, state.pose) || !finite(state.progress) || state.progress < 0
     || !finite(state.distance) || !finite(state.wheelbase) || state.wheelbase < 0.05 || state.wheelbase > 1000
@@ -73,7 +76,7 @@ export function restoreDriveCheckpoint(motion: VehicleMotion, state: DriveCheckp
   try {
     // Rebuild using the original starting pose, never the halfway vehicle heading.
     const restored = new VehicleMotion(state.start);
-    restored.wheelbase = state.wheelbase;
+    restored.wheelbase = state.wheelbase;restored.frontAxleOffset=state.frontAxleOffset??motion.frontAxleOffset;
     restored.startRoute(route);
     const length = restored.path.at(-1)!.s;
     if (state.progress > length || (state.status === 'complete' && length-state.progress >= 0.01)) return false;
@@ -87,7 +90,7 @@ export function restoreDriveCheckpoint(motion: VehicleMotion, state: DriveCheckp
     motion.distance = state.distance;
     // Keep the original tractor path. Prefer the current model's coupling geometry,
     // which is available before its GLB loads; older standalone callers use the save.
-    motion.wheelbase = state.wheelbase;
+    motion.wheelbase = state.wheelbase;if(route.reference==='front-axle')motion.frontAxleOffset=restored.frontAxleOffset;
     if(state.trailer){motion.trailerAngle=state.trailer.angle;motion.routeStartTrailerAngle=state.trailer.startAngle;if(!motion.trailerWheelbase){motion.trailerWheelbase=state.trailer.wheelbase;motion.hitchOffset=state.trailer.hitchOffset;}}
     motion.articulationBlocked=false;
     motion.speed = 0;

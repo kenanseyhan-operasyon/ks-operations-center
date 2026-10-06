@@ -1,7 +1,8 @@
+import { analyzeRoute } from './route-planning';
 import { followHitch } from './trailer-motion';
 import { R14 } from './r14-spec';
 export type Point=[number,number];
-export type DriveRoute={id:string;name:string;vehicleId:string;aircraftId?:string;points:Point[];speedKmh:number;approachKmh:number;approachDistance:number};
+export type DriveRoute={id:string;name:string;vehicleId:string;aircraftId?:string;points:Point[];speedKmh:number;approachKmh:number;approachDistance:number;reference?:'front-axle';startHeading?:number};
 export type Signal='off'|'left'|'right'|'hazard';
 export type Pose={x:number;z:number;heading:number};
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
@@ -13,17 +14,17 @@ export function validateRoutes(value:unknown):DriveRoute[]{
   return value.map(r=>{
     if(!r||typeof r.id!=='string'||!r.id||ids.has(r.id)||typeof r.vehicleId!=='string'||!Array.isArray(r.points)||r.points.length<2||r.points.length>500||r.points.some((p:unknown)=>!Array.isArray(p)||p.length!==2||p.some(v=>typeof v!=='number'||!Number.isFinite(v)||Math.abs(v)>50000)))throw new Error('Güzergâh noktaları geçersiz.');
     ids.add(r.id);const n=(x:unknown,d:number)=>typeof x==='number'&&Number.isFinite(x)?x:d;
-    return {id:r.id.slice(0,180),name:String(r.name||'R14 güzergâhı').slice(0,100),vehicleId:r.vehicleId.slice(0,180),aircraftId:typeof r.aircraftId==='string'?r.aircraftId.slice(0,180):undefined,points:r.points.map((p:Point)=>[...p] as Point),speedKmh:clamp(n(r.speedKmh,8),1,25),approachKmh:clamp(n(r.approachKmh,2),1,5),approachDistance:clamp(n(r.approachDistance,20),5,100)};
+    return {...(r.reference==='front-axle'?{reference:'front-axle' as const}:{}),...(typeof r.startHeading==='number'&&Number.isFinite(r.startHeading)?{startHeading:r.startHeading}:{}),id:r.id.slice(0,180),name:String(r.name||'R14 güzergâhı').slice(0,100),vehicleId:r.vehicleId.slice(0,180),aircraftId:typeof r.aircraftId==='string'?r.aircraftId.slice(0,180):undefined,points:r.points.map((p:Point)=>[...p] as Point),speedKmh:clamp(n(r.speedKmh,8),1,25),approachKmh:clamp(n(r.approachKmh,2),1,5),approachDistance:clamp(n(r.approachDistance,20),5,100)};
   });
 }
-export type PathSample={x:number;z:number;heading:number;s:number;curvature:number};
+export type PathSample={x:number;z:number;heading:number;s:number;curvature:number;segment?:number;anchorX?:number;anchorZ?:number;steer?:number};
 /** Cubic Hermite path preserves the current cab direction and rounds user-drawn bends. */
-export function buildDrivePath(points:Point[],heading:number,wheelbase=7):PathSample[]{
+export function buildDrivePath(points:Point[],heading:number,wheelbase=7,preview=false):PathSample[]{
   if(points.length<2)throw new Error('En az iki nokta gerekli.');
   const ps=points.filter((p,i)=>!i||Math.hypot(p[0]-points[i-1][0],p[1]-points[i-1][1])>.5);
   if(ps.length<2)throw new Error('Güzergâh çok kısa.');
   const first=ps[1],start=ps[0],dir=Math.atan2(first[0]-start[0],-(first[1]-start[1]));
-  if(Math.abs(angle(dir-heading))>Math.PI/3)throw new Error('İlk noktayı aracın önüne koyun. Gerekirse önce aracı elle yönlendirin.');
+  if(!preview&&Math.abs(angle(dir-heading))>Math.PI/3)throw new Error('İlk noktayı aracın önüne koyun. Gerekirse önce aracı elle yönlendirin.');
   const path:PathSample[]=[];
   for(let i=0;i<ps.length-1;i++){
     const a=ps[i],b=ps[i+1],before=ps[Math.max(0,i-1)],after=ps[Math.min(ps.length-1,i+2)],d=Math.hypot(b[0]-a[0],b[1]-a[1]);
@@ -37,8 +38,8 @@ export function buildDrivePath(points:Point[],heading:number,wheelbase=7):PathSa
       const dx=(6*t2-6*t)*a[0]+(3*t2-4*t+1)*ta[0]+(-6*t2+6*t)*b[0]+(3*t2-2*t)*tb[0],dz=(6*t2-6*t)*a[1]+(3*t2-4*t+1)*ta[1]+(-6*t2+6*t)*b[1]+(3*t2-2*t)*tb[1];
       const ddx=(12*t-6)*a[0]+(6*t-4)*ta[0]+(-12*t+6)*b[0]+(6*t-2)*tb[0],ddz=(12*t-6)*a[1]+(6*t-4)*ta[1]+(-12*t+6)*b[1]+(6*t-2)*tb[1];
       const curvature=(dx*ddz-dz*ddx)/Math.max(.0001,Math.hypot(dx,dz)**3),prev=path.at(-1);
-      if(Math.abs(curvature)>Math.tan(Math.PI/5)/wheelbase*1.02)throw new Error('Güzergâh virajı bu araç için dar. Noktaları daha geniş bir dönüş oluşturacak şekilde yerleştirin.');
-      path.push({x,z,heading:Math.atan2(dx,-dz),s:prev?prev.s+Math.hypot(x-prev.x,z-prev.z):0,curvature});
+      if(!preview&&Math.abs(curvature)>Math.tan(Math.PI/5)/wheelbase*1.02)throw new Error('Güzergâh virajı bu araç için dar. Noktaları daha geniş bir dönüş oluşturacak şekilde yerleştirin.');
+      path.push({x,z,segment:points.indexOf(a),heading:Math.atan2(dx,-dz),s:prev?prev.s+Math.hypot(x-prev.x,z-prev.z):0,curvature});
     }
   }
   return path;
@@ -48,13 +49,20 @@ export class VehicleMotion{
   trailerAngle=0;routeStartTrailerAngle=0;trailerWheelbase=0;hitchOffset=0;articulationBlocked=false;
   maxTrailerAngle:number=R14.maxArticulation;
   mode:'manual'|'route'|'paused'|'complete'='manual';path:PathSample[]=[];progress=0;route?:DriveRoute;
-  throttle=0;turn=0;brake=false;maxKmh=8;wheelbase=7;
+  throttle=0;turn=0;brake=false;maxKmh=8;wheelbase=7;frontAxleOffset=0;
   constructor(pose:Pose){this.pose={...pose};}
   clearInput(){this.throttle=0;this.turn=0;this.brake=false;}
   stop(){this.speed=0;this.steer=0;this.braking=true;this.clearInput();if(this.mode==='route')this.mode='paused';}
   startRoute(route:DriveRoute){
-    const first=route.points[0];if(Math.hypot(this.pose.x-first[0],this.pose.z-first[1])>2)throw new Error('Araç güzergâh başlangıcında değil. Başlangıca geri alın veya yeni güzergâh çizin.');
-    this.path=buildDrivePath([[this.pose.x,this.pose.z],...route.points.slice(1)],this.pose.heading,this.wheelbase);this.route=route;this.progress=0;this.speed=0;this.mode='route';this.routeStartTrailerAngle=this.trailerAngle;this.clearInput();
+    const offset=route.reference==='front-axle'?this.frontAxleOffset:0,anchor:[number,number]=[this.pose.x+Math.sin(this.pose.heading)*offset,this.pose.z-Math.cos(this.pose.heading)*offset];
+    const first=route.points[0];if(Math.hypot(anchor[0]-first[0],anchor[1]-first[1])>2)throw new Error('Araç güzergâh başlangıcında değil. Başlangıca geri alın veya yeni güzergâh çizin.');
+    const points=[anchor,...route.points.slice(1)];
+    if(route.reference==='front-axle'){
+      const result=analyzeRoute(points,this.pose.heading,this,'front-axle');
+      if(result.issues.length)throw new Error('Güzergâhı düzenleyip kırmızı bölümü düzeltin.');
+      this.path=result.path;
+    }else this.path=buildDrivePath(points,this.pose.heading,this.wheelbase);
+    this.route=route;this.progress=0;this.speed=0;this.mode='route';this.routeStartTrailerAngle=this.trailerAngle;this.clearInput();
   }
   get remaining(){return Math.max(0,(this.path.at(-1)?.s||0)-this.progress);}
   step(dt:number,running=true,interlock=false){
@@ -84,12 +92,17 @@ export class VehicleMotion{
       let i=this.path.findIndex(p=>p.s>=this.progress);if(i<0)i=this.path.length-1;
       const b=this.path[i],a=this.path[Math.max(0,i-1)],t=clamp((this.progress-a.s)/Math.max(.0001,b.s-a.s),0,1);
       this.pose={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t,heading:a.heading+angle(b.heading-a.heading)*t};
-      this.steer=Math.atan(this.wheelbase*(a.curvature+(b.curvature-a.curvature)*t));
+      if(a.anchorX!==undefined&&b.anchorX!==undefined){
+        const x=a.anchorX+(b.anchorX-a.anchorX)*t,z=a.anchorZ!+(b.anchorZ!-a.anchorZ!)*t;
+        this.pose.x=x-Math.sin(this.pose.heading)*this.frontAxleOffset;this.pose.z=z+Math.cos(this.pose.heading)*this.frontAxleOffset;
+      }
+      this.steer=a.steer!==undefined&&b.steer!==undefined?a.steer+angle(b.steer-a.steer)*t:Math.atan(this.wheelbase*(a.curvature+(b.curvature-a.curvature)*t));
       const ahead=this.path.find(p=>p.s>this.progress+Math.max(5,this.speed*2))||b,turn=angle(ahead.heading-this.pose.heading);
       if(this.signal!=='hazard')this.signal=turn>.06?'right':turn<-.06?'left':'off';
       if(this.remaining<.01){this.speed=0;this.steer=0;this.mode='complete';this.signal='off';}
     }else{
-      const yaw=travel*Math.tan(this.steer)/this.wheelbase,mid=this.pose.heading+yaw/2;this.pose.x+=Math.sin(mid)*travel;this.pose.z-=Math.cos(mid)*travel;this.pose.heading=angle(this.pose.heading+yaw);
+      const yaw=travel*Math.tan(this.steer)/this.wheelbase,mid=this.pose.heading+yaw/2,rearOffset=this.frontAxleOffset?this.frontAxleOffset-this.wheelbase:0,heading=angle(this.pose.heading+yaw);
+      this.pose.x+=Math.sin(mid)*travel+rearOffset*(Math.sin(this.pose.heading)-Math.sin(heading));this.pose.z-=Math.cos(mid)*travel+rearOffset*(Math.cos(this.pose.heading)-Math.cos(heading));this.pose.heading=heading;
       if(this.signal!=='hazard')this.signal=this.turn>.1?'right':this.turn<-.1?'left':this.signal;
     }
     if(travel&&this.trailerWheelbase>0){

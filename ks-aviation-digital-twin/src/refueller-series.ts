@@ -10,7 +10,7 @@ export const isRefueller=(preset:string)=>Object.hasOwn(REFUELLERS,preset);
 export const refuellerSeries=(preset:string)=>REFUELLERS[preset as keyof typeof REFUELLERS]?.series;
 export function refuellerDimensions(preset:string,length=13.5,scale=1){
   const d=r14Dimensions(length,scale);
-  return preset==='R14_2000'?{wheelbase:((R14.tractorAxle+R14.trailerAxle)/2-R14.frontAxle)*length/R14.length*scale,trailerWheelbase:0,hitchOffset:0,maxTrailerAngle:R14.maxArticulation}:d;
+  return preset==='R14_2000'?{wheelbase:((R14.tractorAxle+R14.trailerAxle)/2-R14.frontAxle)*length/R14.length*scale,trailerWheelbase:0,hitchOffset:0,frontAxleOffset:d.frontAxleOffset,maxTrailerAngle:R14.maxArticulation}:d;
 }
 export function validateFleetNumbers(value:unknown,entities:Entity[]):FleetNumbers{
   const result:FleetNumbers={};
