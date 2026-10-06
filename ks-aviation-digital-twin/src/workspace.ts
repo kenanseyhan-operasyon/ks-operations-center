@@ -1,3 +1,4 @@
+import { R14, r14Dimensions } from './r14-spec';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
@@ -75,15 +76,16 @@ export class Workspace {
       checkpoint:()=>this.history.checkpoint(),changed:()=>this.changed(),running:id=>this.running.has(id),
       engine:(id,on)=>{on?this.running.add(id):this.running.delete(id);this.updateAnimationButtons();},
       blocked:id=>{const pack=this.mixers.get(id);return !!pack&&([...pack.open].length>0||[...pack.actions.values()].some(a=>a.time>.02));},
-      wheelbase:id=>(this.vehicleRigs.get(id)?.wheelbase||7)*(this.history.current.entities.find(e=>e.id===id)?.scale||1),
-      move:(id,m,follow)=>{const e=this.history.current.entities.find(e=>e.id===id);if(!e)return;const dx=m.pose.x-e.position[0],dz=m.pose.z-e.position[2];e.position[0]=m.pose.x;e.position[2]=m.pose.z;e.heading=m.pose.heading*180/Math.PI;const g=this.objects.get(id);if(g)applyTransform(g,e);if(follow){this.flight++;this.camera.position.x+=dx;this.camera.position.z+=dz;if(this.orbit){this.orbit.target.x+=dx;this.orbit.target.z+=dz;}this.plan.center[0]+=dx;this.plan.center[1]+=dz;}this.plan.draw();},
+      wheelbase:id=>{const e=this.history.current.entities.find(e=>e.id===id);return r14Dimensions(e?.length,e?.scale).wheelbase;},
+      articulation:id=>{const e=this.history.current.entities.find(e=>e.id===id);return r14Dimensions(e?.length,e?.scale);},
+      move:(id,m,follow)=>{const e=this.history.current.entities.find(e=>e.id===id);if(!e)return;const dx=m.pose.x-e.position[0],dz=m.pose.z-e.position[2];e.position[0]=m.pose.x;e.position[2]=m.pose.z;e.heading=m.pose.heading*180/Math.PI;e.trailerAngle=m.trailerAngle;this.vehicleRigs.get(id)?.setArticulation(m.trailerAngle);const g=this.objects.get(id);if(g)applyTransform(g,e);if(follow){this.flight++;this.camera.position.x+=dx;this.camera.position.z+=dz;if(this.orbit){this.orbit.target.x+=dx;this.orbit.target.z+=dz;}this.plan.center[0]+=dx;this.plan.center[1]+=dz;}this.plan.draw();},
       path:points=>{this.routePoints=points;if(this.routeLine){this.routeLine.removeFromParent();this.routeLine.geometry.dispose();(this.routeLine.material as THREE.Material).dispose();this.routeLine=undefined;}if(points.length>1){this.routeLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points.map(([x,z])=>new THREE.Vector3(x,.12,z))),new THREE.LineBasicMaterial({color:'#57f7e5',depthTest:false}));this.routeLine.renderOrder=1001;this.scene.add(this.routeLine);}this.plan.draw();},
       notify:text=>this.notify(text),focus:()=>{this.airportOverview=false;if(this.freeMode)this.setFree(false);this.collapseEditor();this.action('focus');this.updateSelectionBox();this.updatePad();}
     });
     this.setView(this.device.initialView);
     this.imagery.onChange=()=>{this.plane.sync();this.plan.draw();this.updateGroundStatus();};
     this.bind();this.setLanguage(this.lang);this.syncObjects();new ResizeObserver(()=>this.resize()).observe(this.stage);this.resize();window.addEventListener('resize',()=>this.resize());document.addEventListener('fullscreenchange',()=>this.resize());screen.orientation?.addEventListener('change',()=>this.resize());
-    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;this.driving?.tick(dt);for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer);}if(this.driving?.active)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}};frame();
+    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;this.driving?.tick(dt);for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer,m.trailerAngle);}if(this.driving?.active)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}};frame();
     void this.cloud.init(authCallback);
     if(this.storageWarning)this.notify(this.say('Yerel kayıt okunamadı; kaynak sahne açıldı.','Local save could not be read; source scene opened.'));
   }
@@ -194,19 +196,19 @@ export class Workspace {
     for(const o of this.history.current.entities){const fingerprint=JSON.stringify([o.kind,o.preset,o.color,o.width,o.length,o.height,o.radius,o.thickness,o.points,o.wallStyle,o.flag,o.doorSide]);let g=this.objects.get(o.id);
       if(!g||this.fingerprints.get(o.id)!==fingerprint){if(g){this.scene.remove(g);this.vehicleLights.get(o.id)?.dispose();this.vehicleLights.delete(o.id);this.vehicleRigs.get(o.id)?.dispose();this.vehicleRigs.delete(o.id);disposeObject(g);this.mixers.delete(o.id);}g=makeObject(o);this.scene.add(g);this.objects.set(o.id,g);this.fingerprints.set(o.id,fingerprint);}
       if(this.renderer&&o.preset==='R14'&&g.userData.modelPending&&!g.userData.modelLoading){g.userData.modelLoading=true;void this.loadR14(o,g);}
-      applyTransform(g,o);
+      applyTransform(g,o);this.vehicleRigs.get(o.id)?.setArticulation(o.trailerAngle);
     }
     this.services?.sync();this.photo?.sync();this.updateSelectionBox();this.plan.draw();
   }
   private async loadR14(o:Entity,root:THREE.Group){
     try{
       this.modelPromise??=new GLTFLoader().loadAsync('/models/refueller-38k-r14.glb');const gltf=await this.modelPromise;if(this.objects.get(o.id)!==root)return;
-      const model=cloneModel(gltf.scene),pack=closedAnimationPack(model,gltf.animations),bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3()),s=o.length/Math.max(size.x,size.z);
+      const model=cloneModel(gltf.scene),pack=closedAnimationPack(model,gltf.animations),rig=new VehicleRig(model),bounds=new THREE.Box3().setFromObject(model),s=o.length/R14.length;
       // Ground and center the asset inside a stable selectable wrapper.
-      model.scale.setScalar(s);model.position.set(-center.x*s,-bounds.min.y*s,-center.z*s);
-      const orient=new THREE.Group();orient.add(model);if(size.x>size.z)orient.rotation.y=-Math.PI/2;
+      model.scale.setScalar(s);model.position.set(-R14.centreX*s,-bounds.min.y*s,-R14.centreZ*s);
+      const orient=new THREE.Group();orient.add(model);orient.rotation.y=-Math.PI/2;
       disposeObject(root);root.clear();root.add(orient);root.userData.modelPending=false;model.traverse(n=>{if(n instanceof THREE.Mesh)n.userData.sharedAsset=true;});
-      this.mixers.set(o.id,pack);this.vehicleRigs.set(o.id,new VehicleRig(model));this.vehicleLights.set(o.id,new VehicleLighting(model,this.groundScene));this.vehicleLights.get(o.id)!.update(this.running.has(o.id),this.night,performance.now());this.updateSelectionBox();this.updateAnimationButtons();
+      this.mixers.set(o.id,pack);this.vehicleRigs.set(o.id,rig);this.vehicleLights.set(o.id,new VehicleLighting(model,this.groundScene));rig.setArticulation(this.history.current.entities.find(e=>e.id===o.id)?.trailerAngle);this.vehicleLights.get(o.id)!.update(this.running.has(o.id),this.night,performance.now());this.updateSelectionBox();this.updateAnimationButtons();
     }catch(e){this.modelPromise=undefined;root.userData.modelError=true;root.userData.modelLoading=false;this.notify(this.say('R14 modeli yüklenemedi. Bağlantıyı kontrol ederek sayfayı yenileyin.','R14 could not load. Check your connection and reload.'));console.warn(e);}
   }
   private refreshSelection(){this.services.selection(this.selected().length===1?this.selected()[0]:undefined);this.updateSelectionBox();this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updatePad();this.plan.draw();}

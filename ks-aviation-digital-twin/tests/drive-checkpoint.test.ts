@@ -1,3 +1,4 @@
+import {r14Dimensions} from '../src/r14-spec';
 import assert from 'node:assert/strict';
 import { VehicleMotion, type DriveRoute } from '../src/vehicle-motion';
 import { captureDriveCheckpoint, restoreDriveCheckpoint, type DriveCheckpoint } from '../src/drive-checkpoint';
@@ -6,11 +7,12 @@ import { CloudStore, CloudConflict } from '../src/cloud-store';
 
 const route: DriveRoute = {id:'route-resume',name:'Resume test',vehicleId:'truck',points:[[0,0],[0,-60],[30,-110]],speedKmh:8,approachKmh:2,approachDistance:20};
 const poseEqual = (a:VehicleMotion,b:VehicleMotion) => {
+  assert.ok(Math.abs(a.trailerAngle-b.trailerAngle)<1e-8,'Resume preserves trailer angle');
   assert.ok(Math.hypot(a.pose.x-b.pose.x,a.pose.z-b.pose.z)<1e-8,'Resume preserves position');
   assert.ok(Math.abs(Math.atan2(Math.sin(a.pose.heading-b.pose.heading),Math.cos(a.pose.heading-b.pose.heading)))<1e-8,'Resume preserves heading');
 };
 function snapshot(m:VehicleMotion,r:DriveRoute=route):SceneData {
-  const truck=newEntity('R14',m.pose.x,m.pose.z);truck.id=r.vehicleId;truck.heading=m.pose.heading*180/Math.PI;
+  const truck=newEntity('R14',m.pose.x,m.pose.z);truck.id=r.vehicleId;truck.heading=m.pose.heading*180/Math.PI;truck.trailerAngle=m.trailerAngle;
   return validateScene(JSON.parse(JSON.stringify({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities:[truck],groups:[],source:'checkpoint-test',routes:[r],driving:[captureDriveCheckpoint(truck.id,m,truck.scale)]})));
 }
 function reopen(scene:SceneData):VehicleMotion {
@@ -20,7 +22,7 @@ function reopen(scene:SceneData):VehicleMotion {
   assert.equal(m.speed,0);assert.equal(m.throttle,0);assert.equal(m.turn,0);assert.equal(m.brake,false);
   return m;
 }
-const original=new VehicleMotion({x:.25,z:0,heading:0});original.wheelbase=6.4;original.startRoute(route);
+const original=new VehicleMotion({x:.25,z:0,heading:0});Object.assign(original,r14Dimensions());original.trailerAngle=.1;original.wheelbase=6.4;original.startRoute(route);
 while(original.progress<75)original.step(.016);
 assert.ok(Math.abs(original.pose.heading)>.1,'Checkpoint is on a bend, not just a straight line');
 const saved=snapshot(original),resumed=reopen(saved);

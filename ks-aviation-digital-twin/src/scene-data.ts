@@ -5,12 +5,15 @@ import { FLEET_SPECS } from './fleet-specs';
 import { GSE_SPECS } from './gse-specs';
 import { validateRoutes, type DriveRoute } from './vehicle-motion';
 import { validateDriveCheckpoints, type DriveCheckpoint } from './drive-checkpoint';
+import { R14 } from './r14-spec';
 export type Kind = 'tank' | 'wall' | 'ground' | 'tree' | 'structure' | 'aircraft' | 'vehicle';
 export type Entity = {
   id: string; name: string; kind: Kind; preset: string; color: string;
   position: [number, number, number]; heading: number; scale: number; groupId?: string;
   width: number; length: number; height: number; radius: number; thickness: number;
   points?: [number, number][]; wallStyle?: string; flag?: string; doorSide?: string;
+  /** Trailer heading relative to the tractor, in radians. Absent in legacy scenes. */
+  trailerAngle?: number;
 };
 export type GroundMode='ortho'|'photo'|'satellite'|'overlay'|'plan';
 export function groundModes(value:any):{airport:GroundMode;facility:GroundMode}{const allowed=['photo','satellite','overlay','plan'];return {airport:allowed.includes(value?.airport)?value.airport:'photo',facility:allowed.includes(value?.facility)?value.facility:'satellite'};}
@@ -30,7 +33,7 @@ export function validateScene(value: unknown): SceneData {
     if (o.points && (!Array.isArray(o.points) || o.points.length > 1000 || o.points.some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n) || Math.abs(n)>50000)))) throw new Error('Çizim noktaları geçersiz.');
     return { id: str(o.id), name: str(o.name, o.kind), kind: o.kind, preset: str(o.preset), color: color(o.color), position: [...o.position], heading: finite(o.heading), scale: Math.max(.02, Math.min(100, finite(o.scale,1))), groupId: str(o.groupId) || undefined, width: Math.max(.05, finite(o.width, 2)), length: Math.max(.05, finite(o.length,2)), height: Math.max(.05, finite(o.height,2)), radius: Math.max(.05,finite(o.radius,2)), thickness: Math.max(.02,finite(o.thickness,.2)), points: o.points?.map(p=>[...p]), wallStyle: str(o.wallStyle), flag: str(o.flag), doorSide: str(o.doorSide) };
   });
-  for(const o of entities){const fleet=FLEET_SPECS[o.preset];if(fleet&&o.kind==='aircraft'){o.width=fleet.span;o.length=fleet.length;o.height=fleet.height;}const gse=GSE_SPECS[o.preset];if(gse){o.width=gse.width;o.length=gse.length;o.height=gse.height;}const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
+  for(const [i,o] of entities.entries()){if(o.preset==='R14'&&d.entities[i].trailerAngle!==undefined)o.trailerAngle=Math.max(-R14.maxArticulation,Math.min(R14.maxArticulation,finite(d.entities[i].trailerAngle)));const fleet=FLEET_SPECS[o.preset];if(fleet&&o.kind==='aircraft'){o.width=fleet.span;o.length=fleet.length;o.height=fleet.height;}const gse=GSE_SPECS[o.preset];if(gse){o.width=gse.width;o.length=gse.length;o.height=gse.height;}const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
   const routes=validateRoutes(d.routes),driving=validateDriveCheckpoints(d.driving,entities,routes);
   return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, routes, ...(driving.length?{driving}:{}), groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), sharedGround:['ortho','photo','plan'].includes(d.sharedGround||'')?d.sharedGround:'ortho', groundPhoto:validatePhoto(d.groundPhoto),groundModes:groundModes(d.groundModes) };
 }

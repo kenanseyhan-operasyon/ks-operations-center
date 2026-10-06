@@ -1,21 +1,22 @@
+import type { r14Dimensions } from './r14-spec';
 import type { Entity } from './scene-data';
 import { VehicleMotion, buildDrivePath, clamp, type DriveRoute, type Point, type Signal } from './vehicle-motion';
 import { captureDriveCheckpoint, restoreDriveCheckpoint, type DriveCheckpoint } from './drive-checkpoint';
-type Hooks={entities:()=>Entity[];routes:()=>DriveRoute[];driveStates:()=>DriveCheckpoint[];retainDrive:(id:string,state?:DriveCheckpoint)=>void;save:()=>void;saveRoute:(r:DriveRoute)=>void;checkpoint:()=>void;changed:()=>void;running:(id:string)=>boolean;engine:(id:string,on:boolean)=>void;blocked:(id:string)=>boolean;wheelbase:(id:string)=>number;move:(id:string,m:VehicleMotion,follow:boolean)=>void;path:(points:Point[])=>void;notify:(s:string)=>void;focus:()=>void};
+type Hooks={entities:()=>Entity[];routes:()=>DriveRoute[];driveStates:()=>DriveCheckpoint[];retainDrive:(id:string,state?:DriveCheckpoint)=>void;save:()=>void;saveRoute:(r:DriveRoute)=>void;checkpoint:()=>void;changed:()=>void;running:(id:string)=>boolean;engine:(id:string,on:boolean)=>void;blocked:(id:string)=>boolean;wheelbase:(id:string)=>number;articulation:(id:string)=>ReturnType<typeof r14Dimensions>;move:(id:string,m:VehicleMotion,follow:boolean)=>void;path:(points:Point[])=>void;notify:(s:string)=>void;focus:()=>void};
 export class DrivingPanel{
-  element:HTMLElement;motion?:VehicleMotion;vehicleId?:string;drawing=false;points:Point[]=[];private keys=new Set<string>();private checkpointed=false;private routeId='';private start?:{position:Entity['position'];heading:number};private lang:'tr'|'en'='tr';private follow=true;private status?:HTMLElement;
+  element:HTMLElement;motion?:VehicleMotion;vehicleId?:string;drawing=false;points:Point[]=[];private keys=new Set<string>();private checkpointed=false;private routeId='';private start?:{position:Entity['position'];heading:number;trailerAngle:number};private lang:'tr'|'en'='tr';private follow=true;private status?:HTMLElement;
   constructor(host:HTMLElement,private hooks:Hooks){this.element=document.createElement('section');this.element.className='ws-driving';this.element.hidden=true;host.append(this.element);window.addEventListener('blur',()=>this.pause());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.pause();});}
   get active(){return !this.element.hidden;}
   private say(tr:string,en:string){return this.lang==='tr'?tr:en;}
   private get entity(){return this.hooks.entities().find(e=>e.id===this.vehicleId);}
   setLanguage(lang:'tr'|'en'){this.lang=lang;if(this.active)this.render();}
   open(entity:Entity){
-    this.close();this.vehicleId=entity.id;this.start={position:[...entity.position],heading:entity.heading};
+    this.close();this.vehicleId=entity.id;this.start={position:[...entity.position],heading:entity.heading,trailerAngle:entity.trailerAngle||0};
     this.motion=new VehicleMotion({x:entity.position[0],z:entity.position[2],heading:entity.heading*Math.PI/180});
-    this.motion.wheelbase=this.hooks.wheelbase(entity.id);this.routeId=this.hooks.routes().find(r=>r.vehicleId===entity.id)?.id||'';
+    Object.assign(this.motion,this.hooks.articulation(entity.id));this.motion.trailerAngle=entity.trailerAngle||0;this.routeId=this.hooks.routes().find(r=>r.vehicleId===entity.id)?.id||'';
     const saved=this.hooks.driveStates().find(s=>s.vehicleId===entity.id),route=saved&&this.hooks.routes().find(r=>r.id===saved.routeId);
     if(saved&&route&&saved.scale===entity.scale&&restoreDriveCheckpoint(this.motion,saved,route)){
-      this.routeId=route.id;this.start={position:[saved.start.x,entity.position[1],saved.start.z],heading:saved.start.heading*180/Math.PI};
+      this.routeId=route.id;this.start={position:[saved.start.x,entity.position[1],saved.start.z],heading:saved.start.heading*180/Math.PI,trailerAngle:saved.trailer?.startAngle||0};
       this.hooks.notify(this.say('Kayıtlı sürüş açıldı. Devam etmek için aracı çalıştırıp Devam’a basın.','Saved drive loaded. Start the engine and press Resume to continue.'));
     }else if(saved){this.hooks.retainDrive(entity.id);this.hooks.notify(this.say('Sahne veya güzergâh değişmiş; araç kayıtlı konumunda kaldı.','Scene or route changed; the vehicle remains at its saved position.'));}
     this.element.hidden=false;this.render();this.showRoute();this.hooks.focus();
@@ -44,7 +45,8 @@ export class DrivingPanel{
     if(wantsMove&&!this.hooks.running(e.id)){this.keys.clear();m.stop();this.hooks.notify(this.say('Önce aracı çalıştırın.','Start the engine first.'));}
     else if(wantsMove&&this.hooks.blocked(e.id)){this.keys.clear();m.stop();this.hooks.notify(this.say('Sürüş için platformu, korkuluğu ve platform kapısını kapatın.','Close platform, railing and platform gate before driving.'));}
     else if(wantsMove)this.begin();
-    const oldMode=m.mode,travel=m.step(dt,this.hooks.running(e.id),this.hooks.blocked(e.id));
+    const wasBlocked=m.articulationBlocked,oldMode=m.mode,travel=m.step(dt,this.hooks.running(e.id),this.hooks.blocked(e.id));
+    if(m.articulationBlocked&&!wasBlocked){this.keys.clear();this.hooks.notify(this.say('Çekici–tank dönüş sınırına ulaşıldı. Direksiyonu düzeltip daha geniş dönün; geri giderken önce ileri alarak düzeltin.','Tractor–trailer turn limit reached. Straighten the steering and widen the turn; when reversing, pull forward to straighten.'));}
     if(travel){this.hooks.move(e.id,m,this.follow);}
     if(oldMode==='route'&&m.mode==='complete'){this.remember();this.hooks.changed();this.checkpointed=false;this.hooks.notify(this.say('Güzergâh tamamlandı. Araç durdu; ikmal adımları henüz bağlı değil.','Route complete. Vehicle stopped; refuelling steps are not connected yet.'));}
     if(!m.speed&&this.checkpointed&&m.mode!=='route'){this.remember();this.hooks.changed();this.checkpointed=false;}
@@ -78,14 +80,14 @@ export class DrivingPanel{
       if(!this.hooks.running(e.id))throw new Error(this.say('Önce aracı çalıştırın.','Start the engine first.'));
       if(this.hooks.blocked(e.id))throw new Error(this.say('Platform, korkuluk ve kapı kapalı olmalı.','Platform, railing and gate must be closed.'));
       const r=this.route();if(!r)throw new Error(this.say('Önce güzergâh çizin.','Draw a route first.'));
-      const updated={...r,...this.readSettings()};m.wheelbase=this.hooks.wheelbase(e.id);m.startRoute(updated);this.start={position:[...e.position],heading:e.heading};this.hooks.saveRoute(updated);this.remember();this.hooks.path(m.path.map(p=>[p.x,p.z]));this.begin();
+      const updated={...r,...this.readSettings()};m.wheelbase=this.hooks.wheelbase(e.id);m.startRoute(updated);this.start={position:[...e.position],heading:e.heading,trailerAngle:m.trailerAngle};this.hooks.saveRoute(updated);this.remember();this.hooks.path(m.path.map(p=>[p.x,p.z]));this.begin();
     }
     if(action==='resume'&&m.mode==='paused'&&m.path.length){
       if(!this.hooks.running(e.id))throw new Error(this.say('Önce aracı çalıştırın.','Start the engine first.'));
       if(this.hooks.blocked(e.id))throw new Error(this.say('Platform, korkuluk ve kapı kapalı olmalı.','Platform, railing and gate must be closed.'));
       m.mode='route';this.begin();
     }
-    if(action==='reset'&&this.start){this.pause();this.begin();m.pose={x:this.start.position[0],z:this.start.position[2],heading:this.start.heading*Math.PI/180};m.distance=0;m.mode='manual';m.progress=0;m.path=[];m.route=undefined;this.remember();this.hooks.move(e.id,m,this.follow);this.hooks.changed();this.checkpointed=false;}
+    if(action==='reset'&&this.start){this.pause();this.begin();m.pose={x:this.start.position[0],z:this.start.position[2],heading:this.start.heading*Math.PI/180};m.trailerAngle=this.start.trailerAngle;m.articulationBlocked=false;m.distance=0;m.mode='manual';m.progress=0;m.path=[];m.route=undefined;this.remember();this.hooks.move(e.id,m,this.follow);this.hooks.changed();this.checkpointed=false;}
     this.updateStatus();
   }
   private updateStatus(){

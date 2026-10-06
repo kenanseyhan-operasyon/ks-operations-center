@@ -1,3 +1,5 @@
+import { followHitch } from './trailer-motion';
+import { R14 } from './r14-spec';
 export type Point=[number,number];
 export type DriveRoute={id:string;name:string;vehicleId:string;aircraftId?:string;points:Point[];speedKmh:number;approachKmh:number;approachDistance:number};
 export type Signal='off'|'left'|'right'|'hazard';
@@ -43,6 +45,7 @@ export function buildDrivePath(points:Point[],heading:number,wheelbase=7):PathSa
 }
 export class VehicleMotion{
   pose:Pose;speed=0;steer=0;distance=0;signal:Signal='off';braking=false;
+  trailerAngle=0;routeStartTrailerAngle=0;trailerWheelbase=0;hitchOffset=0;articulationBlocked=false;
   mode:'manual'|'route'|'paused'|'complete'='manual';path:PathSample[]=[];progress=0;route?:DriveRoute;
   throttle=0;turn=0;brake=false;maxKmh=8;wheelbase=7;
   constructor(pose:Pose){this.pose={...pose};}
@@ -50,13 +53,14 @@ export class VehicleMotion{
   stop(){this.speed=0;this.steer=0;this.braking=true;this.clearInput();if(this.mode==='route')this.mode='paused';}
   startRoute(route:DriveRoute){
     const first=route.points[0];if(Math.hypot(this.pose.x-first[0],this.pose.z-first[1])>2)throw new Error('Araç güzergâh başlangıcında değil. Başlangıca geri alın veya yeni güzergâh çizin.');
-    this.path=buildDrivePath([[this.pose.x,this.pose.z],...route.points.slice(1)],this.pose.heading,this.wheelbase);this.route=route;this.progress=0;this.speed=0;this.mode='route';this.clearInput();
+    this.path=buildDrivePath([[this.pose.x,this.pose.z],...route.points.slice(1)],this.pose.heading,this.wheelbase);this.route=route;this.progress=0;this.speed=0;this.mode='route';this.routeStartTrailerAngle=this.trailerAngle;this.clearInput();
   }
   get remaining(){return Math.max(0,(this.path.at(-1)?.s||0)-this.progress);}
   step(dt:number,running=true,interlock=false){
     dt=clamp(dt,0,.1);const before=this.speed;
     if(!running||interlock){this.stop();return 0;}
     if(this.mode==='paused'||this.mode==='complete')return 0;
+    const oldPose={...this.pose},oldProgress=this.progress,oldMode=this.mode;
     let desired=0;
     if(this.mode==='route'&&this.route){
       const near=this.remaining<this.route.approachDistance;
@@ -86,6 +90,13 @@ export class VehicleMotion{
     }else{
       const yaw=travel*Math.tan(this.steer)/this.wheelbase,mid=this.pose.heading+yaw/2;this.pose.x+=Math.sin(mid)*travel;this.pose.z-=Math.cos(mid)*travel;this.pose.heading=angle(this.pose.heading+yaw);
       if(this.signal!=='hazard')this.signal=this.turn>.1?'right':this.turn<-.1?'left':this.signal;
+    }
+    if(travel&&this.trailerWheelbase>0){
+      const trailerAngle=followHitch(oldPose,this.pose,this.trailerAngle,this.hitchOffset,this.trailerWheelbase);
+      if(Math.abs(trailerAngle)>R14.maxArticulation){
+        this.pose=oldPose;this.progress=oldProgress;this.mode=oldMode;this.stop();this.articulationBlocked=true;return 0;
+      }
+      this.trailerAngle=trailerAngle;this.articulationBlocked=false;
     }
     this.distance+=travel;return travel;
   }
