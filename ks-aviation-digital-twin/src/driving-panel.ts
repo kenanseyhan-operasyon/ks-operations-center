@@ -13,7 +13,7 @@ export class DrivingPanel{
   get rate(){return this.active&&!this.drawing?this.testRate:1;}
   private get canDesign(){return this.hooks.canDesign?.()??true;}
   refreshMode(){const open=this.element.querySelector('details')?.open;if(!this.canDesign&&this.drawing){this.drawing=false;this.points=[];}if(this.active){this.render();if(open)this.element.querySelector('details')!.open=true;if(this.drawing)this.previewDraft();else this.showRoute();}}
-  constructor(host:HTMLElement,private hooks:Hooks){this.element=document.createElement('section');this.element.className='ws-driving';this.element.hidden=true;host.append(this.element);this.element.addEventListener('pointerdown',()=>this.hooks.audio?.unlock());window.addEventListener('blur',()=>this.pause());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.pause();});}
+  constructor(host:HTMLElement,private hooks:Hooks){this.element=document.createElement('section');this.element.className='ws-driving';this.element.hidden=true;host.append(this.element);this.element.addEventListener('pointerdown',e=>{if(!(e.target as HTMLElement).closest('[data-drive="sound"]'))this.hooks.audio?.unlock();});window.addEventListener('blur',()=>this.pause());document.addEventListener('visibilitychange',()=>{if(document.hidden)this.pause();});}
   get active(){return !this.element.hidden;}
   private say(tr:string,en:string){return this.lang==='tr'?tr:en;}
   private get entity(){return this.hooks.entities().find(e=>e.id===this.vehicleId);}
@@ -115,7 +115,7 @@ export class DrivingPanel{
     if(this.drawing||(m.mode==='paused'&&m.path.length))this.element.querySelector('details')!.open=true;
     const testRate=this.element.querySelector<HTMLSelectElement>('[data-value="test-rate"]')!;testRate.value=String(this.testRate);testRate.onchange=()=>{const n=Number(testRate.value);this.testRate=TEST_RATES.includes(n as 1)?n:1;this.updateStatus();};
     const audio=this.hooks.audio,sound=this.element.querySelector<HTMLButtonElement>('[data-drive="sound"]')!,volume=this.element.querySelector<HTMLInputElement>('[data-value="volume"]')!;
-    sound.hidden=!audio;this.element.querySelector<HTMLElement>('[data-sound-volume]')!.hidden=!audio;volume.value=String((audio?.volume??.35)*100);volume.oninput=()=>audio?.setVolume(Number(volume.value)/100);
+    sound.hidden=!audio;this.element.querySelector<HTMLElement>('[data-sound-volume]')!.hidden=!audio;volume.value=String((audio?.volume??.2)*100);volume.oninput=()=>audio?.setVolume(Number(volume.value)/100);
     const admin=this.element.querySelector<HTMLElement>('[data-route-admin]')!;admin.hidden=!this.canDesign||!r||this.drawing;
     const name=this.element.querySelector<HTMLInputElement>('[data-value="route-name"]')!;name.value=r?.name||'';name.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();this.action('rename-route');}};
     this.element.querySelector<HTMLElement>('[data-delete-confirm]')!.hidden=!this.deletePending;
@@ -133,7 +133,7 @@ export class DrivingPanel{
     if(['rename-route','delete-route','confirm-delete','draw','edit-route','finish'].includes(action)&&!this.canDesign)return;
     if(this.drawing&&['save','play','resume','reset','rename-route','delete-route','confirm-delete'].includes(action)){this.hooks.notify(this.say('Önce çizimi bitirin veya Vazgeç’e basın.','Finish editing or press Cancel first.'));return;}
     if(action==='enter-design'){if(this.hooks.enterDesign?.())this.refreshMode();return;}
-    if(action==='sound'){const a=this.hooks.audio;if(a){a.setEnabled(!a.enabled);this.updateStatus();}return;}
+    if(action==='sound'){const a=this.hooks.audio;if(a){if(a.failed&&a.enabled)a.unlock();else a.setEnabled(!a.enabled);this.updateStatus();}return;}
     if(action==='rename-route'){
       const r=this.route(),input=this.element.querySelector<HTMLInputElement>('[data-value="route-name"]')!,name=cleanRouteName(input.value);if(!r)return;
       if(!name||routeNameTaken(this.hooks.routes(),e.id,name,r.id)){this.hooks.notify(this.say('Boş olmayan, bu aracın diğer rotalarından farklı bir ad yazın.','Enter a non-empty name different from this vehicle’s other routes.'));input.focus();return;}
@@ -195,7 +195,7 @@ export class DrivingPanel{
     this.element.querySelectorAll<HTMLButtonElement>('[data-signal]').forEach(b=>b.classList.toggle('active',b.dataset.signal===m.signal));
     const resume=this.element.querySelector<HTMLButtonElement>('[data-drive="resume"]');if(resume)resume.disabled=this.drawing||m.mode!=='paused'||!m.path.length;
     for(const action of ['play','reset']){const b=this.element.querySelector<HTMLButtonElement>(`[data-drive="${action}"]`);if(b)b.disabled=this.drawing;}
-    const sound=this.element.querySelector<HTMLButtonElement>('[data-drive="sound"]'),audio=this.hooks.audio;if(sound&&audio){sound.textContent=audio.supported?(audio.enabled?this.say('Ses açık','Sound on'):this.say('Ses kapalı','Sound off')):this.say('Ses desteklenmiyor','Audio unavailable');sound.disabled=!audio.supported;sound.setAttribute('aria-pressed',String(audio.enabled));}
+    const sound=this.element.querySelector<HTMLButtonElement>('[data-drive="sound"]'),audio=this.hooks.audio;if(sound&&audio){sound.textContent=audio.supported?(!audio.enabled?this.say('Ses kapalı','Sound off'):audio.failed?this.say('Sesi yeniden yükle','Retry audio'):audio.loading?this.say('Ses yükleniyor…','Loading audio…'):this.say('Ses açık','Sound on')):this.say('Ses desteklenmiyor','Audio unavailable');sound.disabled=!audio.supported;sound.setAttribute('aria-pressed',String(audio.enabled));}
     const engine=this.element.querySelector('[data-drive="engine"]')!;engine.textContent=this.hooks.running(this.vehicleId!)?this.say('Motoru durdur','Stop engine'):this.say('Aracı çalıştır','Start engine');this.element.querySelector('[data-drive="follow"]')?.classList.toggle('active',this.follow);
   }
 }

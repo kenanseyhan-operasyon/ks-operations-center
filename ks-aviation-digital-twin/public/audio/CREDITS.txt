@@ -1,0 +1,9 @@
+diesel-truck-soft-v2.wav
+Source: “Diesel Truck Idling Front.wav” by ibirdfilm
+https://freesound.org/people/ibirdfilm/sounds/128160/
+License: Creative Commons Zero (CC0 1.0 Universal)
+https://creativecommons.org/publicdomain/zero/1.0/
+Public source preview: https://cdn.freesound.org/previews/128/128160_1372389-hq.mp3
+Retrieved: 2026-10-07
+Changes: mono 16 kHz, excerpt, high-pass and low-pass equalization,
+seamless loop crossfade, DC removal and conservative level normalization.
