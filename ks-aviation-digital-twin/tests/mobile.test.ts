@@ -57,5 +57,5 @@ const pixels=editor.pixels;handlers.pointerdown(mouse(screen[0],screen[1],'point
 (editor as any).hooks.drag=(dx:number,dz:number)=>{rotatedDx=dx;rotatedDz=dz;};
 handlers.pointermove(mouse(screen[0]+20,screen[1],'pointermove'));handlers.pointerup(mouse(screen[0]+20,screen[1],'pointerup'));
 assert.ok(Math.abs(rotatedDx)<1e-6);assert.ok(Math.abs(rotatedDz+20/pixels)<1e-6,'Screen drag follows rotated world coordinates');
-editor.view([30000,30000],180);assert.deepEqual(editor.center,[1750,1250],'Rotated views still clamp in world coordinates');
+editor.view([30000,30000],180);assert.deepEqual(editor.center,[30000,30000],'Rotated views can move beyond raster edges without snapping back to the airport');
 console.log('PASS: rotated map picking and drag preserve surveyed object positions.');

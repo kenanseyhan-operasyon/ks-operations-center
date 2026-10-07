@@ -53,7 +53,7 @@ export class MapPlane {
     this.imagery.active.forEach((t,i)=>{const m=this.meshes.get(t.key);if(m)m.renderOrder=i+1;});
   }
 }
-export type MapHooks={helpersVisible?:()=>boolean; routeDisplay?:()=>RouteDisplay;gateAmount?:(id:string)=>number;route?:()=>[number,number][];drive?:()=>{id:string;signal:string}|undefined; running?:()=>ReadonlySet<string>; ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
+export type MapHooks={cameraInput?:()=>void;helpersVisible?:()=>boolean; routeDisplay?:()=>RouteDisplay;gateAmount?:(id:string)=>number;route?:()=>[number,number][];drive?:()=>{id:string;signal:string}|undefined; running?:()=>ReadonlySet<string>; ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
   canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;bearing=0;night=false;enabled=false;private ctx:CanvasRenderingContext2D;
   private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
@@ -76,7 +76,7 @@ export class PlanMap {
       if(!this.points.has(e.pointerId))return;
       const old=[...this.points.values()];const [x,y]=coords(e);this.points.set(e.pointerId,[x,y]);
       if(this.points.size===2){
-        const next=[...this.points.values()],mid=(p:[number,number][]):[number,number]=>[(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2],distance=(p:[number,number][])=>Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
+        this.hooks.cameraInput?.();const next=[...this.points.values()],mid=(p:[number,number][]):[number,number]=>[(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2],distance=(p:[number,number][])=>Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);
         const v=pinchView(this.center,this.span,this.host.clientWidth,this.host.clientHeight,mid(old),mid(next),distance(next)/Math.max(1,distance(old)));const delta=screenDeltaToWorld(v.center[0]-this.center[0],v.center[1]-this.center[1],this.bearing);this.center=[this.center[0]+delta[0],this.center[1]+delta[1]];this.span=v.span;this.limit();this.draw();return;
       }
       const p=this.pointer;if(!p||this.multi)return;const dx=x-p.cx,dy=y-p.cz;
@@ -86,14 +86,14 @@ export class PlanMap {
       if(!p.pan&&!this.hooks.drawing()){
         if(!p.drag){if(!this.hooks.selection().has(p.hit!))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);this.hooks.dragStart();p.drag=true;}
         this.hooks.drag(...screenDeltaToWorld(dx/this.pixels,dy/this.pixels,this.bearing));
-      }else{const delta=screenDeltaToWorld(dx/this.pixels,dy/this.pixels,this.bearing);this.center[0]-=delta[0];this.center[1]-=delta[1];this.limit();this.draw();}
+      }else{this.hooks.cameraInput?.();const delta=screenDeltaToWorld(dx/this.pixels,dy/this.pixels,this.bearing);this.center[0]-=delta[0];this.center[1]-=delta[1];this.limit();this.draw();}
       p.cx=x;p.cz=y;
     });
     const up=(e:PointerEvent)=>{this.points.delete(e.pointerId);const p=this.pointer;this.pointer=undefined;
       if(p?.box&&p.move&&e.type!=='pointercancel'){this.hooks.boxSelect?.(this.hooks.entities().filter(o=>{const [x,y]=this.toScreen(o.position[0],o.position[2]);return x>=Math.min(p.x,p.cx)&&x<=Math.max(p.x,p.cx)&&y>=Math.min(p.y,p.cz)&&y<=Math.max(p.y,p.cz);}).map(o=>o.id),p.extend);}else if(p?.drag)this.hooks.dragEnd();else if(p&&!this.multi&&!p.move&&e.type!=='pointercancel'&&e.button===0&&(this.hooks.drawing()||!this.hooks.serviceClick(p.world[0],p.world[1],12/this.pixels)))this.hooks.click(p.world[0],p.world[1],p.hit,e.ctrlKey||e.metaKey);
       if(!this.points.size)this.multi=false;this.refresh();};
     input.addEventListener('pointerup',up);input.addEventListener('pointercancel',up);
-    input.addEventListener('wheel',e=>{e.preventDefault();const r=input.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
+    input.addEventListener('wheel',e=>{this.hooks.cameraInput?.();e.preventDefault();const r=input.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,a=this.toWorld(x,y);this.span=Math.max(15,Math.min(20000,this.span*Math.exp(e.deltaY*.001)));const b=this.toWorld(x,y);this.center[0]+=a[0]-b[0];this.center[1]+=a[1]-b[1];this.refresh();},{passive:false});
   }
   private limit(){const v=boundedView(this.center,this.span);this.center=v.center;this.span=v.span;}
   get pixels(){return (this.host.clientWidth||800)/this.span;}

@@ -4,7 +4,8 @@ import { groundDisplayImage } from './ground-tone';
 /** Fixed, georeferenced rasters. Airport and facility share these exact meshes.
  * No terrain, tile eviction, zoom-dependent replacement or camera-dependent offsets. */
 export const GROUND_BOUNDS={minX:-1250,maxX:1750,minZ:-3850,maxZ:1250};
-export function boundedView(center:[number,number],span:number){return {center:[Math.max(GROUND_BOUNDS.minX,Math.min(GROUND_BOUNDS.maxX,center[0])),Math.max(GROUND_BOUNDS.minZ,Math.min(GROUND_BOUNDS.maxZ,center[1]))] as [number,number],span:Math.max(15,Math.min(16000,span))};}
+/** Limit zoom, while allowing the view centre to move beyond the raster edges. */
+export function boundedView(center:[number,number],span:number){return {center:center.map(v=>Number.isFinite(v)?v:0) as [number,number],span:Math.max(15,Math.min(20000,Number.isFinite(span)?span:180))};}
 export class StaticGround{
   group=new THREE.Group();enabled=true;ready=0;failed=0;
   private layers:{image:HTMLImageElement|HTMLCanvasElement;rect:typeof atlas[number];ready:boolean}[]=[];

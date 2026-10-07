@@ -38,6 +38,7 @@ export class DrivingPanel{
     if(down&&['w','s','arrowup','arrowdown'].includes(key)&&this.motion.mode!=='manual'){this.motion.stop();this.motion.mode='manual';this.remember();}
     return true;
   }
+  releaseFollow(){if(this.active&&this.follow){this.follow=false;this.updateStatus();}}
   private signal(value:Signal){if(this.motion)this.motion.signal=this.motion.signal===value?'off':value;this.updateStatus();}
   private route(){return this.hooks.routes().find(r=>r.id===this.routeId&&r.vehicleId===this.vehicleId);}
   private readSettings():Pick<DriveRoute,'speedKmh'|'approachKmh'|'approachDistance'|'aircraftId'>{
