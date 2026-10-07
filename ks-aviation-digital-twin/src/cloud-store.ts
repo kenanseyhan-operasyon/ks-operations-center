@@ -6,11 +6,12 @@ export { CloudConflict } from './cloud-errors';
 export type CloudConfig={url:string;anonKey:string};
 type Session={access_token:string;refresh_token:string;expires_at:number;user:{id:string;email?:string};recovery?:boolean};
 export type CloudRecord={revision:number;payload:SceneData;updated_at:string};
+export type PublishedSave=CloudRecord&{published_revision:number};
 const SESSION='KS_ADT_CLOUD_AUTH_V1';
 export const sceneContent=(scene:SceneData)=>JSON.stringify({...scene,updatedAt:undefined});
 /** Only a publishable/anon key enters the browser. All scene access is protected by Supabase Auth + RLS. */
 export class CloudStore{
-  config?:CloudConfig;session?:Session;revision=0;private refreshing?:Promise<void>;
+  config?:CloudConfig;session?:Session;revision=0;publishedRevision=0;editor=false;private refreshing?:Promise<void>;
   constructor(private request:typeof fetch=(...args)=>fetch(...args),private storage:Storage=localStorage){}
   get email(){return this.session?.user.email||'';}
   get userId(){return this.session?.user.id;}
@@ -48,7 +49,7 @@ export class CloudStore{
     }
     return this.session.access_token;
   }
-  async signIn(email:string,password:string){this.retain(await this.api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})},false));this.revision=0;}
+  async signIn(email:string,password:string){this.editor=false;this.retain(await this.api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})},false));this.revision=0;}
   async signUp(email:string,password:string,repeat:string,redirectTo:string){validateNewPassword(password,repeat);const value=await this.api('/auth/v1/signup?redirect_to='+encodeURIComponent(redirectTo),{method:'POST',body:JSON.stringify({email,password})},false);if(value?.access_token){this.retain(value);this.revision=0;}return !!value?.access_token;}
   async resendVerification(email:string,redirectTo:string){await this.api('/auth/v1/resend?redirect_to='+encodeURIComponent(redirectTo),{method:'POST',body:JSON.stringify({email,type:'signup'})},false);}
   async requestPasswordReset(email:string,redirectTo:string){await this.api('/auth/v1/recover?redirect_to='+encodeURIComponent(redirectTo),{method:'POST',body:JSON.stringify({email})},false);}
@@ -65,7 +66,25 @@ export class CloudStore{
     if(!user?.id||user.id!==this.userId)throw new CloudError('unknown');
     this.retain({...this.session!,user,recovery:false});
   }
-  signOut(){this.session=undefined;this.revision=0;this.storage.removeItem(SESSION);}
+  signOut(){this.session=undefined;this.revision=0;this.editor=false;this.storage.removeItem(SESSION);}
+  async refreshEditor(){
+    this.editor=false;if(!this.session||this.recovering)return false;
+    const rows=await this.api('/rest/v1/ks_adt_editors?select=user_id&enabled=eq.true&user_id=eq.'+encodeURIComponent(this.userId!));
+    this.editor=Array.isArray(rows)&&rows.some(r=>r.user_id===this.userId);return this.editor;
+  }
+  async readPublished():Promise<CloudRecord|undefined>{
+    const rows=await this.api('/rest/v1/ks_adt_published_scenes?scene_id=eq.ADB&select=revision,payload,updated_at',{cache:'no-store'},false);
+    if(!Array.isArray(rows))throw new CloudError('invalid_scene');
+    const row=rows[0];if(!row)return;
+    if(!Number.isInteger(row.revision)||row.revision<1)throw new CloudError('invalid_scene');
+    return {...row,payload:validateScene(row.payload)};
+  }
+  async savePublished(scene:SceneData):Promise<PublishedSave>{
+    if(!this.editor||!this.session||this.recovering)throw new CloudError('read_only');
+    const snapshot=validateScene(scene),row=await this.api('/rest/v1/rpc/ks_adt_save_published_scene',{method:'POST',body:JSON.stringify({p_scene_id:'ADB',p_expected_revision:this.revision,p_expected_published_revision:this.publishedRevision,p_payload:snapshot})});
+    if(!row||!Number.isInteger(row.revision)||row.revision<=this.revision||!Number.isInteger(row.published_revision)||row.published_revision<=this.publishedRevision)throw new CloudError('save_unconfirmed');
+    this.revision=row.revision;this.publishedRevision=row.published_revision;return {...row,payload:snapshot};
+  }
   async read():Promise<CloudRecord|undefined>{
     const rows=await this.api('/rest/v1/ks_adt_scenes?scene_id=eq.ADB&select=revision,payload,updated_at');
     if(!Array.isArray(rows))throw new CloudError('invalid_scene');

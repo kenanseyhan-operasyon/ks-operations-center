@@ -23,6 +23,7 @@ const messages: Record<string, [string, string]> = {
   same_password: ['Yeni şifreniz mevcut şifrenizden farklı olmalı.', 'Your new password must be different from the current password.'],
   session_expired: ['Oturumun süresi doldu. Yeniden giriş yapın; bu cihazdaki kayıtlarınız korunuyor.', 'Your session has expired. Sign in again; your local saves are safe.'],
   not_signed_in: ['Bulut kaydı için hesabınıza giriş yapın.', 'Sign in to use cloud saves.'],
+  read_only: ['Bu sahne gösterim modunda. Kalıcı değişiklik için yetkili tasarımcı hesabıyla giriş yapın.', 'This scene is in viewing mode. Sign in with an authorized designer account to save changes.'],
   recovery_required: ['Önce e-postadaki şifre sıfırlama bağlantısını açın.', 'Open the password reset link in your email first.'],
   invalid_link: ['Bu bağlantı geçersiz, kullanılmış veya süresi dolmuş. Yeni bir e-posta isteyin.', 'This link is invalid, already used, or expired. Request a new email.'],
   network: ['İnternet bağlantısı kurulamadı. Bağlantınızı kontrol edip yeniden deneyin.', 'Could not connect. Check your internet connection and try again.'],
@@ -47,6 +48,7 @@ export function providerError(body: any, status: number): CloudError {
   // Older GoTrue versions may not provide error_code. Only classify known messages; never display them.
   const legacy = String(body?.msg || body?.message || body?.error_description || '').toLowerCase();
   if (code === '40001') return new CloudConflict();
+  if (code === '42501') return new CloudError('read_only',status);
   if (!code || /^\d+$/.test(code)) {
     if (legacy.includes('invalid login credentials')) code = 'invalid_credentials';
     else if (legacy.includes('email not confirmed')) code = 'email_not_confirmed';
