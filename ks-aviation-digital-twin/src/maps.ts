@@ -53,7 +53,7 @@ export class MapPlane {
     this.imagery.active.forEach((t,i)=>{const m=this.meshes.get(t.key);if(m)m.renderOrder=i+1;});
   }
 }
-export type MapHooks={ routeDisplay?:()=>RouteDisplay;gateAmount?:(id:string)=>number;route?:()=>[number,number][];drive?:()=>{id:string;signal:string}|undefined; running?:()=>ReadonlySet<string>; ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
+export type MapHooks={helpersVisible?:()=>boolean; routeDisplay?:()=>RouteDisplay;gateAmount?:(id:string)=>number;route?:()=>[number,number][];drive?:()=>{id:string;signal:string}|undefined; running?:()=>ReadonlySet<string>; ground?:()=>StaticGround|undefined;boxSelect?:(ids:string[],extend:boolean)=>void; photo:()=>PhotoGround|undefined;markers:()=>ServiceMarker[];serviceClick:(x:number,z:number,tolerance:number)=>boolean; entities:()=>Entity[]; selection:()=>Set<string>; editable:()=>boolean; drawing:()=>boolean; click:(x:number,z:number,id:string|undefined,extend:boolean)=>void; dragStart:()=>void; drag:(dx:number,dz:number)=>void; dragEnd:()=>void; change:()=>void };
 export class PlanMap {
   canvas=document.createElement('canvas');center:[number,number]=[0,0];span=180;bearing=0;night=false;enabled=false;private ctx:CanvasRenderingContext2D;
   private points=new Map<number,[number,number]>();private multi=false;private drawPending=false;
@@ -120,7 +120,7 @@ export class PlanMap {
     this.hooks.photo()?.draw(c);
     if(this.night){c.save();c.setTransform(d,0,0,d,0,0);c.fillStyle='rgba(3,12,29,.76)';c.fillRect(0,0,w,h);c.restore();}
     for(const o of [...this.hooks.entities()].sort((a,b)=>Number(b.kind==='ground')-Number(a.kind==='ground'))){
-      const selected=this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
+      const selected=(this.hooks.helpersVisible?.()??true)&&this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(isFacilityGate(o)){const amount=this.hooks.gateAmount?.(o.id)||0;c.strokeStyle=selected?'#b7ff3c':o.color;c.lineWidth=Math.max(.12,3/p/o.scale);for(let i=1;i<o.points!.length;i++){const a=o.points![i-1],b=o.points![i],dx=b[0]-a[0],dz=b[1]-a[1],shift=amount*.52;c.moveTo(a[0]-dx*shift,a[1]-dz*shift);c.lineTo(a[0]+dx*(.5-shift),a[1]+dz*(.5-shift));c.moveTo(a[0]+dx*(.5+shift),a[1]+dz*(.5+shift));c.lineTo(b[0]+dx*shift,b[1]+dz*shift);}}
       else if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
       else if(o.kind==='tank'||o.kind==='tree'){c.arc(0,0,o.kind==='tank'?o.radius:o.width/2,0,Math.PI*2);c.fill();}
@@ -131,7 +131,7 @@ export class PlanMap {
       else{c.rect(-o.width/2,-o.length/2,o.width,o.length);c.fill();if(o.kind==='vehicle'){c.fillStyle='#4d8498';c.fillRect(-o.width*.43,-o.length*.46,o.width*.86,o.length*.16);}}
       c.stroke();if(isRefueller(o.preset)&&this.hooks.running?.().has(o.id)){if(this.night){const glow=c.createRadialGradient(0,-o.length/2-3,0,0,-o.length/2-3,6);glow.addColorStop(0,'rgba(255,235,175,.65)');glow.addColorStop(1,'rgba(255,235,175,0)');c.fillStyle=glow;c.fillRect(-6,-o.length/2-9,12,12);}c.fillStyle='#fff1ba';c.fillRect(-o.width*.4,-o.length/2,.35,.3);c.fillRect(o.width*.4-.35,-o.length/2,.35,.3);c.fillStyle='#ffba38';for(const side of [-1,1])for(let z=-o.length*.3;z<o.length*.45;z+=2)c.fillRect(side*o.width/2-.1,z,.2,.2);}if(selected){const W=o.kind==='tank'?o.radius*2:o.width,L=o.kind==='tank'?o.radius*2:o.length;c.strokeStyle='#b7ff3c';c.lineWidth=2/p/o.scale;c.strokeRect(-W/2-1/p,-L/2-1/p,W+2/p,L+2/p);}c.restore();
     }
-    const route=this.hooks.route?.()||[],display=this.hooks.routeDisplay?.();if(route.length){
+    const route=this.hooks.route?.()||[],display=this.hooks.routeDisplay?.();if(route.length&&(this.hooks.helpersVisible?.()??true)){
       c.lineWidth=3/p;for(let i=1;i<route.length;i++){c.beginPath();c.moveTo(...route[i-1]);c.lineTo(...route[i]);c.strokeStyle=display?.danger?.[i]||display?.danger?.[i-1]?'#ff534c':'#57f7e5';c.stroke();}
       for(const point of [route[0],route.at(-1)!]){c.beginPath();c.arc(point[0],point[1],5/p,0,Math.PI*2);c.fillStyle='#57f7e5';c.fill();}
     }

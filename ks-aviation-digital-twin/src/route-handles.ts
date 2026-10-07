@@ -27,6 +27,7 @@ export class RouteHandles{
   }
   private finish(cancel:boolean){if(!this.gesture)return;const id=this.gesture.pointer;this.gesture=undefined;if(this.layer.hasPointerCapture(id))this.layer.releasePointerCapture(id);this.hooks.end(cancel);this.hooks.lock(false);}
   set(display:RouteDisplay){
+    if(!display.handles?.length)this.finish(true);
     this.display=display;const handles=display.handles||[];this.layer.hidden=!handles.length;
     while(this.buttons.length>handles.length)this.buttons.pop()!.remove();
     while(this.buttons.length<handles.length){const b=document.createElement('button');b.type='button';b.dataset.routeNode=String(this.buttons.length);b.textContent=String(this.buttons.length+1);b.setAttribute('aria-label',`Güzergâh noktası / Route point ${this.buttons.length+1}`);this.layer.append(b);this.buttons.push(b);}

@@ -1,3 +1,5 @@
+import {VehicleAudio} from './vehicle-audio';
+import {advanceSimulation} from './simulation-clock';
 import {FacilityGates,isFacilityGate,setGateOpening} from './facility-gates';
 import {RouteHandles} from './route-handles';
 import type {RouteDisplay} from './route-planning';
@@ -37,7 +39,7 @@ export class Workspace {
   history!:SceneHistory;selection=new Set<string>();editing=false;mode:'airport'|'facility'='facility';
   private session!:DesignSession;private staticGround!:StaticGround;private free?:FreeCamera;private freeMode=false;private exitDialog?:Promise<boolean>;
   private scene=new THREE.Scene();private groundScene=new THREE.Scene();private device=currentDevice();private renderSize='';private contextLost=false;private library!:GSELibrary;private camera=new THREE.PerspectiveCamera(42,1,.05,30000);private renderer?:THREE.WebGLRenderer;private orbit?:OrbitControls;private transform?:TransformControls;
-  private cloud!:CloudPanel;private driving!:DrivingPanel;private vehicleRigs=new Map<string,VehicleRig>();private routeLine?:THREE.LineSegments;private routeDisplay:RouteDisplay={points:[]};private routeHandles!:RouteHandles;private facilityGates=new FacilityGates();private routePoints:[number,number][]=[];private saving=false;
+  private audio=new VehicleAudio();private cloud!:CloudPanel;private driving!:DrivingPanel;private vehicleRigs=new Map<string,VehicleRig>();private routeLine?:THREE.LineSegments;private routeDisplay:RouteDisplay={points:[]};private routeHandles!:RouteHandles;private facilityGates=new FacilityGates();private routePoints:[number,number][]=[];private saving=false;
   private night=false;private running=new Set<string>();private vehicleLights=new Map<string,VehicleLighting>();
   private skyLight=new THREE.HemisphereLight(0xe9f7ff,0x596552,2.5);private sunLight=new THREE.DirectionalLight(0xfff6e9,3);
   private inputCanvas?:HTMLCanvasElement;private openMenu:'nav'|'tools'|undefined;private airportOverview=false;private airportUpright=false;private viewportSize='';
@@ -66,19 +68,20 @@ export class Workspace {
     this.sunLight.position.set(-120,240,90);this.scene.add(this.skyLight,this.sunLight);
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(3000,5100),new THREE.MeshBasicMaterial({color:'#56695c',depthTest:false,depthWrite:false}));ground.rotation.x=-Math.PI/2;ground.position.set(250,-.1,-1300);ground.renderOrder=-1000;this.groundScene.add(ground);
     this.staticGround=new StaticGround(()=>{this.tintGround();this.plan?.draw();if(this.history)this.updateGroundStatus();});this.groundScene.add(this.staticGround.group);
-    this.plan=new PlanMap(this.stage,this.imagery,{running:()=>this.running,ground:()=>this.staticGround,boxSelect:(ids,extend)=>{if(!extend)this.selection.clear();ids.forEach(id=>this.selection.add(id));this.refreshSelection();},photo:()=>this.photo,markers:()=>this.services?.markers()||[],serviceClick:(x,z,t)=>this.services?.hit2D(x,z,t)||false,entities:()=>this.history.current.entities,selection:()=>this.selection,editable:()=>this.editing&&!this.driving?.active,drawing:()=>!!this.tool||!!this.driving?.drawing,route:()=>this.routePoints,routeDisplay:()=>this.routeDisplay,gateAmount:id=>this.facilityGates.amount(id),drive:()=>this.driving?.active?{id:this.driving.vehicleId!,signal:this.driving.motion?.signal||'off'}:undefined,click:(x,z,hit,extend)=>this.clickMap(x,z,hit,extend),dragStart:()=>this.history.checkpoint(),drag:(dx,dz)=>{moveEntities(this.history.current,this.selection,dx,dz);this.syncObjects();},dragEnd:()=>this.changed(),change:()=>this.updateLocation()});
+    this.plan=new PlanMap(this.stage,this.imagery,{running:()=>this.running,ground:()=>this.staticGround,boxSelect:(ids,extend)=>{if(!extend)this.selection.clear();ids.forEach(id=>this.selection.add(id));this.refreshSelection();},photo:()=>this.photo,markers:()=>this.services?.markers()||[],serviceClick:(x,z,t)=>this.services?.hit2D(x,z,t)||false,entities:()=>this.history.current.entities,selection:()=>this.selection,helpersVisible:()=>this.editing,editable:()=>this.editing&&!this.driving?.active,drawing:()=>!!this.tool||!!this.driving?.drawing,route:()=>this.routePoints,routeDisplay:()=>this.routeDisplay,gateAmount:id=>this.facilityGates.amount(id),drive:()=>this.driving?.active?{id:this.driving.vehicleId!,signal:this.driving.motion?.signal||'off'}:undefined,click:(x,z,hit,extend)=>this.clickMap(x,z,hit,extend),dragStart:()=>this.history.checkpoint(),drag:(dx,dz)=>{moveEntities(this.history.current,this.selection,dx,dz);this.syncObjects();},dragEnd:()=>this.changed(),change:()=>this.updateLocation()});
     this.services=new AircraftServices(this.$('.ws-map'),{entities:()=>this.history.current.entities,object:id=>this.objects.get(id),select:id=>{this.selection=new Set([id]);this.refreshSelection();this.action('focus');},focus:(target,offset)=>{this.plan.view([target.x,target.z],22);this.flyTo(target,offset.length(),true,false,offset);},redraw:()=>this.plan.draw(),realScale:id=>{this.history.change(d=>{const o=d.entities.find(o=>o.id===id);if(o)o.scale=1;});this.changed();this.refreshSelection();}});
     this.photo=new PhotoGround(this.$('.ws-map'),()=>({...validatePhoto(this.history.current.groundPhoto),enabled:['photo','overlay'].includes(this.groundMode())}),p=>{if(!this.setEditing(true))return;this.history.change(d=>{d.groundPhoto=p;d.sharedGround=p.enabled?'photo':'ortho';});this.changed();},()=>{this.tintGround();this.plan.draw();},p=>this.focusPhoto(p));this.groundScene.add(this.photo.group);
     this.library=new GSELibrary(this.$('.ws-map'),(preset,center)=>{if(!this.setEditing(true))return;this.$<HTMLSelectElement>('#wsCatalog').value=preset;this.action(center?'center':'place');this.collapseEditor();if(center)this.action('focus');});
-    this.cloud=new CloudPanel(this.$('.ws-map'),()=>this.history.current,data=>{this.driving?.close();this.history.checkpoint();this.history.current=validateScene(data);this.session=new DesignSession(this.history.current);this.selection.clear();this.changed();},text=>this.notify(text),()=>{if(!this.cloud?.canEdit&&this.editing)this.setEditing(false);this.updateSaveState();});
+    this.cloud=new CloudPanel(this.$('.ws-map'),()=>this.history.current,data=>{this.driving?.close();this.history.checkpoint();this.history.current=validateScene(data);this.session=new DesignSession(this.history.current);this.selection.clear();this.changed();},text=>this.notify(text),()=>{if(!this.cloud?.canEdit&&this.editing)this.setEditing(false);this.driving?.refreshMode();this.updateSaveState();});
     this.driving=new DrivingPanel(this.$('.ws-map'),{
       entities:()=>this.history.current.entities,routes:()=>this.history.current.routes||[],
       driveStates:()=>this.history.current.driving||[],
       retainDrive:(id,state)=>{const states=(this.history.current.driving||[]).filter(s=>s.vehicleId!==id);if(state)states.push(state);if(states.length)this.history.current.driving=states;else delete this.history.current.driving;},
-      save:()=>{void this.save();},canSave:()=>this.cloud.canEdit,
-      saveRoute:route=>{this.history.change(d=>{d.routes=(d.routes||[]).filter(r=>r.id!==route.id);d.routes.push(route);});this.updateSaveState();},
+      save:()=>{void this.save();},canSave:()=>this.cloud.canEdit,canDesign:()=>this.editing&&this.cloud.canEdit,enterDesign:()=>this.setEditing(true,true),audio:this.audio,
+      saveRoute:route=>{this.history.change(d=>{d.routes??=[];const index=d.routes.findIndex(r=>r.id===route.id);if(index<0)d.routes.push(route);else d.routes[index]=route;});this.updateSaveState();},
+      removeRoute:id=>{this.history.change(d=>{d.routes=(d.routes||[]).filter(r=>r.id!==id);d.driving=(d.driving||[]).filter(s=>s.routeId!==id);});this.changed();},
       checkpoint:()=>this.history.checkpoint(),changed:()=>this.changed(),running:id=>this.running.has(id),
-      engine:(id,on)=>{on?this.running.add(id):this.running.delete(id);this.updateAnimationButtons();},
+      engine:(id,on)=>{this.audio.engine(id,on);on?this.running.add(id):this.running.delete(id);this.updateAnimationButtons();},
       blocked:id=>{const pack=this.mixers.get(id);return !!pack&&([...pack.open].length>0||[...pack.actions.values()].some(a=>a.time>.02));},
       wheelbase:id=>{const e=this.history.current.entities.find(e=>e.id===id);return refuellerDimensions(e?.preset||'R14',e?.length,e?.scale).wheelbase;},
       articulation:id=>{const e=this.history.current.entities.find(e=>e.id===id);return refuellerDimensions(e?.preset||'R14',e?.length,e?.scale);},
@@ -97,7 +100,8 @@ export class Workspace {
     this.setView(this.device.initialView);
     this.imagery.onChange=()=>{this.plane.sync();this.plan.draw();this.updateGroundStatus();};
     this.bind();this.setLanguage(this.lang);this.syncObjects();new ResizeObserver(()=>this.resize()).observe(this.stage);this.resize();window.addEventListener('resize',()=>this.resize());document.addEventListener('fullscreenchange',()=>this.resize());screen.orientation?.addEventListener('change',()=>this.resize());
-    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;const gatesChanged=this.facilityGates.update(dt,this.history.current.entities,this.running,id=>this.objects.get(id));this.driving?.tick(dt);for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer,m.trailerAngle);}if(this.driving?.active||gatesChanged)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else if(!this.routeHandles?.dragging)this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}this.routeHandles?.update();};frame();
+    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;let gatesChanged=false;advanceSimulation(dt,this.driving?.rate||1,(step,last)=>{gatesChanged=this.facilityGates.update(step,this.history.current.entities,this.running,id=>this.objects.get(id))||gatesChanged;this.driving?.tick(step,last);});const audible=this.driving?.vehicleId||this.selected()[0]?.id,motion=audible===this.driving?.vehicleId?this.driving.motion:undefined;this.audio.update(dt,{id:audible,running:!!audible&&this.running.has(audible),speed:motion?.speed||0,throttle:motion?.throttle||0,braking:motion?.braking||false,automatic:motion?.mode==='route'});for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer,m.trailerAngle);}if(this.driving?.active||gatesChanged)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else if(!this.routeHandles?.dragging)this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}this.routeHandles?.update();};frame();
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.audio.silence();});window.addEventListener('pagehide',()=>this.audio.silence());
     await this.cloud.init(authCallback);
     if(this.storageWarning)this.notify(this.say('Yerel kayıt okunamadı; kaynak sahne açıldı.','Local save could not be read; source scene opened.'));
   }
@@ -145,7 +149,7 @@ export class Workspace {
   }
   setLanguage(lang:Lang){this.lang=lang;this.cloud?.setLanguage(lang);this.driving?.setLanguage(lang);this.setMenu(this.openMenu);this.services?.setLanguage(lang);this.photo?.setLanguage(lang);this.library?.setLanguage(lang);this.root.querySelectorAll<HTMLElement>('[data-label]').forEach(e=>e.textContent=this.l(e.dataset.label!));this.$<HTMLInputElement>('#wsSearch').placeholder=this.l('search');this.$<HTMLInputElement>('#wsGroupName').placeholder=this.l('groupName');this.$<HTMLSelectElement>('#wsCatalog').querySelectorAll('option').forEach(o=>o.textContent=lang==='tr'?CATALOG[o.value].tr:CATALOG[o.value].en);this.$('#wsFallback').textContent=this.say('WebGL kullanılamıyor. 2D harita ve tasarım araçları açık.','WebGL unavailable. 2D map and design tools are available.');this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updateSaveState();this.updatePad();this.imagery.onChange();}
   show(mode:'airport'|'facility',edit=false){this.active=true;this.root.hidden=false;this.setMenu(undefined);this.setView('3d');this.navigate(mode);this.setEditing(edit);requestAnimationFrame(()=>this.resize());}
-  hide(){this.driving?.close();syncPortraitLock(false);this.free?.clear();this.active=false;this.root.hidden=true;this.flight++;}
+  hide(){this.audio.silence();this.driving?.close();syncPortraitLock(false);this.free?.clear();this.active=false;this.root.hidden=true;this.flight++;}
   navigate(mode:'airport'|'facility',smooth=true){
     this.driving?.close();this.mode=mode;syncPortraitLock(this.active&&mode==='airport'&&this.device.mobile);this.applyGround();this.airportOverview=mode==='airport';this.airportUpright=this.device.mobile;
     if(this.freeMode)this.setFree(false);
@@ -163,7 +167,7 @@ export class Workspace {
     if(this.cloud?.canEdit)return true;
     this.notify(this.say('Kalıcı düzenleme için tasarımcı hesabınızla giriş yapın.','Sign in with your designer account to edit and save.'));this.cloud?.open();return false;
   }
-  setEditing(enabled:boolean){if(enabled)this.driving?.close();if(enabled&&!this.unlockDesign())return false;this.editing=enabled;if(enabled){this.library.element.hidden=true;this.photo.element.hidden=true;if(this.services.visible)this.services.toggle();}this.$('.ws-panel').hidden=!enabled;this.root.classList.toggle('editing',enabled);this.$('[data-nav="design"]').classList.toggle('active',enabled);this.cancelTool();this.updateSelectionBox();this.renderProperties();this.updateSaveState();this.updatePad();this.resize();return true;}
+  setEditing(enabled:boolean,keepDrive=false){if(enabled&&!this.unlockDesign())return false;if(enabled&&!keepDrive)this.driving?.close();this.editing=enabled;this.driving?.refreshMode();this.drawRoute(this.routeDisplay);if(enabled){this.library.element.hidden=true;this.photo.element.hidden=true;if(this.services.visible)this.services.toggle();}this.$('.ws-panel').hidden=!enabled;this.root.classList.toggle('editing',enabled);this.$('[data-nav="design"]').classList.toggle('active',enabled);this.cancelTool();this.updateSelectionBox();this.renderProperties();this.updateSaveState();this.updatePad();this.resize();return true;}
   private setView(view:'2d'|'3d'){
     if(view==='3d'&&!this.ensure3D())view='2d';const was2d=this.plan.enabled;this.plan.enabled=view==='2d';this.plan.canvas.hidden=!this.plan.enabled;if(this.renderer)this.renderer.domElement.hidden=this.plan.enabled;
     if(this.plan.enabled&&this.orbit&&!was2d){this.free?.clear();this.plan.center=this.viewCenter();this.plan.bearing=this.orbit.getAzimuthalAngle();this.plan.span=Math.max(30,2*this.camera.position.distanceTo(this.orbit.target)*Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2))*this.camera.aspect);}
@@ -205,13 +209,13 @@ export class Workspace {
     this.services?.sync();this.photo?.sync();this.updateSelectionBox();this.plan.draw();
   }
   private drawRoute(display:RouteDisplay){
-    this.routeDisplay=display;this.routePoints=display.points;this.routeHandles?.set(display);
+    this.routeDisplay=display;this.routePoints=display.points;this.routeHandles?.set(this.editing?display:{points:[]});
     if(this.routeLine){this.routeLine.removeFromParent();this.routeLine.geometry.dispose();(this.routeLine.material as THREE.Material).dispose();this.routeLine=undefined;}
     if(display.points.length>1){
       const positions:number[]=[],colors:number[]=[],good=new THREE.Color('#57f7e5'),bad=new THREE.Color('#ff534c');
       for(let i=1;i<display.points.length;i++){const c=display.danger?.[i]||display.danger?.[i-1]?bad:good;for(const p of [display.points[i-1],display.points[i]]){positions.push(p[0],.12,p[1]);colors.push(c.r,c.g,c.b);}}
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-      this.routeLine=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false}));this.routeLine.renderOrder=1001;this.scene.add(this.routeLine);
+      this.routeLine=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false}));this.routeLine.visible=this.editing;this.routeLine.renderOrder=1001;this.scene.add(this.routeLine);
     }
     this.plan.draw();
   }
@@ -228,7 +232,7 @@ export class Workspace {
   }
   private refreshSelection(){this.services.selection(this.selected().length===1?this.selected()[0]:undefined);this.updateSelectionBox();this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updatePad();this.plan.draw();}
   private updateSelectionBox(){
-    const list=this.selected();this.selectionBox.visible=list.length>0&&!this.plan.enabled;this.selectionBox.box.makeEmpty();for(const o of list){const g=this.objects.get(o.id);if(g){g.updateMatrixWorld(true);this.selectionBox.box.union(new THREE.Box3().setFromObject(g));}}
+    const list=this.selected();this.selectionBox.visible=this.editing&&list.length>0&&!this.plan.enabled;this.selectionBox.box.makeEmpty();for(const o of list){const g=this.objects.get(o.id);if(g){g.updateMatrixWorld(true);this.selectionBox.box.union(new THREE.Box3().setFromObject(g));}}
     if(this.transform&&!this.drag){if(this.editing&&!this.driving?.active&&list.length&&!this.plan.enabled){const center=new THREE.Vector3();list.forEach(o=>center.add(new THREE.Vector3().fromArray(o.position)));center.divideScalar(list.length);this.pivot.position.copy(center);this.pivot.rotation.set(0,0,0);this.pivot.scale.setScalar(1);this.transform.attach(this.pivot);this.transform.enabled=true;}else{this.transform.detach();this.transform.enabled=false;}}
   }
   private setTransform(mode:'translate'|'rotate'|'scale'){if(this.transform){this.transform.setMode(mode);this.transform.showX=mode!=='rotate';this.transform.showY=mode==='rotate';this.transform.showZ=mode!=='rotate';}this.root.querySelectorAll<HTMLElement>('[data-transform]').forEach(b=>b.classList.toggle('active',b.dataset.transform===mode));}
@@ -265,7 +269,7 @@ export class Workspace {
     if(action==='cloud'){this.driving?.pause();this.cloud.open();return;}
     if(action==='drive'){const e=this.selected()[0];if(e&&isRefueller(e.preset)){this.setMenu(undefined);this.driving.open(e);}return;}
     if(action==='night'){this.night=!this.night;this.applyEnvironment();return;}
-    if(action==='engine'){const o=this.selected()[0];if(!o||!isRefueller(o.preset))return;this.running.has(o.id)?this.running.delete(o.id):this.running.add(o.id);this.updateAnimationButtons();this.plan.draw();return;}
+    if(action==='engine'){const o=this.selected()[0];if(!o||!isRefueller(o.preset))return;this.audio.engine(o.id,!this.running.has(o.id));this.running.has(o.id)?this.running.delete(o.id):this.running.add(o.id);this.updateAnimationButtons();this.plan.draw();return;}
     if(action==='save'){void this.save();return;}if(action==='discard'){void this.requestLeave(true);return;}if(action==='finishEdit'){void this.requestLeave();return;}
     if(action==='free'){if(this.plan.enabled){this.notify(this.say('2D görünümde sürükleyerek serbestçe gezebilirsiniz. 3D’de serbest kamera için 3D’yi açın.','Drag to navigate freely in 2D. Open 3D for the free camera.'));return;}this.setFree(!this.freeMode);return;}
     if(action==='closePanel'){this.$('.ws-panel').hidden=true;this.resize();return;}

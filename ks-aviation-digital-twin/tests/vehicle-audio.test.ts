@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {VehicleAudio,EngineTone,type EngineInput} from '../src/vehicle-audio';
+const require=createRequire(import.meta.url),{RenderingAudioContext}=require('web-audio-engine');
+const prefs=new Map<string,string>();Object.assign(globalThis,{localStorage:{getItem:(k:string)=>prefs.get(k)??null,setItem:(k:string,v:string)=>prefs.set(k,v)},window:{AudioContext:RenderingAudioContext}});
+const idle:EngineInput={id:'3000',running:true,speed:0,throttle:0,braking:false,automatic:false};
+const tone=new EngineTone();for(let i=0;i<100;i++)tone.update(.05,idle);assert.ok(tone.rpm>=690&&tone.rpm<710);assert.equal(tone.gear,0);
+let shifts=0,previousRpm=0,drop=false;
+for(let kmh=0;kmh<=25;kmh+=.04){const shifted=tone.update(.05,{...idle,speed:kmh/3.6,throttle:1});if(shifted){shifts++;previousRpm=tone.rpm;}else if(tone.shift>0&&tone.rpm<previousRpm)drop=true;assert.ok(tone.rpm>=600&&tone.rpm<=2400);}
+assert.ok(shifts>=3&&drop,'Upshifts create a brief RPM dip');const gear=tone.gear;
+for(let i=0;i<40;i++)tone.update(.05,{...idle,speed:(19+(i%2?.05:-.05))/3.6,throttle:1});assert.equal(tone.gear,gear,'Gear hysteresis prevents chatter at the threshold');
+tone.update(.05,{...idle,speed:-1,throttle:-1});assert.equal(tone.gear,-1);tone.update(.05,{...idle,running:false});assert.equal(tone.rpm,0);
+let factories=0;const context=new RenderingAudioContext({sampleRate:22050,numberOfChannels:1});
+const audio=new VehicleAudio(()=>{factories++;return context;});audio.update(.05,idle);assert.equal(factories,0,'No AudioContext or autoplay before a user gesture');
+audio.engine('3000',true);await context.resume();assert.equal(factories,1);
+async function render(seconds:number,input:EngineInput){const start=context.currentTime;while(context.currentTime<start+seconds){await context.resume();audio.update(.05,input);context.processTo(context.currentTime+.05);}return [Math.round(start*context.sampleRate),Math.round(context.currentTime*context.sampleRate)] as const;}
+const start=await render(.7,idle),settle=await render(.6,idle),voice=(audio as any).voice;
+const idleRange=await render(.8,idle);assert.equal((audio as any).voice,voice,'Frames reuse the same voice without accumulating oscillators');assert.equal((audio as any).transients.size,0,'Starter nodes disconnect on end');
+const accelerating=await render(1,{...idle,speed:5/3.6,throttle:1});assert.ok(audio.tone.rpm>1300);
+await render(.2,{...idle,speed:8/3.6,throttle:1});assert.equal(audio.tone.gear,2);
+await render(.4,{...idle,speed:8/3.6,braking:true});assert.equal((audio as any).transients.size,0);
+audio.setVolume(1);await render(.5,{...idle,speed:25/3.6,throttle:1});
+audio.setEnabled(false);assert.equal((audio as any).voice,undefined);assert.equal(context.state,'suspended');
+const muted=await render(.4,idle);assert.equal((audio as any).voice,undefined,'Muted ticks cannot recreate an engine');
+audio.setEnabled(true);await render(.5,idle);assert.ok((audio as any).voice);assert.equal(factories,1,'Unmute reuses one context');
+audio.silence();assert.equal(context.state,'suspended');const hidden=await render(.4,idle);assert.equal((audio as any).voice,undefined,'Page-hide silence persists until another gesture');
+audio.unlock();await render(.4,idle);assert.ok((audio as any).voice);audio.engine('3000',false);const stopped=await render(.4,{...idle,running:false});assert.equal((audio as any).voice,undefined);
+const pcm:Float32Array=context.exportAsAudioData().channelData[0];let peak=0;for(const sample of pcm){assert.ok(Number.isFinite(sample));peak=Math.max(peak,Math.abs(sample));}assert.ok(peak>.01&&peak<.95,`Sound has nonzero output without clipping: ${peak}`);
+const rms=(range:readonly[number,number])=>Math.sqrt(pcm.slice(range[0]+600,range[1]).reduce((s,n)=>s+n*n,0)/(range[1]-range[0]-600));
+assert.ok(rms(idleRange)>.001);assert.ok(rms(accelerating)>rms(idleRange)*1.15,'Throttle is audible above idle');assert.ok(Math.abs(rms(start)-rms(settle))>rms(settle)*.1,'Cranking is distinct from settled idle');
+for(const range of [muted,hidden,stopped])assert.ok(rms(range)<1e-5,'Mute, page-hide and engine-off render silence');
+const restored=new VehicleAudio(()=>context);assert.equal(restored.volume,1);assert.equal(restored.enabled,true);
+console.log(`PASS: diesel idle/throttle/gear hysteresis, starter/shift/brake waveform, user gesture, one-context lifecycle, mute/volume and hidden-page silence; peak ${peak.toFixed(3)}.`);
