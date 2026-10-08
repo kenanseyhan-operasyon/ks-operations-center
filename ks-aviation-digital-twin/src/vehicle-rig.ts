@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { R14 } from './r14-spec';
 import { FuelGauge, refitTankMarkings, tankLift } from './refueller-details';
+import {VehicleCab} from './vehicle-cab';
 type Wheel={pivot:THREE.Group;spin:THREE.Group;front:boolean;trailer:boolean};
 
 /** Prepare one cloned R14 in native coordinates, before scaling/grounding.
@@ -10,6 +11,7 @@ export class VehicleRig {
   readonly wheels:Wheel[]=[];
   readonly trailer=new THREE.Group();
   readonly gauges:FuelGauge[]=[];
+  readonly cab:VehicleCab;
   private geometries=new Set<THREE.BufferGeometry>();
   private materials=new Set<THREE.Material>();
   get wheelbase(){return ((this.articulated?R14.tractorAxle:(R14.tractorAxle+R14.trailerAxle)/2)-R14.frontAxle)*this.model.scale.x;}
@@ -122,7 +124,7 @@ export class VehicleRig {
       }
       if(articulated&&index===2)attach(pivot);this.wheels.push({pivot,spin,front:index===0,trailer:articulated&&index===2});
     }
-    model.updateMatrixWorld(true);
+    this.cab=new VehicleCab(model);model.updateMatrixWorld(true);
   }
   private own<T extends THREE.BufferGeometry>(g:T):T{this.geometries.add(g);return g;}
   private material(color:string,metalness:number,roughness:number){const m=new THREE.MeshStandardMaterial({color,metalness,roughness});this.materials.add(m);return m;}
@@ -132,5 +134,5 @@ export class VehicleRig {
     const scale=this.model.getWorldScale(new THREE.Vector3()).x;this.setArticulation(trailerAngle);
     for(const wheel of this.wheels){wheel.spin.rotation.z=distanceMetres/(R14.tyreRadius*scale);wheel.pivot.rotation.y=wheel.front?-steer:0;}
   }
-  dispose(){this.geometries.forEach(g=>g.dispose());this.materials.forEach(m=>m.dispose());}
+  dispose(){this.cab.dispose();this.geometries.forEach(g=>g.dispose());this.materials.forEach(m=>m.dispose());}
 }

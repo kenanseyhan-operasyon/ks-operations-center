@@ -1,4 +1,5 @@
 import {clickApproachOffset,configureWorkspaceOrbit,constrainCameraHeight} from './camera-navigation';
+import {CabDrivingView} from './cab-driving-view';
 import {VehicleAudio} from './vehicle-audio';
 import {advanceSimulation} from './simulation-clock';
 import {FacilityGates,isFacilityGate,setGateOpening} from './facility-gates';
@@ -40,6 +41,7 @@ export class Workspace {
   history!:SceneHistory;selection=new Set<string>();editing=false;mode:'airport'|'facility'='facility';
   private session!:DesignSession;private staticGround!:StaticGround;private free?:FreeCamera;private freeMode=false;private exitDialog?:Promise<boolean>;
   private scene=new THREE.Scene();private groundScene=new THREE.Scene();private device=currentDevice();private renderSize='';private contextLost=false;private library!:GSELibrary;private camera=new THREE.PerspectiveCamera(42,1,.05,30000);private renderer?:THREE.WebGLRenderer;private orbit?:OrbitControls;private transform?:TransformControls;
+  private cabView?:CabDrivingView;private cabExterior?:{id:string;position:THREE.Vector3;target:THREE.Vector3;free:boolean};
   private audio=new VehicleAudio();private cloud!:CloudPanel;private driving!:DrivingPanel;private vehicleRigs=new Map<string,VehicleRig>();private routeLine?:THREE.LineSegments;private routeDisplay:RouteDisplay={points:[]};private routeHandles!:RouteHandles;private facilityGates=new FacilityGates();private routePoints:[number,number][]=[];private saving=false;
   private night=false;private running=new Set<string>();private vehicleLights=new Map<string,VehicleLighting>();
   private skyLight=new THREE.HemisphereLight(0xe9f7ff,0x596552,2.5);private sunLight=new THREE.DirectionalLight(0xfff6e9,3);
@@ -75,7 +77,7 @@ export class Workspace {
     this.library=new GSELibrary(this.$('.ws-map'),(preset,center)=>{if(!this.setEditing(true))return;this.$<HTMLSelectElement>('#wsCatalog').value=preset;this.action(center?'center':'place');this.collapseEditor();if(center)this.action('focus');});
     this.cloud=new CloudPanel(this.$('.ws-map'),()=>this.history.current,data=>{this.driving?.close();this.history.checkpoint();this.history.current=validateScene(data);this.session=new DesignSession(this.history.current);this.selection.clear();this.changed();},text=>this.notify(text),()=>{if(!this.cloud?.canEdit&&this.editing)this.setEditing(false);this.driving?.refreshMode();this.updateSaveState();});
     this.driving=new DrivingPanel(this.$('.ws-map'),{
-      entities:()=>this.history.current.entities,routes:()=>this.history.current.routes||[],
+      cabin:on=>this.setCabin(on),entities:()=>this.history.current.entities,routes:()=>this.history.current.routes||[],
       driveStates:()=>this.history.current.driving||[],
       retainDrive:(id,state)=>{const states=(this.history.current.driving||[]).filter(s=>s.vehicleId!==id);if(state)states.push(state);if(states.length)this.history.current.driving=states;else delete this.history.current.driving;},
       save:()=>{void this.save();},canSave:()=>this.cloud.canEdit,canDesign:()=>this.editing&&this.cloud.canEdit,enterDesign:()=>this.setEditing(true,true),audio:this.audio,
@@ -86,7 +88,7 @@ export class Workspace {
       blocked:id=>{const pack=this.mixers.get(id);return !!pack&&([...pack.open].length>0||[...pack.actions.values()].some(a=>a.time>.02));},
       wheelbase:id=>{const e=this.history.current.entities.find(e=>e.id===id);return refuellerDimensions(e?.preset||'R14',e?.length,e?.scale).wheelbase;},
       articulation:id=>{const e=this.history.current.entities.find(e=>e.id===id);return refuellerDimensions(e?.preset||'R14',e?.length,e?.scale);},
-      move:(id,m,follow)=>{const e=this.history.current.entities.find(e=>e.id===id);if(!e)return;const dx=m.pose.x-e.position[0],dz=m.pose.z-e.position[2];e.position[0]=m.pose.x;e.position[2]=m.pose.z;e.heading=m.pose.heading*180/Math.PI;e.trailerAngle=m.trailerAngle;this.vehicleRigs.get(id)?.setArticulation(m.trailerAngle);const g=this.objects.get(id);if(g)applyTransform(g,e);if(follow){this.flight++;this.camera.position.x+=dx;this.camera.position.z+=dz;if(this.orbit){this.orbit.target.x+=dx;this.orbit.target.z+=dz;}this.plan.center[0]+=dx;this.plan.center[1]+=dz;}this.plan.draw();},
+      move:(id,m,follow)=>{const e=this.history.current.entities.find(e=>e.id===id);if(!e)return;const dx=m.pose.x-e.position[0],dz=m.pose.z-e.position[2];e.position[0]=m.pose.x;e.position[2]=m.pose.z;e.heading=m.pose.heading*180/Math.PI;e.trailerAngle=m.trailerAngle;this.vehicleRigs.get(id)?.setArticulation(m.trailerAngle);const g=this.objects.get(id);if(g)applyTransform(g,e);if(follow&&!this.cabView?.active){this.flight++;this.camera.position.x+=dx;this.camera.position.z+=dz;if(this.orbit){this.orbit.target.x+=dx;this.orbit.target.z+=dz;}this.plan.center[0]+=dx;this.plan.center[1]+=dz;}this.plan.draw();},
       gateWaiting:(e,m)=>this.facilityGates.waiting(e,m.pose,m.speed,m.speed<-.01||m.throttle<0,this.history.current.entities)?.id,
       openGate:id=>{const e=this.history.current.entities.find(e=>e.id===id),gate=e&&this.facilityGates.nearest(e,this.history.current.entities);if(gate){this.history.change(()=>{gate.gateOpen=true;});this.changed();this.notify(this.say('Tesis kapısı açılıyor.','Facility gate opening.'));}else this.notify(this.say('Yakında tesis kapısı yok.','No facility gate nearby.'));},
       path:display=>this.drawRoute(display),
@@ -101,10 +103,41 @@ export class Workspace {
     this.setView(this.device.initialView);
     this.imagery.onChange=()=>{this.plane.sync();this.plan.draw();this.updateGroundStatus();};
     this.bind();this.setLanguage(this.lang);this.syncObjects();new ResizeObserver(()=>this.resize()).observe(this.stage);this.resize();window.addEventListener('resize',()=>this.resize());document.addEventListener('fullscreenchange',()=>this.resize());screen.orientation?.addEventListener('change',()=>this.resize());
-    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;let gatesChanged=false;advanceSimulation(dt,this.driving?.rate||1,(step,last)=>{gatesChanged=this.facilityGates.update(step,this.history.current.entities,this.running,id=>this.objects.get(id))||gatesChanged;this.driving?.tick(step,last);});const audible=this.driving?.vehicleId||this.selected()[0]?.id,motion=audible===this.driving?.vehicleId?this.driving.motion:undefined;this.audio.update(dt,{id:audible,running:!!audible&&this.running.has(audible),speed:motion?.speed||0,throttle:motion?.throttle||0,braking:motion?.braking||false,automatic:motion?.mode==='route'});for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer,m.trailerAngle);}if(this.driving?.active||gatesChanged)this.plan.draw();if(!this.plan.enabled&&this.renderer){if(this.freeMode)this.free?.update(dt);else if(!this.routeHandles?.dragging)this.orbit?.update();this.constrainCamera();this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);}this.routeHandles?.update();};frame();
+    const clock=new THREE.Clock();let lastFrame=0;const frame=(now=0)=>{requestAnimationFrame(frame);if(this.device.mobile&&now-lastFrame<32)return;lastFrame=now;const dt=Math.min(.1,clock.getDelta());if(!this.active||document.hidden)return;let gatesChanged=false;advanceSimulation(dt,this.driving?.rate||1,(step,last)=>{gatesChanged=this.facilityGates.update(step,this.history.current.entities,this.running,id=>this.objects.get(id))||gatesChanged;this.driving?.tick(step,last);});const audible=this.driving?.vehicleId||this.selected()[0]?.id,motion=audible===this.driving?.vehicleId?this.driving.motion:undefined;this.audio.update(dt,{id:audible,running:!!audible&&this.running.has(audible),speed:motion?.speed||0,throttle:motion?.throttle||0,braking:motion?.braking||false,automatic:motion?.mode==='route',cabin:this.cabView?.active,distance:audible&&this.objects.get(audible)?this.camera.position.distanceTo(this.objects.get(audible)!.position):0,signal:motion?.signal,horn:this.driving?.horn});for(const {mixer} of this.mixers.values())mixer.update(dt);for(const [id,rig] of this.vehicleLights){const m=this.driving?.vehicleId===id?this.driving.motion:undefined;rig.update(this.running.has(id),this.night,now,m?.signal,m?.braking,(m?.speed||0)<0);if(m)this.vehicleRigs.get(id)?.update(m.distance,m.steer,m.trailerAngle);}if(this.driving?.active||gatesChanged)this.plan.draw();this.render3D(now,dt);this.routeHandles?.update();};frame();
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.audio.silence();});window.addEventListener('pagehide',()=>this.audio.silence());
     await this.cloud.init(authCallback);
     if(this.storageWarning)this.notify(this.say('Yerel kayıt okunamadı; kaynak sahne açıldı.','Local save could not be read; source scene opened.'));
+  }
+  private setCabin(inside:boolean){
+    if(!inside){
+      if(!this.cabView?.active)return true;
+      const saved=this.cabExterior;this.cabView.exit();this.cabExterior=undefined;this.root.classList.remove('cab-driving');
+      this.flight++;
+      if(saved){const e=this.history.current.entities.find(e=>e.id===saved.id),origin=new THREE.Vector3().fromArray(e?.position||[0,0,0]);this.camera.position.copy(origin).add(saved.position);this.orbit?.target.copy(origin).add(saved.target);this.freeMode=saved.free;}
+      if(this.orbit){this.orbit.enabled=!this.freeMode;this.orbit.enableDamping=false;this.orbit.update();this.orbit.enableDamping=true;}
+      if(this.free){this.free.enabled=this.freeMode;this.free.paused=false;this.free.clear();this.free.sync();}
+      this.drawRoute(this.routeDisplay);this.updateSelectionBox();this.updatePad();return true;
+    }
+    const e=this.history.current.entities.find(e=>e.id===this.driving?.vehicleId);if(!e||!this.driving.active||this.driving.drawing)return false;
+    if(this.plan.enabled)this.setView('3d');
+    const cab=this.vehicleRigs.get(e.id)?.cab;if(this.plan.enabled||!this.cabView||!cab){this.notify(this.say('Kabin için 3D araç modelinin yüklenmesini bekleyin.','Wait for the 3D vehicle model to load before entering the cab.'));return false;}
+    this.flight++;this.airportOverview=false;this.setMenu(undefined);
+    const origin=new THREE.Vector3().fromArray(e.position);this.cabExterior={id:e.id,position:this.camera.position.clone().sub(origin),target:(this.freeMode?this.camera.position.clone().addScaledVector(this.camera.getWorldDirection(new THREE.Vector3()),30):(this.orbit?.target.clone()||origin.clone())).sub(origin),free:this.freeMode};
+    if(this.orbit){this.orbit.enableDamping=false;this.orbit.update();this.orbit.enableDamping=true;this.orbit.enabled=false;}
+    if(this.free){this.free.enabled=false;this.free.paused=true;this.free.clear();}
+    this.cabView.enter(cab);this.root.classList.add('cab-driving');this.selectionBox.visible=false;if(this.routeLine)this.routeLine.visible=false;this.routeHandles?.set({points:[]});this.updatePad();return true;
+  }
+  private render3D(now:number,dt:number){
+    if(this.plan.enabled||!this.renderer)return;
+    const m=this.driving?.motion;
+    if(this.cabView?.active&&m){
+      this.cabView.update({speed:m.speed,steer:m.steer,rpm:this.audio.tone.rpm,gear:this.audio.tone.gear,running:this.running.has(this.driving.vehicleId!),night:this.night,signal:m.signal,rate:this.driving.rate},now);
+      this.cabView.renderMirrors(this.renderer,this.groundScene,this.scene,now);
+    }else{
+      if(this.freeMode)this.free?.update(dt);else if(!this.routeHandles?.dragging)this.orbit?.update();this.constrainCamera();
+      if(m)this.vehicleRigs.get(this.driving.vehicleId!)?.cab.update({speed:m.speed,steer:m.steer,rpm:this.audio.tone.rpm,gear:this.audio.tone.gear,running:this.running.has(this.driving.vehicleId!),night:this.night});
+    }
+    this.updateSelectionBox();this.renderer.clear();this.renderer.render(this.groundScene,this.camera);this.renderer.clearDepth();this.renderer.render(this.scene,this.camera);this.cabView?.renderOverlay(this.renderer);
   }
   private ensure3D(){
     if(this.renderer)return !this.contextLost;
@@ -114,11 +147,12 @@ export class Workspace {
       this.orbit.addEventListener('start',()=>this.manualCamera());this.orbit.addEventListener('end',()=>{this.updateTiles();this.updateLocation();});
       this.transform=new TransformControls(this.camera,this.inputCanvas);this.transform.setSize(.8);this.transform.showY=false;this.scene.add(this.transform.getHelper());this.transform.enabled=false;
       this.transform.addEventListener('mouseDown',()=>this.beginTransform());this.transform.addEventListener('objectChange',()=>this.applyGizmo());this.transform.addEventListener('mouseUp',()=>{if(this.drag){this.drag=false;if(this.orbit)this.orbit.enabled=!this.freeMode;if(this.free)this.free.paused=false;this.changed();}});
+      this.cabView=new CabDrivingView(this.camera,this.inputCanvas,this.stage,this.device.mobile,{key:(k,down)=>{this.driving?.key(k,down);},exit:()=>{this.driving?.setCabin(false);}});this.cabView.setLanguage(this.lang);
       const pointers3D=new Set<number>();let multi3D=false,moved3D=false;
       this.inputCanvas.addEventListener('pointerdown',e=>{pointers3D.add(e.pointerId);if(pointers3D.size>1)multi3D=true;else moved3D=false;this.dragStart=[e.clientX,e.clientY];});
       this.inputCanvas.addEventListener('pointermove',e=>{if(this.dragStart&&pointers3D.has(e.pointerId)&&Math.hypot(e.clientX-this.dragStart[0],e.clientY-this.dragStart[1])>4)moved3D=true;});
       this.inputCanvas.addEventListener('pointercancel',e=>{pointers3D.delete(e.pointerId);if(!pointers3D.size)multi3D=false;this.dragStart=undefined;});
-      this.inputCanvas.addEventListener('pointerup',e=>{const wasMulti=multi3D;pointers3D.delete(e.pointerId);if(!pointers3D.size)multi3D=false;if(wasMulti||moved3D)return;if(e.button!==0||this.transform?.axis||!this.dragStart||Math.hypot(e.clientX-this.dragStart[0],e.clientY-this.dragStart[1])>4)return;const r=this.inputCanvas!.getBoundingClientRect();const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.camera);const p=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());const hits=ray.intersectObjects([...this.objects.values()],true);const marker=hits.find(h=>h.object.userData.servicePointId);if(marker&&!this.tool&&!this.driving?.drawing){this.services.focus(marker.object.userData.servicePointId);return;}let hit:THREE.Object3D|undefined=hits[0]?.object;while(hit&&!hit.userData.entityId)hit=hit.parent||undefined;const point=!this.editing&&!this.driving?.drawing&&hit?hits[0].point:p;if(point)this.clickMap(point.x,point.z,hit?.userData.entityId,e.ctrlKey||e.metaKey,true);});
+      this.inputCanvas.addEventListener('pointerup',e=>{const wasMulti=multi3D;pointers3D.delete(e.pointerId);if(!pointers3D.size)multi3D=false;if(wasMulti||moved3D||this.cabView?.active)return;if(e.button!==0||this.transform?.axis||!this.dragStart||Math.hypot(e.clientX-this.dragStart[0],e.clientY-this.dragStart[1])>4)return;const r=this.inputCanvas!.getBoundingClientRect();const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.camera);const p=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),new THREE.Vector3());const hits=ray.intersectObjects([...this.objects.values()],true);const marker=hits.find(h=>h.object.userData.servicePointId);if(marker&&!this.tool&&!this.driving?.drawing){this.services.focus(marker.object.userData.servicePointId);return;}let hit:THREE.Object3D|undefined=hits[0]?.object;while(hit&&!hit.userData.entityId)hit=hit.parent||undefined;const point=!this.editing&&!this.driving?.drawing&&hit?hits[0].point:p;if(point)this.clickMap(point.x,point.z,hit?.userData.entityId,e.ctrlKey||e.metaKey,true);});
       this.inputCanvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this.contextLost=true;this.setView('2d');this.$<HTMLButtonElement>('[data-view="3d"]').disabled=true;this.notify(this.say('Grafik bağlantısı kesildi; sahneniz korunarak 2D açıldı.','Graphics context lost; your scene is preserved in 2D.'));});
       this.inputCanvas.addEventListener('webglcontextrestored',()=>{this.contextLost=false;this.$<HTMLButtonElement>('[data-view="3d"]').disabled=false;this.notify(this.say('3D yeniden hazır. 3D düğmesiyle açabilirsiniz.','3D is ready again. Use the 3D button to return.'));});
       this.free=new FreeCamera(this.camera,this.inputCanvas,()=>{this.manualCamera();this.updateLocation();});this.bind3DEditing();this.syncObjects();return true;
@@ -149,7 +183,7 @@ export class Workspace {
     window.addEventListener('keydown',e=>{if(!this.active||(e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return;const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();if(!mod&&this.driving?.key(k,true)){e.preventDefault();return;}if(this.freeMode&&!this.plan.enabled&&!mod&&['w','a','s','d','q','e','shift'].includes(k)){e.preventDefault();this.flight++;this.free?.key(k,true);return;}if(!this.editing)return;if(!mod&&k.startsWith('arrow')&&this.selection.size){e.preventDefault();const step=e.shiftKey?5:.5;this.change(d=>moveEntities(d,this.selection,k==='arrowleft'?-step:k==='arrowright'?step:0,k==='arrowup'?-step:k==='arrowdown'?step:0));return;}if(mod&&k==='s'){e.preventDefault();this.save();return;}if(mod&&k==='z'){e.preventDefault();this.action(e.shiftKey?'redo':'undo');}else if(mod&&k==='y'){e.preventDefault();this.action('redo');}else if(mod&&k==='c'){e.preventDefault();this.clipboard=this.selected().map(o=>structuredClone(o));}else if(mod&&k==='v'){e.preventDefault();this.duplicate(this.clipboard);}else if(k==='delete'||k==='backspace'){e.preventDefault();this.action('remove');}else if(k==='escape')this.action('cancel');else if(k==='enter'&&this.tool)this.action('finish');else if(!mod&&['w','e','r'].includes(k))this.setTransform(({w:'translate',e:'rotate',r:'scale'} as const)[k as 'w']);});
     window.addEventListener('keyup',e=>{this.driving?.key(e.key.toLowerCase(),false);this.free?.key(e.key.toLowerCase(),false);});
   }
-  setLanguage(lang:Lang){this.lang=lang;this.cloud?.setLanguage(lang);this.driving?.setLanguage(lang);this.setMenu(this.openMenu);this.services?.setLanguage(lang);this.photo?.setLanguage(lang);this.library?.setLanguage(lang);this.root.querySelectorAll<HTMLElement>('[data-label]').forEach(e=>e.textContent=this.l(e.dataset.label!));this.$<HTMLInputElement>('#wsSearch').placeholder=this.l('search');this.$<HTMLInputElement>('#wsGroupName').placeholder=this.l('groupName');this.$<HTMLSelectElement>('#wsCatalog').querySelectorAll('option').forEach(o=>o.textContent=lang==='tr'?CATALOG[o.value].tr:CATALOG[o.value].en);this.$('#wsFallback').textContent=this.say('WebGL kullanılamıyor. 2D harita ve tasarım araçları açık.','WebGL unavailable. 2D map and design tools are available.');this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updateSaveState();this.updatePad();this.imagery.onChange();}
+  setLanguage(lang:Lang){this.lang=lang;this.cabView?.setLanguage(lang);this.cloud?.setLanguage(lang);this.driving?.setLanguage(lang);this.setMenu(this.openMenu);this.services?.setLanguage(lang);this.photo?.setLanguage(lang);this.library?.setLanguage(lang);this.root.querySelectorAll<HTMLElement>('[data-label]').forEach(e=>e.textContent=this.l(e.dataset.label!));this.$<HTMLInputElement>('#wsSearch').placeholder=this.l('search');this.$<HTMLInputElement>('#wsGroupName').placeholder=this.l('groupName');this.$<HTMLSelectElement>('#wsCatalog').querySelectorAll('option').forEach(o=>o.textContent=lang==='tr'?CATALOG[o.value].tr:CATALOG[o.value].en);this.$('#wsFallback').textContent=this.say('WebGL kullanılamıyor. 2D harita ve tasarım araçları açık.','WebGL unavailable. 2D map and design tools are available.');this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updateSaveState();this.updatePad();this.imagery.onChange();}
   show(mode:'airport'|'facility',edit=false){this.active=true;this.root.hidden=false;this.setMenu(undefined);this.setView('3d');this.navigate(mode);this.setEditing(edit);requestAnimationFrame(()=>this.resize());}
   hide(){this.audio.silence();this.driving?.close();syncPortraitLock(false);this.free?.clear();this.active=false;this.root.hidden=true;this.flight++;}
   navigate(mode:'airport'|'facility',smooth=true){
@@ -171,6 +205,7 @@ export class Workspace {
   }
   setEditing(enabled:boolean,keepDrive=false){if(enabled&&!this.unlockDesign())return false;if(enabled&&!keepDrive)this.driving?.close();this.editing=enabled;this.driving?.refreshMode();this.drawRoute(this.routeDisplay);if(enabled){this.library.element.hidden=true;this.photo.element.hidden=true;if(this.services.visible)this.services.toggle();}this.$('.ws-panel').hidden=!enabled;this.root.classList.toggle('editing',enabled);this.$('[data-nav="design"]').classList.toggle('active',enabled);this.cancelTool();this.updateSelectionBox();this.renderProperties();this.updateSaveState();this.updatePad();this.resize();return true;}
   private setView(view:'2d'|'3d'){
+    if(view==='2d')this.driving?.setCabin(false);
     if(view==='3d'&&!this.ensure3D())view='2d';const was2d=this.plan.enabled;this.plan.enabled=view==='2d';this.plan.canvas.hidden=!this.plan.enabled;if(this.renderer)this.renderer.domElement.hidden=this.plan.enabled;
     if(this.plan.enabled&&this.orbit&&!was2d){this.free?.clear();this.plan.center=this.viewCenter();this.plan.bearing=this.orbit.getAzimuthalAngle();this.plan.span=Math.max(30,2*this.camera.position.distanceTo(this.orbit.target)*Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2))*this.camera.aspect);}
     if(!this.plan.enabled&&was2d){const distance=this.plan.span/(2*Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2))*Math.max(.2,this.stage.clientWidth/Math.max(1,this.stage.clientHeight)));this.flyTo(new THREE.Vector3(this.plan.center[0],0,this.plan.center[1]),distance,false,false,cameraOffset(distance,this.plan.bearing));}
@@ -191,8 +226,8 @@ export class Workspace {
     if(!this.orbit)return;this.orbit.enableDamping=false;this.orbit.update();this.orbit.enableDamping=true;const start=this.camera.position.clone(),startTarget=this.orbit.target.clone(),end=target.clone().add(offset||(top?new THREE.Vector3(0,distance,.001):new THREE.Vector3(distance*.64,distance*.65,distance*.52)));const token=++this.flight,t=performance.now();if(this.free)this.free.paused=true;
     const step=(now:number)=>{if(token!==this.flight){if(this.free)this.free.paused=false;return;}const k=smooth?Math.min(1,(now-t)/850):1,q=1-(1-k)**3;this.camera.position.lerpVectors(start,end,q);this.orbit!.target.lerpVectors(startTarget,target,q);this.orbit!.update();this.constrainCamera();if(k<1)requestAnimationFrame(step);else{this.free?.sync();if(this.free)this.free.paused=false;this.updateTiles();}};requestAnimationFrame(step);
   }
-  private constrainCamera(){if(!this.orbit)return;this.orbit.target.y=Math.max(0,this.orbit.target.y);constrainCameraHeight(this.camera);if(!this.freeMode)this.camera.lookAt(this.orbit.target);this.free?.constrain();}
-  private manualCamera(){this.flight++;this.airportOverview=false;this.driving?.releaseFollow();}
+  private constrainCamera(){if(!this.orbit||this.cabView?.active)return;this.orbit.target.y=Math.max(0,this.orbit.target.y);constrainCameraHeight(this.camera);if(!this.freeMode)this.camera.lookAt(this.orbit.target);this.free?.constrain();}
+  private manualCamera(){if(this.cabView?.active)return;this.flight++;this.airportOverview=false;this.driving?.releaseFollow();}
   private goToPoint(x:number,z:number){
     if(!Number.isFinite(x)||!Number.isFinite(z))return;
     this.manualCamera();this.free?.clear();
@@ -211,22 +246,22 @@ export class Workspace {
   private changed(){this.history.current.updatedAt=new Date().toISOString();this.applyGround();this.syncObjects();this.renderList();this.renderProperties();this.updateLocation();this.updateSaveState();this.updatePad();}
   private syncObjects(){
     const ids=new Set(this.history.current.entities.map(o=>o.id));
-    for(const [key,g] of this.objects)if(!ids.has(key)){this.scene.remove(g);this.vehicleLights.get(key)?.dispose();this.vehicleLights.delete(key);this.vehicleRigs.get(key)?.dispose();this.vehicleRigs.delete(key);this.running.delete(key);disposeObject(g);this.objects.delete(key);this.fingerprints.delete(key);this.mixers.delete(key);this.selection.delete(key);}
+    for(const [key,g] of this.objects)if(!ids.has(key)){if(this.cabExterior?.id===key)this.driving?.setCabin(false);this.scene.remove(g);this.vehicleLights.get(key)?.dispose();this.vehicleLights.delete(key);this.vehicleRigs.get(key)?.dispose();this.vehicleRigs.delete(key);this.running.delete(key);disposeObject(g);this.objects.delete(key);this.fingerprints.delete(key);this.mixers.delete(key);this.selection.delete(key);}
     for(const o of this.history.current.entities){const fingerprint=JSON.stringify([o.kind,o.preset,o.color,o.width,o.length,o.height,o.radius,o.thickness,o.points,o.wallStyle,o.flag,o.doorSide]);let g=this.objects.get(o.id);
-      if(!g||this.fingerprints.get(o.id)!==fingerprint){if(g){this.scene.remove(g);this.vehicleLights.get(o.id)?.dispose();this.vehicleLights.delete(o.id);this.vehicleRigs.get(o.id)?.dispose();this.vehicleRigs.delete(o.id);disposeObject(g);this.mixers.delete(o.id);}g=makeObject(o);this.scene.add(g);this.objects.set(o.id,g);this.fingerprints.set(o.id,fingerprint);}
+      if(!g||this.fingerprints.get(o.id)!==fingerprint){if(this.cabExterior?.id===o.id)this.driving?.setCabin(false);if(g){this.scene.remove(g);this.vehicleLights.get(o.id)?.dispose();this.vehicleLights.delete(o.id);this.vehicleRigs.get(o.id)?.dispose();this.vehicleRigs.delete(o.id);disposeObject(g);this.mixers.delete(o.id);}g=makeObject(o);this.scene.add(g);this.objects.set(o.id,g);this.fingerprints.set(o.id,fingerprint);}
       if(this.renderer&&isRefueller(o.preset)&&g.userData.modelPending&&!g.userData.modelLoading){g.userData.modelLoading=true;void this.loadR14(o,g);}
       applyTransform(g,o);if(isFacilityGate(o))setGateOpening(g,this.facilityGates.amount(o.id));this.vehicleRigs.get(o.id)?.setArticulation(o.trailerAngle);this.vehicleRigs.get(o.id)?.setFuelLevel(o.fuelLitres);
     }
     this.services?.sync();this.photo?.sync();this.updateSelectionBox();this.plan.draw();
   }
   private drawRoute(display:RouteDisplay){
-    this.routeDisplay=display;this.routePoints=display.points;this.routeHandles?.set(this.editing?display:{points:[]});
+    this.routeDisplay=display;this.routePoints=display.points;this.routeHandles?.set(this.editing&&!this.cabView?.active?display:{points:[]});
     if(this.routeLine){this.routeLine.removeFromParent();this.routeLine.geometry.dispose();(this.routeLine.material as THREE.Material).dispose();this.routeLine=undefined;}
     if(display.points.length>1){
       const positions:number[]=[],colors:number[]=[],good=new THREE.Color('#57f7e5'),bad=new THREE.Color('#ff534c');
       for(let i=1;i<display.points.length;i++){const c=display.danger?.[i]||display.danger?.[i-1]?bad:good;for(const p of [display.points[i-1],display.points[i]]){positions.push(p[0],.12,p[1]);colors.push(c.r,c.g,c.b);}}
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-      this.routeLine=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false}));this.routeLine.visible=this.editing;this.routeLine.renderOrder=1001;this.scene.add(this.routeLine);
+      this.routeLine=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({vertexColors:true,depthTest:false}));this.routeLine.visible=this.editing&&!this.cabView?.active;this.routeLine.renderOrder=1001;this.scene.add(this.routeLine);
     }
     this.plan.draw();
   }
@@ -243,7 +278,7 @@ export class Workspace {
   }
   private refreshSelection(){this.services.selection(this.selected().length===1?this.selected()[0]:undefined);this.updateSelectionBox();this.renderList();this.renderProperties();this.updateLocation();this.updateAnimationButtons();this.updatePad();this.plan.draw();}
   private updateSelectionBox(){
-    const list=this.selected();this.selectionBox.visible=this.editing&&list.length>0&&!this.plan.enabled;this.selectionBox.box.makeEmpty();for(const o of list){const g=this.objects.get(o.id);if(g){g.updateMatrixWorld(true);this.selectionBox.box.union(new THREE.Box3().setFromObject(g));}}
+    const list=this.selected();this.selectionBox.visible=this.editing&&!this.cabView?.active&&list.length>0&&!this.plan.enabled;this.selectionBox.box.makeEmpty();for(const o of list){const g=this.objects.get(o.id);if(g){g.updateMatrixWorld(true);this.selectionBox.box.union(new THREE.Box3().setFromObject(g));}}
     if(this.transform&&!this.drag){if(this.editing&&!this.driving?.active&&list.length&&!this.plan.enabled){const center=new THREE.Vector3();list.forEach(o=>center.add(new THREE.Vector3().fromArray(o.position)));center.divideScalar(list.length);this.pivot.position.copy(center);this.pivot.rotation.set(0,0,0);this.pivot.scale.setScalar(1);this.transform.attach(this.pivot);this.transform.enabled=true;}else{this.transform.detach();this.transform.enabled=false;}}
   }
   private setTransform(mode:'translate'|'rotate'|'scale'){if(this.transform){this.transform.setMode(mode);this.transform.showX=mode!=='rotate';this.transform.showY=mode==='rotate';this.transform.showZ=mode!=='rotate';}this.root.querySelectorAll<HTMLElement>('[data-transform]').forEach(b=>b.classList.toggle('active',b.dataset.transform===mode));}
@@ -275,6 +310,7 @@ export class Workspace {
   private finishDrawing(){if(!this.tool)return;const c=CATALOG[this.tool],min=c.kind==='ground'?3:2;if(this.draft.length<min){this.notify(this.say(`En az ${min} nokta seçin.`,`Select at least ${min} points.`));return;}const x=this.draft.reduce((s,p)=>s+p[0],0)/this.draft.length,z=this.draft.reduce((s,p)=>s+p[1],0)/this.draft.length,o=newEntity(this.tool,x,z,this.lang);o.points=this.draft.map(p=>[p[0]-x,p[1]-z]);this.change(d=>{numberRefueller(d,o);d.entities.push(o);});this.selection=new Set([o.id]);this.cancelTool();this.refreshSelection();}
   private duplicate(items=this.selected()){if(!this.editing||!items.length)return;const copies=structuredClone(items);copies.forEach(o=>{o.id=id();if(!isRefueller(o.preset))o.name+=this.say(' kopya',' copy');o.position[0]+=3;o.position[2]+=3;o.groupId=undefined;});this.change(d=>{for(const o of copies){numberRefueller(d,o);d.entities.push(o);}});this.selection=new Set(copies.map(o=>o.id));this.refreshSelection();}
   private action(action:string){
+    if(this.cabView?.active){if(action==='zoomIn'||action==='zoomOut'){this.cabView.zoom(action==='zoomIn'?-180:180);return;}if(['focus','vehicle','top','free','restoreCamera'].includes(action))this.driving?.setCabin(false);}
     if(['focus','vehicle','top','free','zoomIn','zoomOut','restoreCamera'].includes(action))this.airportOverview=false;
     if(action==='facility-gate'){const gate=this.selected()[0];if(gate&&isFacilityGate(gate)){this.history.change(()=>{gate.gateOpen=!gate.gateOpen;});this.changed();this.updateAnimationButtons();this.notify(gate.gateOpen?this.say('Kapı açık tutulacak.','Gate will stay open.'):this.say('Otomatik kapı: araç tamamen geçince kapanır.','Automatic gate: closes after the complete vehicle clears.'));}return;}
     if(action==='cloud'){this.driving?.pause();this.cloud.open();return;}
