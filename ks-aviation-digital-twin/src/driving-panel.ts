@@ -104,7 +104,7 @@ export class DrivingPanel{
       this.waitingGate='';this.begin();
     }else this.waitingGate='';
     const wasBlocked=m.articulationBlocked,oldMode=m.mode,travel=m.step(dt,this.hooks.running(e.id),this.hooks.blocked(e.id));
-    if(m.articulationBlocked&&!wasBlocked){this.keys.clear();this.hooks.notify(this.say('Çekici–tank dönüş sınırına ulaşıldı. Direksiyonu düzeltip daha geniş dönün; geri giderken önce ileri alarak düzeltin.','Tractor–trailer turn limit reached. Straighten the steering and widen the turn; when reversing, pull forward to straighten.'));}
+    if(m.articulationBlocked&&!wasBlocked){this.hooks.notify(this.say('Tank fazla katlandığı için hareket durdu. İleri giderek açıyı azaltın; geri manevrada direksiyonu tankın arkasının kaydığı tarafa çevirin.','Movement stopped to prevent the trailer folding further. Pull forward; when reversing, steer toward the side the trailer rear has swung.'));}
     if(travel){this.hooks.move(e.id,m,this.follow);}
     if(oldMode==='route'&&m.mode==='complete'){this.remember();this.hooks.changed();this.checkpointed=false;this.hooks.notify(this.say('Güzergâh tamamlandı. Araç durdu; ikmal adımları henüz bağlı değil.','Route complete. Vehicle stopped; refuelling steps are not connected yet.'));}
     if(!m.speed&&this.checkpointed&&m.mode!=='route'){this.remember();this.hooks.changed();this.checkpointed=false;}
@@ -198,7 +198,8 @@ export class DrivingPanel{
     if(!this.active||!this.status||!this.motion)return;const m=this.motion;
     const state=this.waitingGate?this.say('Kapı açılması bekleniyor','Waiting for gate'):this.drawing?this.say(`Çizim · ${this.points.length} nokta`,`Drawing · ${this.points.length} points`):m.mode==='complete'?this.say('Park edildi','Parked'):m.mode==='paused'?this.say(`Duraklatıldı · ${m.remaining.toFixed(1)} m`,`Paused · ${m.remaining.toFixed(1)} m`):m.mode==='route'?this.say(`Güzergâh · ${m.remaining.toFixed(1)} m`,`Route · ${m.remaining.toFixed(1)} m`):this.say('Elle sürüş','Manual driving');
     const gear=this.hooks.audio?.tone.gear;
-    const text=`${this.testRate>1?`${this.testRate}× · `:''}${Math.abs(m.speed*3.6).toFixed(1)} ${this.say('km/sa','km/h')} · ${m.speed<-.01?'R':gear?`D${gear}`:'D'} · ${state}`;if(this.status.textContent!==text)this.status.textContent=text;
+    const assist=m.articulationBlocked?this.say(' · İleri giderek tankı düzeltin',' · Pull forward to straighten'):m.steeringAssisted?this.say(' · Dönüş desteği',' · Turn assist'):'';
+    const text=`${this.testRate>1?`${this.testRate}× · `:''}${Math.abs(m.speed*3.6).toFixed(1)} ${this.say('km/sa','km/h')} · ${m.speed<-.01?'R':gear?`D${gear}`:'D'} · ${state}${assist}`;if(this.status.textContent!==text)this.status.textContent=text;
     this.element.querySelectorAll<HTMLButtonElement>('[data-signal]').forEach(b=>b.classList.toggle('active',b.dataset.signal===m.signal));
     const resume=this.element.querySelector<HTMLButtonElement>('[data-drive="resume"]');if(resume)resume.disabled=this.drawing||m.mode!=='paused'||!m.path.length;
     for(const action of ['play','reset']){const b=this.element.querySelector<HTMLButtonElement>(`[data-drive="${action}"]`);if(b)b.disabled=this.drawing;}

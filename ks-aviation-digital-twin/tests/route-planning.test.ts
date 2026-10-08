@@ -9,6 +9,15 @@ import {CloudStore} from '../src/cloud-store';
 const geometry=refuellerDimensions('R14'),points:Point[]=[[0,0],[0,-60],[30,-110]];
 const route:DriveRoute={id:'front-route',name:'Front axle',vehicleId:'truck',points,reference:'front-axle',startHeading:0,speedKmh:8,approachKmh:2,approachDistance:20};
 const close=(a:number,b:number,tolerance=1e-8)=>assert.ok(Math.abs(a-b)<tolerance,`${a} != ${b}`);
+// A normal yard U-turn rejected by the former 22-degree cutoff is now drivable.
+const yard:Point[]=Array.from({length:13},(_,i)=>{const a=i*Math.PI/12;return [10*(1-Math.cos(a)),-10*Math.sin(a)];});
+assert.ok(analyzeRoute(yard,0,{...geometry,maxTrailerAngle:22*Math.PI/180},'front-axle').issues.includes('trailer'));
+assert.deepEqual(analyzeRoute(yard,0,geometry,'front-axle').issues,[]);
+for(const dt of [.016,.05]){
+  const m=new VehicleMotion(routeStart(yard,0,geometry.frontAxleOffset));Object.assign(m,geometry);m.startRoute({...route,points:yard,approachDistance:5});let max=0;
+  for(let i=0;i<10000&&m.mode==='route';i++){m.step(dt);max=Math.max(max,Math.abs(m.trailerAngle));assert.equal(m.articulationBlocked,false);}
+  assert.equal(m.mode,'complete');assert.ok(max>40*Math.PI/180&&max<geometry.maxTrailerAngle);
+}
 for(const preset of ['R14','R14_2000'])for(const dt of [.016,.05]){
   const g=refuellerDimensions(preset),m=new VehicleMotion(routeStart(points,0,g.frontAxleOffset));Object.assign(m,g);m.startRoute(route);
   let steps=0,turned=false;

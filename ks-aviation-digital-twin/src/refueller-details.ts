@@ -10,6 +10,31 @@ const skinZ=(x:number,y:number,side:number)=>{
   return .155+side*.275*Math.sqrt(Math.max(0,1-((originalY+.10175)/.15325)**2));
 };
 
+/** Package the 3000's hose equipment ahead of the tank's coupling sweep.
+ * Keep the full tank, axle positions, operating side and parked coupling intact. */
+export function clearCouplingSweep(model:THREE.Object3D,own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
+  const place=(node:THREE.Object3D|undefined,depth:number,dx:number,dz=0)=>{
+    if(!node?.parent)return;
+    node.updateWorldMatrix(true,true);
+    const transform=new THREE.Matrix4().makeTranslation(-.16+dx,0,dz)
+      .multiply(new THREE.Matrix4().makeScale(depth,1,1)).multiply(new THREE.Matrix4().makeTranslation(.16,0,0));
+    node.applyMatrix4(node.parent.matrixWorld.clone().invert().multiply(transform).multiply(node.parent.matrixWorld));
+  };
+  place(model.getObjectByName('Large_Reference_Hose_Drum'),.5,-.07);
+  place(model.getObjectByName('Transverse_Filter_Behind_Panel'),1,-.01);
+  model.traverse(node=>{
+    if(/^Drum_Exit_/.test(node.name))place(node,.5,-.07,.055);
+    if(node.name!=='Delivery_Hose_Taut_Parked'||!(node instanceof THREE.Mesh))return;
+    const geometry=own(node.geometry.clone()),positions=geometry.getAttribute('position'),inverse=node.matrixWorld.clone().invert();
+    for(let i=0;i<positions.count;i++){
+      const v=new THREE.Vector3().fromBufferAttribute(positions,i).applyMatrix4(node.matrixWorld),blend=THREE.MathUtils.smoothstep(v.y,-.15,-.03);
+      v.x+=(-.23+(v.x+.16)*.5-v.x)*blend;v.z+=.055*blend;v.applyMatrix4(inverse);positions.setXYZ(i,v.x,v.y,v.z);
+    }
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();node.geometry=geometry;
+  });
+  model.updateMatrixWorld(true);
+}
+
 /** Reuse the model's lettering without stretching its glyphs along the neck. */
 export function refitTankMarkings(meshes:THREE.Mesh[],own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
   const wrap=(mesh:THREE.Mesh,side:number,place:(v:THREE.Vector3)=>void)=>{

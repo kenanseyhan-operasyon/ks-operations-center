@@ -26,7 +26,7 @@ function fixture(editor=true){
   const tap=(action:string)=>button(action).click();
   const set=(key:string,value:string)=>{const field=panel.element.querySelector<HTMLInputElement>(`[data-value="${key}"]`)!;field.value=value;field.dispatchEvent(new dom.window.Event('change',{bubbles:true}));};
   const tick=(dt:number)=>advanceSimulation(dt,panel.rate,(step,last)=>{gates.update(step,entities,running,()=>undefined);panel.tick(step,last);});
-  return {panel,routes,states,vehicle,gate,gates,geometry,notices,tap,button,set,tick,get saves(){return saves;},mode:(value:boolean)=>{editing=value;panel.refreshMode();}};
+  return {panel,routes,states,vehicle,gate,gates,entities,geometry,notices,tap,button,set,tick,get saves(){return saves;},mode:(value:boolean)=>{editing=value;panel.refreshMode();}};
 }
 const f=fixture();
 const options=[...f.panel.element.querySelectorAll<HTMLOptionElement>('[data-value="route"] option')].slice(1).map(o=>o.textContent);
@@ -59,6 +59,21 @@ function run(rate:number,fps:number){const x=fixture();x.set('test-rate',String(
 const normal=run(1,60),fast=run(8,30);assert.ok(Math.abs(normal.realTime/fast.realTime-8)<.05);assert.ok(Math.hypot(normal.end.x-fast.end.x,normal.end.z-fast.end.z)<.01);
 let total=0,max=0;advanceSimulation(.1,8,dt=>{total+=dt;max=Math.max(max,dt);});assert.ok(Math.abs(total-.8)<1e-9&&max<=.05);
 const half=fixture();half.set('test-rate','8');half.tap('engine');half.tap('play');for(let i=0;i<35;i++)half.tick(1/30);half.tap('pause');assert.ok(half.states[0].progress>0);const halfMotion=new VehicleMotion(half.states[0].pose);Object.assign(halfMotion,half.geometry);assert.ok(restoreDriveCheckpoint(halfMotion,half.states[0],half.routes[0]));half.panel.close();assert.equal(half.panel.rate,1);
+
+// The video regression: held gas/steering in an empty yard must stay responsive.
+for(const lang of ['tr','en'] as const){
+  const turn=fixture();turn.entities.splice(1);turn.panel.setLanguage(lang);turn.tap('engine');turn.panel.key('w',true);turn.panel.key('d',true);
+  let yaw=0;for(let i=0;i<600;i++){const before=turn.panel.motion!.pose.heading;turn.tick(.05);const after=turn.panel.motion!.pose.heading;yaw+=Math.atan2(Math.sin(after-before),Math.cos(after-before));}
+  const m=turn.panel.motion!;assert.ok(yaw>Math.PI*2&&m.speed>0);assert.equal(turn.notices.length,0,'Continuous forward turning must not trigger stop notifications');
+  assert.ok(turn.panel.element.textContent!.includes(lang==='tr'?'Dönüş desteği':'Turn assist'));
+  turn.panel.key('w',false);turn.panel.key('s',true);m.speed=0;m.trailerAngle=54*Math.PI/180;
+  for(let i=0;i<150;i++)turn.tick(.05);
+  assert.ok(m.articulationBlocked);assert.equal(m.turn,1,'The panel must not clear held steering at the reverse guard');assert.equal(m.throttle,-1);assert.equal(turn.notices.length,1,'Holding reverse shows one useful message');
+  turn.panel.key('d',false);turn.panel.key('a',true);for(let i=0;i<100;i++)turn.tick(.05);
+  assert.equal(m.articulationBlocked,false);assert.ok(m.speed<0,'Countersteering can recover without releasing/repressing the held reverse key');
+  turn.panel.key('s',false);turn.panel.key('a',false);turn.panel.key('w',true);for(let i=0;i<120;i++)turn.tick(.05);
+  assert.ok(m.speed>0);assert.equal(m.articulationBlocked,false);assert.equal(turn.routes.length,2);turn.panel.close();
+}
 
 // Exercise production 3D helper methods without a WebGL browser/session.
 const object=new THREE.Group();object.add(new THREE.Mesh(new THREE.BoxGeometry(3,4,14)));const selected=newEntity('R14',0,0);

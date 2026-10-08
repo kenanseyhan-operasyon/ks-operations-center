@@ -7,6 +7,11 @@ export type Signal='off'|'left'|'right'|'hazard';
 export type Pose={x:number;z:number;heading:number};
 export const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const angle=(v:number)=>Math.atan2(Math.sin(v),Math.cos(v));
+/** Rear-axle bicycle motion, expressed at the saved body centre. */
+function manualPose(pose:Pose,travel:number,steer:number,wheelbase:number,frontAxleOffset:number):Pose{
+  const yaw=travel*Math.tan(steer)/wheelbase,mid=pose.heading+yaw/2,rearOffset=frontAxleOffset?frontAxleOffset-wheelbase:0,heading=angle(pose.heading+yaw);
+  return {x:pose.x+Math.sin(mid)*travel+rearOffset*(Math.sin(pose.heading)-Math.sin(heading)),z:pose.z-Math.cos(mid)*travel-rearOffset*(Math.cos(pose.heading)-Math.cos(heading)),heading};
+}
 export function validateRoutes(value:unknown):DriveRoute[]{
   if(value===undefined)return [];
   if(!Array.isArray(value)||value.length>100)throw new Error('En fazla 100 güzergâh saklanabilir.');
@@ -46,13 +51,13 @@ export function buildDrivePath(points:Point[],heading:number,wheelbase=7,preview
 }
 export class VehicleMotion{
   pose:Pose;speed=0;steer=0;distance=0;signal:Signal='off';braking=false;
-  trailerAngle=0;routeStartTrailerAngle=0;trailerWheelbase=0;hitchOffset=0;articulationBlocked=false;
+  trailerAngle=0;routeStartTrailerAngle=0;trailerWheelbase=0;hitchOffset=0;articulationBlocked=false;steeringAssisted=false;
   maxTrailerAngle:number=R14.maxArticulation;
   mode:'manual'|'route'|'paused'|'complete'='manual';path:PathSample[]=[];progress=0;route?:DriveRoute;
   throttle=0;turn=0;brake=false;maxKmh=8;wheelbase=7;frontAxleOffset=0;
   constructor(pose:Pose){this.pose={...pose};}
   clearInput(){this.throttle=0;this.turn=0;this.brake=false;}
-  stop(){this.speed=0;this.steer=0;this.braking=true;this.clearInput();if(this.mode==='route')this.mode='paused';}
+  stop(){this.speed=0;this.steer=0;this.braking=true;this.steeringAssisted=false;this.clearInput();if(this.mode==='route')this.mode='paused';}
   startRoute(route:DriveRoute){
     const offset=route.reference==='front-axle'?this.frontAxleOffset:0,anchor:[number,number]=[this.pose.x+Math.sin(this.pose.heading)*offset,this.pose.z-Math.cos(this.pose.heading)*offset];
     const first=route.points[0];if(Math.hypot(anchor[0]-first[0],anchor[1]-first[1])>2)throw new Error('Araç güzergâh başlangıcında değil. Başlangıca geri alın veya yeni güzergâh çizin.');
@@ -66,7 +71,7 @@ export class VehicleMotion{
   }
   get remaining(){return Math.max(0,(this.path.at(-1)?.s||0)-this.progress);}
   step(dt:number,running=true,interlock=false){
-    dt=clamp(dt,0,.1);const before=this.speed;
+    dt=clamp(dt,0,.1);const before=this.speed;this.steeringAssisted=false;
     if(!running||interlock){this.stop();return 0;}
     if(this.mode==='paused'||this.mode==='complete')return 0;
     const oldPose={...this.pose},oldProgress=this.progress,oldMode=this.mode;
@@ -79,7 +84,18 @@ export class VehicleMotion{
     }else{
       desired=this.throttle>0?this.maxKmh/3.6:this.throttle<0?-Math.min(5,this.maxKmh)/3.6:0;
       if(this.speed*desired<0&&Math.abs(this.speed)>.03)desired=0;
-      const target=this.turn*Math.PI/5;this.steer+=clamp(target-this.steer,-1.1*dt,1.1*dt);
+      let target=this.turn*Math.PI/5;
+      if(this.trailerWheelbase>0&&(this.speed>0||this.speed===0&&desired>0)){
+        // As the tank nears full lock, smoothly approach a sustainable circle.
+        // beta' / rear-axle travel = (-sin(beta) - curvature * D) / trailer wheelbase.
+        // A distance-based margin keeps this independent of speed and frame rate.
+        const beta=this.trailerAngle,limit=Math.max(0,this.maxTrailerAngle-2*Math.PI/180),rearOffset=this.frontAxleOffset?this.frontAxleOffset-this.wheelbase:0;
+        const d=Math.max(.05,this.trailerWheelbase-(this.hitchOffset-rearOffset)*Math.cos(beta)),relax=this.trailerWheelbase*.35;
+        const low=(-Math.sin(beta)-this.trailerWheelbase*(limit-beta)/relax)/d,high=(-Math.sin(beta)+this.trailerWheelbase*(limit+beta)/relax)/d;
+        const assisted=Math.atan(this.wheelbase*clamp(Math.tan(target)/this.wheelbase,low,high));
+        this.steeringAssisted=Math.abs(assisted-target)>.001;target=assisted;
+      }
+      this.steer+=clamp(target-this.steer,-1.1*dt,1.1*dt);
     }
     if(this.brake)desired=0;
     const slowing=Math.abs(desired)<Math.abs(this.speed),rate=this.brake?3:slowing?1.5:.8;
@@ -101,16 +117,28 @@ export class VehicleMotion{
       if(this.signal!=='hazard')this.signal=turn>.06?'right':turn<-.06?'left':'off';
       if(this.remaining<.01){this.speed=0;this.steer=0;this.mode='complete';this.signal='off';}
     }else{
-      const yaw=travel*Math.tan(this.steer)/this.wheelbase,mid=this.pose.heading+yaw/2,rearOffset=this.frontAxleOffset?this.frontAxleOffset-this.wheelbase:0,heading=angle(this.pose.heading+yaw);
-      this.pose.x+=Math.sin(mid)*travel+rearOffset*(Math.sin(this.pose.heading)-Math.sin(heading));this.pose.z-=Math.cos(mid)*travel+rearOffset*(Math.cos(this.pose.heading)-Math.cos(heading));this.pose.heading=heading;
+      this.pose=manualPose(oldPose,travel,this.steer,this.wheelbase,this.frontAxleOffset);
       if(this.signal!=='hazard')this.signal=this.turn>.1?'right':this.turn<-.1?'left':this.signal;
     }
     if(travel&&this.trailerWheelbase>0){
-      const trailerAngle=followHitch(oldPose,this.pose,this.trailerAngle,this.hitchOffset,this.trailerWheelbase);
-      // Keep legacy parked angles, while allowing only straightening when an old
-      // checkpoint starts outside the current model's equipment clearance.
-      if(Math.abs(trailerAngle)>this.maxTrailerAngle&&Math.abs(trailerAngle)>=Math.abs(this.trailerAngle)-1e-9){
-        this.pose=oldPose;this.progress=oldProgress;this.mode=oldMode;this.stop();this.articulationBlocked=true;return 0;
+      let trailerAngle=followHitch(oldPose,this.pose,this.trailerAngle,this.hitchOffset,this.trailerWheelbase);
+      const safe=(next:number)=>Math.abs(next)<Math.abs(this.trailerAngle)-1e-9||Math.abs(next)<=this.maxTrailerAngle&&!(this.articulationBlocked&&travel<0);
+      if(!safe(trailerAngle)&&this.mode==='manual'&&travel>0){
+        // A loaded full-lock pose or a large time step may outrun steering slew.
+        // Reduce this step's steering, never the speed or the saved trailer angle.
+        const trial=(steer:number)=>{const pose=manualPose(oldPose,travel,steer,this.wheelbase,this.frontAxleOffset);return {pose,angle:followHitch(oldPose,pose,this.trailerAngle,this.hitchOffset,this.trailerWheelbase)};};
+        let accepted=trial(0);
+        if(safe(accepted.angle)){
+          let low=0,high=1;
+          for(let i=0;i<24;i++){const fraction=(low+high)/2,next=trial(this.steer*fraction);if(safe(next.angle)){low=fraction;accepted=next;}else high=fraction;}
+          this.steer*=low;this.pose=accepted.pose;trailerAngle=accepted.angle;this.steeringAssisted=true;
+        }
+      }
+      if(!safe(trailerAngle)){
+        // Only block movement that folds the trailer further. Keep steering and
+        // held inputs alive so reverse correction or pulling forward works at once.
+        this.pose=oldPose;this.progress=oldProgress;this.mode=oldMode==='route'?'paused':oldMode;
+        this.speed=0;this.braking=true;this.articulationBlocked=true;return 0;
       }
       this.trailerAngle=trailerAngle;this.articulationBlocked=false;
     }

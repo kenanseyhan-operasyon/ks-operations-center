@@ -14,6 +14,8 @@ const bytes=fs.readFileSync('public/models/refueller-38k-r14.glb');
 const gltf=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 const sourceTank=gltf.scene.getObjectByName('Tank_Shell') as THREE.Mesh;
 const sourcePositions=Array.from(sourceTank.geometry.attributes.position.array);
+const sourceHose=gltf.scene.getObjectByName('Delivery_Hose_Taut_Parked') as THREE.Mesh;
+const sourceHosePositions=Array.from(sourceHose.geometry.attributes.position.array);
 function prepare(articulated=true){
   const model=clone(gltf.scene),mixer=new THREE.AnimationMixer(model);
   for(const clip of gltf.animations){const a=mixer.clipAction(clip);a.play();a.time=0;a.paused=true;}mixer.update(0);
@@ -64,12 +66,35 @@ for(const angle of [-R14.maxArticulation,0,R14.maxArticulation]){
     assert.ok(Math.abs(Math.hypot(p.x-hitch.x,p.z-hitch.z)-Math.hypot(R14.trailerAxle-R14.hitchX,.19))<1e-8);
   }
 }
+// Check actual equipment vertices against the tank surface throughout its sweep;
+// overlapping axis-aligned bounding boxes alone are not a collision.
+const equipment:THREE.Mesh[]=[];
+model.traverse(n=>{if(!(n instanceof THREE.Mesh))return;for(let p=n.parent;p;p=p.parent)if(p===rig.trailer)return;equipment.push(n);});
+const tankMaterial=tank.material,probeMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});tank.material=probeMaterial;
+const ray=new THREE.Raycaster(),up=new THREE.Vector3(0,1,0),vertex=new THREE.Vector3();
+for(let degrees=-55;degrees<=55;degrees+=5){
+  rig.setArticulation(degrees*Math.PI/180);model.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(tank,true);
+  for(const mesh of equipment){
+    if(!new THREE.Box3().setFromObject(mesh,true).intersectsBox(bounds))continue;
+    const positions=mesh.geometry.getAttribute('position'),seen=new Set<string>();
+    for(let i=0;i<positions.count;i++){
+      vertex.fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld);if(!bounds.containsPoint(vertex))continue;
+      const key=vertex.toArray().map(v=>v.toFixed(5)).join();if(seen.has(key))continue;seen.add(key);ray.set(vertex,up);
+      const hits=ray.intersectObject(tank,false).map(h=>h.distance).filter((d,i,a)=>!i||d-a[i-1]>.00001);
+      assert.equal(hits.length%2,0,`${mesh.name} must stay outside the tank at ${degrees} degrees`);
+    }
+  }
+}
+tank.material=tankMaterial;probeMaterial.dispose();
+const drumBounds=new THREE.Box3().setFromObject(model.getObjectByName('Large_Reference_Hose_Drum')!,true),filterBounds=new THREE.Box3().setFromObject(model.getObjectByName('Transverse_Filter_Behind_Panel')!,true);
+assert.ok(drumBounds.min.x>filterBounds.max.x,'Repositioned drum remains behind the filter');
 for(const clip of gltf.animations){
   for(const track of clip.tracks){const binding=THREE.PropertyBinding.parseTrackName(track.name);assert.ok(THREE.PropertyBinding.findNode(model,binding.nodeName),'Existing animation target still exists');}
   const a=mixer.clipAction(clip);a.paused=false;a.time=clip.duration/2;mixer.update(0);a.paused=true;
 }
 const other=prepare();rig.setArticulation(.5);assert.equal(other.rig.trailer.rotation.y,0,'Vehicle instances are independent');
 assert.deepEqual(Array.from(sourceTank.geometry.attributes.position.array),sourcePositions,'Cached GLB geometry is unchanged');
+assert.deepEqual(Array.from(sourceHose.geometry.attributes.position.array),sourceHosePositions,'Coupling clearance never changes cached hose geometry');
 const rigid=prepare(false),rigidTank=rigid.model.getObjectByName('Tank_Shell') as THREE.Mesh;
 assert.deepEqual(Array.from(rigidTank.geometry.attributes.position.array),sourcePositions,'2000 preserves the original 38k tank');
 assert.ok(rigid.model.getObjectByName('Clean_Chassis_Rail'),'2000 preserves the original single chassis');
@@ -77,6 +102,7 @@ assert.equal(rigid.model.getObjectByName('R14_KINGPIN'),undefined);
 const rigidPose=new THREE.Box3().setFromObject(rigidTank,true);rigid.rig.update(3,.2,.5);rigid.model.updateMatrixWorld(true);
 assert.deepEqual(new THREE.Box3().setFromObject(rigidTank,true),rigidPose,'2000 tank stays fixed to its chassis while driving');
 assert.equal(refuellerDimensions('R14_2000').trailerWheelbase,0);
+assert.deepEqual(Array.from((rigid.model.getObjectByName('Delivery_Hose_Taut_Parked') as THREE.Mesh).geometry.attributes.position.array),sourceHosePositions,'2000 keeps its original equipment layout');
 assert.ok(Math.abs(rigid.rig.wheelbase*13.5/R14.length-refuellerDimensions('R14_2000').wheelbase)<1e-9);
 
 function motion(){const m=new VehicleMotion({x:0,z:0,heading:0});Object.assign(m,r14Dimensions());m.throttle=1;return m;}
@@ -90,8 +116,30 @@ for(const turn of [-.3,.3]){
 assert.ok(Math.abs(curves[0].trailerAngle+curves[1].trailerAngle)<1e-10,'Left/right symmetry');
 const parked=curves[1],angle=parked.trailerAngle;parked.stop();for(let i=0;i<20;i++)parked.step(.05);assert.equal(parked.trailerAngle,angle,'Pause does not straighten the tank');
 const reverse=motion();reverse.throttle=-1;reverse.trailerAngle=.1;for(let i=0;i<80;i++)reverse.step(.05);assert.ok(reverse.trailerAngle>.1,'Reverse articulation is physical, not forward-only easing');
-const limited=motion();limited.turn=1;for(let i=0;i<2500&&!limited.articulationBlocked;i++)limited.step(.05);assert.equal(limited.articulationBlocked,true);assert.equal(limited.speed,0);assert.ok(Math.abs(limited.trailerAngle)<=R14.drivingArticulation);
-const legacyBent=motion();legacyBent.trailerAngle=.6;for(let i=0;i<150;i++)legacyBent.step(.05);assert.equal(legacyBent.articulationBlocked,false);assert.ok(Math.abs(legacyBent.trailerAngle)<R14.drivingArticulation,'Old parked angles can straighten without deleting their saved pose');
+// Hold full steering long enough for several complete circles: no sudden stop,
+// no trailer-angle clamp/sliding, and full speed on desktop or a slow phone frame.
+for(const dt of [.01,.05,.1])for(const kmh of [2,8,25])for(const turn of [-1,1]){
+  const m=motion();m.turn=turn;m.maxKmh=kmh;let yaw=0,assisted=false;
+  for(let i=0;i<150/dt;i++){
+    const previous=m.pose.heading;m.step(dt);yaw+=Math.atan2(Math.sin(m.pose.heading-previous),Math.cos(m.pose.heading-previous));assisted||=m.steeringAssisted;
+    assert.equal(m.articulationBlocked,false,'Forward steering must not trap a vehicle in empty space');assert.ok(Math.abs(m.trailerAngle)<=R14.maxArticulation);
+  }
+  assert.ok(Math.abs(yaw)>Math.PI*2&&assisted);assert.ok(Math.abs(m.trailerAngle)>50*Math.PI/180,'The former 22-degree cutoff is gone');assert.ok(Math.abs(m.speed-kmh/3.6)<1e-8);
+  m.turn=0;for(let i=0;i<1000;i++)m.step(dt);assert.ok(Math.abs(m.trailerAngle)<.5,'Releasing steering straightens the tank');
+}
+// At the reverse mechanical guard, inputs and steering continue to work.
+for(const side of [-1,1]){
+  const m=motion();m.trailerAngle=side*54*Math.PI/180;m.throttle=-1;m.turn=side;
+  for(let i=0;i<100;i++)m.step(.05);
+  assert.ok(m.articulationBlocked);assert.equal(m.speed,0);assert.equal(m.throttle,-1);assert.equal(m.turn,side);assert.equal(m.steer,side*Math.PI/5);
+  const stopped={...m.pose},bent=m.trailerAngle;m.turn=-side;
+  for(let i=0;i<100;i++)m.step(.05);
+  assert.equal(m.articulationBlocked,false);assert.ok(m.speed<0&&Math.abs(m.trailerAngle)<Math.abs(bent));assert.notDeepEqual(m.pose,stopped);
+  m.throttle=1;m.turn=0;for(let i=0;i<150;i++)m.step(.05);assert.equal(m.articulationBlocked,false);assert.ok(m.speed>0);
+}
+const fullLock=motion();fullLock.trailerAngle=-R14.maxArticulation;fullLock.steer=Math.PI/5;fullLock.turn=1;fullLock.speed=25/3.6;fullLock.maxKmh=25;
+assert.ok(fullLock.step(.1)>0);assert.equal(fullLock.articulationBlocked,false);assert.ok(Math.abs(fullLock.trailerAngle)<=R14.maxArticulation,'Saved full-lock poses can pull forward immediately');
+const legacyBent=motion();legacyBent.trailerAngle=.6;for(let i=0;i<150;i++)legacyBent.step(.05);assert.equal(legacyBent.articulationBlocked,false);assert.ok(Math.abs(legacyBent.trailerAngle)<.4,'Old parked angles can straighten without deleting their saved pose');
 const entity=newEntity('R14',3,4);entity.trailerAngle=.35;
 const scene=validateScene(JSON.parse(JSON.stringify({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities:[entity],groups:[],source:'test'})));
 assert.equal(scene.entities[0].trailerAngle,.35,'Manual parked angle survives JSON/cloud validation');

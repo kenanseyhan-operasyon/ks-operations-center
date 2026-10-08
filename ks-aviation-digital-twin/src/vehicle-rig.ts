@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { R14 } from './r14-spec';
-import { FuelGauge, refitTankMarkings, tankLift } from './refueller-details';
+import { FuelGauge, refitTankMarkings, tankLift, clearCouplingSweep } from './refueller-details';
 import {VehicleCab} from './vehicle-cab';
 type Wheel={pivot:THREE.Group;spin:THREE.Group;front:boolean;trailer:boolean};
 
@@ -46,7 +46,7 @@ export class VehicleRig {
       }
       geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();mesh.geometry=geometry;
     }
-    if(articulated)refitTankMarkings(meshes,g=>this.own(g));
+    if(articulated){refitTankMarkings(meshes,g=>this.own(g));clearCouplingSweep(model,g=>this.own(g));}
     const steel=this.material('#343e45',.7,.45),silver=this.material('#b8c4cb',.7,.35),rubber=this.material('#232629',0,.94),dark=this.material('#14191d',.3,.65),red=this.material('#b72f24',.3,.5);
     const add=(name:string,geometry:THREE.BufferGeometry,material:THREE.Material)=>{
       const mesh=new THREE.Mesh(this.own(geometry),material);mesh.name=name;mesh.userData.sharedAsset=true;model.add(mesh);return mesh;
