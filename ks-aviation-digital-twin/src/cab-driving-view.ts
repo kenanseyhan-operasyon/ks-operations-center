@@ -6,10 +6,11 @@ type ViewState=CabInstruments&{signal:string;rate:number};
 export class CabDrivingView{
   readonly hud:HTMLElement;private cab?:VehicleCab;private yaw=0;private pitch=-.045;private fov=66;
   private pointer?:{id:number;x:number;y:number};private touches=new Set<number>();private lastMirror=-Infinity;
-  private targets=[new T.WebGLRenderTarget(192,288),new T.WebGLRenderTarget(192,288)];
+  // Offscreen passes hold linear HDR; tone-map once when showing a mirror in the main view.
+  private targets=[new T.WebGLRenderTarget(192,288,{type:T.HalfFloatType}),new T.WebGLRenderTarget(192,288,{type:T.HalfFloatType})];
   private rearCamera=new T.PerspectiveCamera(66,2/3,.04,12000);
   private overlay=new T.Scene();private overlayCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
-  private quad=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshBasicMaterial({depthTest:false,depthWrite:false,toneMapped:false}));
+  private quad=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshBasicMaterial({depthTest:false,depthWrite:false,toneMapped:true}));
   private savedProjection?:{fov:number;near:number};private lang:'tr'|'en'='tr';
   get active(){return !!this.cab;}
   get vehicleCab(){return this.cab;}
@@ -42,7 +43,7 @@ export class CabDrivingView{
   clearInput(){this.pointer=undefined;this.touches.clear();for(const key of ['w','a','s','d',' ','b'])this.hooks.key(key,false);}
   enter(cab:VehicleCab){
     if(this.cab===cab)return;this.exit();this.savedProjection={fov:this.camera.fov,near:this.camera.near};this.cab=cab;cab.setInside(true);this.hud.hidden=false;this.fov=66;this.look(0,-.045);this.lastMirror=-Infinity;
-    cab.mirrors.forEach((m,i)=>{const mat=m.surface.material as T.MeshBasicMaterial;mat.map=this.targets[i].texture;mat.color.set('#ffffff');mat.toneMapped=false;mat.needsUpdate=true;});
+    cab.mirrors.forEach((m,i)=>{const mat=m.surface.material as T.MeshBasicMaterial;mat.map=this.targets[i].texture;mat.color.set('#ffffff');mat.toneMapped=true;mat.needsUpdate=true;});
   }
   exit(){
     if(!this.cab)return;this.clearInput();this.cab.setInside(false);this.cab.mirrors.forEach(m=>{const mat=m.surface.material as T.MeshBasicMaterial;mat.map=null;mat.color.set('#68818c');mat.needsUpdate=true;});this.cab=undefined;this.hud.hidden=true;
@@ -64,6 +65,9 @@ export class CabDrivingView{
   }
   renderMirrors(renderer:T.WebGLRenderer,ground:T.Scene,scene:T.Scene,now:number){
     const cab=this.cab;if(!cab||now-this.lastMirror<(this.mobile?100:50))return;this.lastMirror=now;
+    if(this.targets[0].texture.type===T.HalfFloatType&&!renderer.extensions.has('EXT_color_buffer_float')&&!renderer.extensions.has('EXT_color_buffer_half_float')){
+      for(const target of this.targets){target.dispose();target.texture.type=T.UnsignedByteType;}
+    }
     const target=renderer.getRenderTarget(),viewport=renderer.getViewport(new T.Vector4()),scissor=renderer.getScissor(new T.Vector4()),scissorTest=renderer.getScissorTest();
     const visible=cab.mirrors.map(m=>m.surface.visible);cab.mirrors.forEach(m=>m.surface.visible=false);
     try{renderer.setScissorTest(false);cab.mirrors.forEach((mirror,i)=>{
