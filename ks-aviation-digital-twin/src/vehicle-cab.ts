@@ -10,10 +10,10 @@ const hull=(points:T.Vector2[])=>{
 };
 /** Subtract the actual convex window apertures from the opaque exterior shell.
  * Interpolate every vertex attribute at the cut, leaving the cached GLB intact. */
-function openWindows(mesh:T.Mesh,cuts:Cut[]){
+function openWindows(mesh:T.Mesh,cuts:Cut[],removed?:(geometry:T.BufferGeometry)=>void){
   const source=mesh.geometry.index?mesh.geometry.toNonIndexed():mesh.geometry.clone(),attributes=Object.entries(source.attributes);
   const inverse=mesh.matrixWorld.clone().invert();
-  let triangles:Vertex[][]=[];
+  let triangles:Vertex[][]=[];const panes:Vertex[][]=[];
   for(let i=0;i<source.attributes.position.count;i+=3){
     const tri:Vertex[]=[];
     for(let j=0;j<3;j++){
@@ -43,12 +43,16 @@ function openWindows(mesh:T.Mesh,cuts:Cut[]){
     for(const tri of triangles){
       if(planes.some(plane=>tri.every(v=>plane(v)<-1e-9))){kept.push(tri);continue;}
       let remaining=tri;for(const plane of planes){const parts=split(remaining,plane);kept.push(...triangulate(parts.outside));remaining=parts.inside;if(remaining.length<3)break;}
+      if(removed&&remaining.length>=3)panes.push(...triangulate(remaining));
     }
     triangles=kept;
   }
-  const output=new T.BufferGeometry();
-  for(const [name,a] of attributes){const values:number[]=[];for(const tri of triangles)for(const v of tri)values.push(...(name==='position'?new T.Vector3().fromArray(v.position).applyMatrix4(inverse).toArray():v[name]));output.setAttribute(name,new T.Float32BufferAttribute(values,a.itemSize));}
-  output.computeBoundingBox();output.computeBoundingSphere();source.dispose();return output;
+  const geometry=(faces:Vertex[][])=>{
+    const output=new T.BufferGeometry();
+    for(const [name,a] of attributes){const values:number[]=[];for(const tri of faces)for(const v of tri)values.push(...(name==='position'?new T.Vector3().fromArray(v.position).applyMatrix4(inverse).toArray():v[name]));output.setAttribute(name,new T.Float32BufferAttribute(values,a.itemSize));}
+    output.computeBoundingBox();output.computeBoundingSphere();return output;
+  };
+  if(removed)removed(geometry(panes));const output=geometry(triangles);source.dispose();return output;
 }
 
 export type CabInstruments={speed:number;rpm:number;gear:number;steer:number;running:boolean;night:boolean};
@@ -58,6 +62,8 @@ export class VehicleCab{
   readonly interior=new T.Group();readonly eye=new T.Object3D();readonly mirrors:CabMirror[]=[];
   readonly glass=new T.MeshStandardMaterial({color:'#a4c8d2',transparent:true,opacity:.16,roughness:.18,metalness:.05,side:T.DoubleSide,depthWrite:false});
   readonly wheel=new T.Group();private speedNeedle!:T.Group;private rpmNeedle!:T.Group;
+  private inside=false;private pillars?:T.Mesh;private sightlines:{mesh:T.Mesh;normal:T.BufferGeometry;open:T.BufferGeometry}[]=[];
+  get isInside(){return this.inside;}
   private geometries=new Set<T.BufferGeometry>();private materials=new Set<T.Material>();private textures=new Set<T.Texture>();
   constructor(readonly model:T.Object3D){
     this.interior.name='KS_DRIVER_INTERIOR';model.add(this.interior);this.materials.add(this.glass);
@@ -84,6 +90,17 @@ export class VehicleCab{
       const paint=outer.material.clone();paint.side=T.FrontSide;this.materials.add(paint);outer.material=paint;
       const lining=dark.clone();lining.side=T.BackSide;this.materials.add(lining);const inner=new T.Mesh(outer.geometry,lining);inner.name='CAB_INNER_'+name;inner.position.copy(outer.position);inner.quaternion.copy(outer.quaternion);inner.scale.copy(outer.scale);inner.userData.sharedAsset=true;outer.parent!.add(inner);
     }
+    if(shell){
+      // Glass-like corner sections open the A-pillars at eye height from inside.
+      // The roof, lower doors and exterior cab keep their original solid shape.
+      const corner:Cut={axis:2,min:-.04,max:.35,polygon:[[-.92,-.112],[-.794,-.112],[-.794,.010],[-.92,.010]].map(([x,y])=>new T.Vector2(x,y))};
+      const opened=openWindows(shell,[corner],geometry=>{
+        this.geometries.add(geometry);const glass=this.glass.clone();glass.opacity=.09;this.materials.add(glass);
+        this.pillars=new T.Mesh(geometry,glass);this.pillars.name='CAB_TRANSPARENT_CORNERS';this.pillars.visible=false;this.pillars.userData.sharedAsset=true;
+        this.pillars.position.copy(shell.position);this.pillars.quaternion.copy(shell.quaternion);this.pillars.scale.copy(shell.scale);shell.parent!.add(this.pillars);
+      });this.geometries.add(opened);
+      for(const mesh of [shell,cab.getObjectByName('CAB_INNER_Low_Short_Cab_Shell') as T.Mesh])if(mesh)this.sightlines.push({mesh,normal:mesh.geometry,open:opened});
+    }
     const light=new T.MeshBasicMaterial({color:'#d7ece3'}),red=new T.MeshBasicMaterial({color:'#e95f47'});this.materials.add(light);this.materials.add(red);
     const mesh=(name:string,geometry:T.BufferGeometry,mat:T.Material,parent:T.Object3D=this.interior)=>{this.geometries.add(geometry);const m=new T.Mesh(geometry,mat);m.name=name;m.userData.sharedAsset=true;parent.add(m);return m;};
     const box=(name:string,size:number[],p:number[],mat:T.Material=dark,parent:T.Object3D=this.interior)=>{const m=mesh(name,new T.BoxGeometry(size[0],size[1],size[2]),mat,parent);m.position.fromArray(p);return m;};
@@ -91,7 +108,6 @@ export class VehicleCab{
     box('CAB_REAR_LINER',[.012,.276,.330],[-.599,-.11,.155],soft);
     box('DASHBOARD_LOWER',[.082,.048,.327],[-.830,-.159,.155]);
     box('DASHBOARD_TOP',[.069,.012,.327],[-.841,-.128,.155],soft);
-    box('INSTRUMENT_HOOD',[.032,.007,.118],[-.840,-.076,.254],black);
     for(const z of [.062,.265]){
       box('SEAT_CUSHION',[.083,.022,.082],[-.694,-.197,z],seat);
       const back=box('SEAT_BACK',[.023,.126,.083],[-.644,-.145,z],seat);back.rotation.z=-.06;
@@ -133,7 +149,7 @@ export class VehicleCab{
     }
     this.update({speed:0,rpm:0,gear:0,steer:0,running:false,night:false});
   }
-  setInside(inside:boolean){this.glass.opacity=inside?.055:.16;}
+  setInside(inside:boolean){this.inside=inside;this.glass.opacity=inside?.055:.16;for(const part of this.sightlines)part.mesh.geometry=inside?part.open:part.normal;if(this.pillars)this.pillars.visible=inside;}
   update(state:CabInstruments){
     this.wheel.rotation.z=-state.steer*14;
     if(this.speedNeedle)this.speedNeedle.rotation.z=(225-270*Math.min(1,Math.abs(state.speed)*3.6/40))*Math.PI/180;

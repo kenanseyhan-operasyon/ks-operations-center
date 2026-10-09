@@ -132,7 +132,7 @@ export class Workspace {
     const m=this.driving?.motion;
     if(this.cabView?.active&&m){
       this.cabView.update({speed:m.speed,steer:m.steer,rpm:this.audio.tone.rpm,gear:this.audio.tone.gear,running:this.running.has(this.driving.vehicleId!),night:this.night,signal:m.signal,rate:this.driving.rate},now);
-      this.cabView.renderMirrors(this.renderer,this.groundScene,this.scene,now);
+      this.cabView.renderViews(this.renderer,this.groundScene,this.scene,now);
     }else{
       if(this.freeMode)this.free?.update(dt);else if(!this.routeHandles?.dragging)this.orbit?.update();this.constrainCamera();
       if(m)this.vehicleRigs.get(this.driving.vehicleId!)?.cab.update({speed:m.speed,steer:m.steer,rpm:this.audio.tone.rpm,gear:this.audio.tone.gear,running:this.running.has(this.driving.vehicleId!),night:this.night});

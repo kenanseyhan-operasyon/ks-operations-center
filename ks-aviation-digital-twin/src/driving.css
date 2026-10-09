@@ -15,6 +15,8 @@
 .cab-hud button{pointer-events:auto;touch-action:none;user-select:none;min-height:40px;padding:7px 12px;border:1px solid #73867e;border-radius:7px;background:#13252bea;color:#edf4ef;font-size:12px}
 .cab-mirror{position:absolute;top:20%;width:clamp(72px,12vw,150px);aspect-ratio:2/3;border:5px solid #18252a;border-radius:11px;box-shadow:0 3px 14px #0009;box-sizing:border-box;pointer-events:none}
 .cab-mirror-left{left:12px}.cab-mirror-right{right:12px}.cab-mirror span{position:absolute;left:0;right:0;bottom:0;background:#15252bdc;text-align:center;padding:5px 1px;font-size:9px;letter-spacing:.08em}
+.cab-surround{position:absolute;right:12px;bottom:16px;width:clamp(120px,18vw,240px);aspect-ratio:1;border:5px solid #18252a;border-radius:11px;box-shadow:0 3px 14px #0009;box-sizing:border-box;pointer-events:none}
+.cab-surround span{position:absolute;left:0;right:0;bottom:0;background:#15252bdc;text-align:center;padding:5px 1px;font-size:9px;letter-spacing:.06em}
 .cab-instruments{position:absolute;bottom:98px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;padding:12px 20px 26px;border:1px solid #75847b80;border-radius:16px;background:linear-gradient(150deg,#101a20f2,#23323bd9);box-shadow:0 8px 24px #0005;font-variant-numeric:tabular-nums;text-align:center}
 .cab-instruments b{font-size:25px;font-weight:600}.cab-instruments small{display:block;font-size:9px;color:#b7c6bd}.cab-instruments strong{color:#c8edbb;font-size:25px;min-width:34px}.cab-instruments [data-state]{position:absolute;bottom:7px;left:0;right:0;letter-spacing:.06em}.cab-signal{color:#4a6058;font-size:17px}.cab-signal.lit{color:#b8ff65}
 .cab-look{position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;gap:5px;white-space:nowrap}.cab-hint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap;background:#13252bbf;padding:3px 8px;border-radius:5px}
@@ -24,6 +26,9 @@
 .ws-driving header b{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ws-driving header button{flex-shrink:0}
 .cab-touch{display:none;position:absolute;bottom:50px;pointer-events:auto;gap:8px}.cab-touch button{min-width:56px;min-height:54px;font-size:16px;background:#243a42e8}.cab-steer{left:14px}.cab-pedals{right:14px;grid-template-columns:repeat(2,1fr)}.cab-touch .cab-brake{border-color:#d7937d;color:#ffd1c3}
 @media(pointer:coarse),(max-width:800px){
+ .cab-surround{width:clamp(96px,15vw,136px);right:134px;bottom:174px}
  .cab-touch{display:grid}.cab-steer{grid-template-columns:repeat(2,1fr)}.cab-look{bottom:8px}.cab-hint{display:none}.cab-instruments{bottom:178px;gap:10px;padding:8px 12px 23px}.cab-instruments b,.cab-instruments strong{font-size:20px}.cab-mirror{top:22%;width:clamp(68px,15vw,104px)}.cab-mirror-left{left:5px}.cab-mirror-right{right:5px}.workspace.cab-driving .ws-driving.cab-compact{top:10px;right:8px;width:215px}.cab-look button{font-size:10px;padding:6px 9px}.cab-touch button{min-width:50px;min-height:49px}
 }
-@media(max-height:500px){.cab-instruments{bottom:58px;padding-top:7px;padding-bottom:23px;gap:12px}.cab-instruments b,.cab-instruments strong{font-size:20px}.cab-mirror{top:16%;width:74px}.cab-hint{display:none}.cab-look{bottom:8px}}
+@media(max-height:500px){.cab-instruments{bottom:58px;padding-top:7px;padding-bottom:23px;gap:12px}.cab-instruments b,.cab-instruments strong{font-size:20px}.cab-mirror{top:16%;width:74px}.cab-hint{display:none}.cab-look{bottom:8px}.cab-surround{width:96px;bottom:48px}}
+
+@media(max-height:500px) and (pointer:coarse),(max-height:500px) and (max-width:800px){.cab-surround{bottom:174px}}

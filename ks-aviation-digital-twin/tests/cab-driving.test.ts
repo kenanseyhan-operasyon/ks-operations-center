@@ -4,6 +4,7 @@ import * as T from 'three';
 import {JSDOM} from 'jsdom';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
+import {WebGLBackground} from 'three/src/renderers/webgl/WebGLBackground.js';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {VehicleRig} from '../src/vehicle-rig';
 import {CabDrivingView} from '../src/cab-driving-view';
@@ -30,7 +31,17 @@ for(const {model,rig} of [left,right]){
   const shell=model.getObjectByName('Low_Short_Cab_Shell') as T.Mesh;
   assert.notEqual(shell.geometry,originalShell.geometry);assert.ok(shell.geometry.attributes.position.count<30000,'Aperture cuts do not explode the mesh budget');
   assert.ok(rig.cab.glass.transparent&&!rig.cab.glass.depthWrite&&rig.cab.glass.opacity<.2);
-  rig.cab.setInside(true);assert.ok(rig.cab.glass.opacity<.08);rig.cab.setInside(false);
+  const ordinaryShell=shell.geometry;
+  rig.cab.setInside(true);assert.ok(rig.cab.glass.opacity<.08);
+  assert.equal(model.getObjectByName('INSTRUMENT_HOOD'),undefined,'The marked shelf must not obstruct the windscreen');
+  for(const degrees of [-35,-25,-20,-15,55,60]){
+    const yaw=degrees*Math.PI/180,ray=new T.Raycaster(eye,new T.Vector3(-Math.cos(yaw),0,-Math.sin(yaw)),0,.6);
+    const hits=ray.intersectObject(model,true).filter(h=>!((h.object as T.Mesh).material as T.Material).transparent);
+    assert.equal(hits.length,0,`The former solid corner at ${degrees} degrees is see-through from the seat`);
+  }
+  assert.ok((model.getObjectByName('CAB_TRANSPARENT_CORNERS') as T.Mesh).visible);rig.cab.setInside(false);
+  assert.equal(shell.geometry,ordinaryShell,'Exiting the cab restores the original exterior');
+  assert.equal(model.getObjectByName('CAB_TRANSPARENT_CORNERS')!.visible,false);
   rig.cab.update({speed:5,rpm:1250,gear:2,steer:.35,running:true,night:false});assert.equal(rig.cab.wheel.rotation.z,-.35*14);
   assert.equal(rig.cab.mirrors.length,2);assert.ok(rig.cab.mirrors.some(m=>m.side===1));
 }
@@ -61,21 +72,44 @@ for(const portrait of [false,true]){
   pointer(gas,'pointerdown',10,10,10);pointer(steering,'pointerdown',20,10,11);assert.ok(keys.has('w')&&keys.has('a'),'Phone can steer and accelerate together');pointer(gas,'pointercancel',10,10,10);assert.ok(!keys.has('w')&&keys.has('a'));pointer(steering,'pointerup',20,10,11);assert.equal(keys.size,0,'Pedal and steering releases cannot get stuck');
   const ahead=view.hud.querySelector<HTMLButtonElement>('[data-look="centre"]')!;ahead.click();view.update(state,400);assert.ok(camera.getWorldDirection(new T.Vector3()).dot(expected)>.998);
   assert.equal(view.hud.querySelector('[data-speed]')!.textContent,'7.2');assert.equal(view.hud.querySelector('[data-gear]')!.textContent,'D2');
-  keys.add('w');view.setLanguage('en');assert.equal(keys.size,0);assert.ok(view.hud.textContent!.includes('LEFT MIRROR'));view.setLanguage('tr');assert.ok(view.hud.textContent!.includes('SOL AYNA'));
+  keys.add('w');view.setLanguage('en');assert.equal(keys.size,0);assert.ok(view.hud.textContent!.includes('LEFT MIRROR')&&view.hud.textContent!.includes('SURROUND VIEW'));view.setLanguage('tr');assert.ok(view.hud.textContent!.includes('SOL AYNA')&&view.hud.textContent!.includes('ÜSTTEN ÇEVRE'));
   // Render the actual scene from each moving mirror camera; record WebGL calls without a browser/session.
-  let renderTarget:any=null;const viewport=new T.Vector4(0,0,el.clientWidth,el.clientHeight),scissor=viewport.clone();let scissorTest=true,draws=0;const snapshots:{camera:T.PerspectiveCamera;target:T.WebGLRenderTarget}[]=[];
-  const renderer:any={extensions:{has:()=>true},getRenderTarget:()=>renderTarget,setRenderTarget:(t:any)=>{renderTarget=t;},getViewport:(v:T.Vector4)=>v.copy(viewport),setViewport:(...a:any[])=>{a.length===1?viewport.copy(a[0]):viewport.set(a[0],a[1],a[2],a[3]);},getScissor:(v:T.Vector4)=>v.copy(scissor),setScissor:(...a:any[])=>{a.length===1?scissor.copy(a[0]):scissor.set(a[0],a[1],a[2],a[3]);},getScissorTest:()=>scissorTest,setScissorTest:(b:boolean)=>{scissorTest=b;},clear(){},clearDepth(){},render(_s:T.Scene,c:T.PerspectiveCamera){draws++;if(renderTarget){assert.ok(rig.cab.mirrors.every(m=>!m.surface.visible),'Mirrors are excluded from their own render passes');snapshots.push({camera:c.clone(),target:renderTarget});}}};
-  const ground=new T.Scene(),scene=new T.Scene();scene.add(root);view.renderMirrors(renderer,ground,scene,1000);assert.equal(draws,4);view.renderMirrors(renderer,ground,scene,1001);assert.equal(draws,4,'Mirror refresh budget limits extra render passes');assert.equal(renderTarget,null);assert.equal(scissorTest,true);assert.deepEqual(viewport.toArray(),[0,0,el.clientWidth,el.clientHeight]);assert.ok(rig.cab.mirrors.every(m=>m.surface.visible));
+  let renderTarget:any=null;const viewport=new T.Vector4(0,0,el.clientWidth,el.clientHeight),scissor=viewport.clone();let scissorTest=true,draws=0;const snapshots:{camera:T.Camera;target:T.WebGLRenderTarget}[]=[];const overlayFlips:number[]=[];
+  const renderer:any={extensions:{has:()=>true},getClearColor:(c:T.Color)=>c.set('#94adb7'),getClearAlpha:()=>1,setClearColor(){},getRenderTarget:()=>renderTarget,setRenderTarget:(t:any)=>{renderTarget=t;},getViewport:(v:T.Vector4)=>v.copy(viewport),setViewport:(...a:any[])=>{a.length===1?viewport.copy(a[0]):viewport.set(a[0],a[1],a[2],a[3]);},getScissor:(v:T.Vector4)=>v.copy(scissor),setScissor:(...a:any[])=>{a.length===1?scissor.copy(a[0]):scissor.set(a[0],a[1],a[2],a[3]);},getScissorTest:()=>scissorTest,setScissorTest:(b:boolean)=>{scissorTest=b;},clear(){},clearDepth(){},render(_s:T.Scene,c:T.PerspectiveCamera){draws++;if(renderTarget){assert.ok(rig.cab.mirrors.every(m=>!m.surface.visible),'Mirrors are excluded from their own render passes');assert.equal(rig.cab.isInside,false,'Auxiliary cameras see the solid exterior');snapshots.push({camera:c.clone(),target:renderTarget});}else overlayFlips.push((view as any).quad.scale.x);}};
+  const ground=new T.Scene(),scene=new T.Scene();scene.add(root);view.renderViews(renderer,ground,scene,1000);assert.equal(draws,6);view.renderViews(renderer,ground,scene,1001);assert.equal(draws,6,'Mirror refresh budget limits extra render passes');assert.equal(renderTarget,null);assert.equal(scissorTest,true);assert.deepEqual(viewport.toArray(),[0,0,el.clientWidth,el.clientHeight]);assert.ok(rig.cab.mirrors.every(m=>m.surface.visible));
   for(let i=0;i<2;i++){
     const mirror=rig.cab.mirrors[i],snap=snapshots[i*2],mirrorPosition=mirror.eye.getWorldPosition(new T.Vector3());assert.ok(snap.camera.position.distanceTo(mirrorPosition)<1e-8);assert.ok(snap.camera.getWorldDirection(new T.Vector3()).dot(expected)<-.95,'Each mirror looks rearward, not through the windscreen');assert.ok(snap.target.width<=256&&snap.target.height<=384);
     assert.equal(snap.target.texture.type,T.HalfFloatType,'Preserve unclipped linear light in the mirror pass');assert.ok((mirror.surface.material as T.Material).toneMapped&&(view as any).quad.material.toneMapped,'Apply the main view exposure once at mirror display');
     const uv=mirror.surface.geometry.attributes.uv;assert.ok(uv.getX(0)>uv.getX(1),'Physical mirror flips the horizontal image');
-    snap.camera.updateMatrixWorld(true);const frustum=new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(snap.camera.projectionMatrix,snap.camera.matrixWorldInverse));
+    snap.camera.updateMatrixWorld(true);const frustum=new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices((snap.camera as T.PerspectiveCamera).projectionMatrix,(snap.camera as T.PerspectiveCamera).matrixWorldInverse));
     for(const angle of [-.30,0,.30]){rig.setArticulation(angle);model.updateMatrixWorld(true);const body=model.getObjectByName('Tank_Shell')!;const box=new T.Box3().setFromObject(body);assert.ok(frustum.intersectsBox(box),'Moving articulated tank remains in the rear mirror field');}
   }
-  Object.defineProperty(view.hud,'clientHeight',{value:el.clientHeight});for(const frame of view.hud.querySelectorAll<HTMLElement>('[data-mirror]'))Object.defineProperties(frame,{offsetLeft:{value:frame.dataset.mirror==='left'?10:el.clientWidth-100},offsetTop:{value:150},offsetWidth:{value:90},offsetHeight:{value:135}});
-  view.renderOverlay(renderer);assert.equal(draws,6);assert.equal((view as any).quad.scale.x,-1);assert.deepEqual(viewport.toArray(),[0,0,el.clientWidth,el.clientHeight]);
-  renderer.extensions.has=()=>false;renderer.render=()=>{throw new Error('render lost');};assert.throws(()=>view.renderMirrors(renderer,ground,scene,2000));assert.equal(renderTarget,null);assert.ok(rig.cab.mirrors.every(m=>m.surface.visible),'Render failure restores scene state');assert.ok((view as any).targets.every((t:T.WebGLRenderTarget)=>t.texture.type===T.UnsignedByteType),'Older GPUs fall back to supported mirror buffers');
+  const surround=snapshots[4],top=surround.camera as T.OrthographicCamera;
+  assert.ok(top.isOrthographicCamera&&top.getWorldDirection(new T.Vector3()).y<-.999,'Surround camera looks vertically down');
+  assert.ok(top.up.dot(expected)>.999,'The vehicle front stays at the top of the inset');
+  assert.ok(surround.target.width<=256&&surround.target.height<=256);
+  const bounds=new T.Box3().setFromObject(model,true);for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
+    const projected=new T.Vector3(x,y,z).project(top);assert.ok(Math.abs(projected.x)<.9&&Math.abs(projected.y)<.9,'The full vehicle plus space around it fits the overhead view');
+  }
+  Object.defineProperty(view.hud,'clientHeight',{value:el.clientHeight});for(const frame of view.hud.querySelectorAll<HTMLElement>('[data-mirror],[data-surround]'))Object.defineProperties(frame,{offsetLeft:{value:frame.dataset.mirror==='left'?10:el.clientWidth-100},offsetTop:{value:150},offsetWidth:{value:90},offsetHeight:{value:135}});
+  view.renderOverlay(renderer);assert.equal(draws,9);assert.deepEqual(overlayFlips,[-1,-1,1],'Mirrors flip, the overhead view keeps left/right correct');assert.deepEqual(viewport.toArray(),[0,0,el.clientWidth,el.clientHeight]);
+  renderer.extensions.has=()=>false;renderer.render=()=>{throw new Error('render lost');};assert.throws(()=>view.renderViews(renderer,ground,scene,2000));assert.equal(renderTarget,null);assert.ok(rig.cab.mirrors.every(m=>m.surface.visible),'Render failure restores scene state');assert.ok(rig.cab.isInside,'Render failure restores the transparent interior corners');assert.ok((view as any).targets.every((t:T.WebGLRenderTarget)=>t.texture.type===T.UnsignedByteType),'Older GPUs fall back to supported mirror buffers');
+  // Exercise Three's actual background color encoder. With autoClear=false,
+  // switching back from a linear target used to leave the next screen clear dark.
+  let encoded:number[]=[],screenClears:number[][]=[];renderTarget=null;let fail=false;
+  const skyRenderer:any={...renderer,outputColorSpace:T.SRGBColorSpace,autoClear:false,xr:{getEnvironmentBlendMode:()=> 'opaque'},
+    clear(){if(!renderTarget)screenClears.push([...encoded]);else {const rgb=new T.Color(skyRenderer.getClearColor(new T.Color())).getRGB({r:0,g:0,b:0},T.LinearSRGBColorSpace);assert.deepEqual(encoded,[rgb.r,rgb.g,rgb.b,.73],'Offscreen sky is consistently linear before every clear');}},
+    render(s:T.Scene){if(fail)throw new Error('render lost');background.render(s);}};
+  const background=WebGLBackground(skyRenderer,{}, {buffers:{color:{setClear:(r:number,g:number,b:number,a:number)=>{encoded=[r,g,b,a];},setMask(){}},depth:{setTest(){},setMask(){}}}}, {},false,false);
+  Object.assign(skyRenderer,{getClearColor:(c:T.Color)=>c.copy(background.getClearColor()),getClearAlpha:()=>background.getClearAlpha(),setClearColor:(c:T.Color,a:number)=>background.setClearColor(c,a)});
+  for(const [index,sky] of ['#94adb7','#07111e'].entries()){
+    skyRenderer.setClearColor(new T.Color(sky),.73);const expectedClear=[...encoded];screenClears=[];
+    for(let frame=0;frame<30;frame++){
+      view.renderViews(skyRenderer,ground,scene,3000+index*4000+frame*16);skyRenderer.clear();skyRenderer.render(ground,camera);skyRenderer.clearDepth();skyRenderer.render(scene,camera);view.renderOverlay(skyRenderer);
+    }
+    assert.equal(screenClears.length,30);assert.ok(screenClears.every(c=>c.every((v,i)=>Math.abs(v-expectedClear[i])<1e-8)),'Day/night sky must stay constant across mirror-refresh and skipped frames');
+    fail=true;assert.throws(()=>view.renderViews(skyRenderer,ground,scene,6000+index*4000));fail=false;assert.deepEqual(encoded,expectedClear,'Failed auxiliary rendering restores the screen clear color too');assert.ok(rig.cab.isInside);
+  }
   keys.add('w');view.exit();assert.equal(keys.size,0);assert.equal(camera.fov,42);assert.equal(camera.near,.05);assert.ok(view.hud.hidden);assert.ok(rig.cab.mirrors.every(m=>(m.surface.material as T.MeshBasicMaterial).map===null));const count=draws;view.renderOverlay(renderer);assert.equal(draws,count);view.dispose();
 }
 syncPortraitLock(false);
