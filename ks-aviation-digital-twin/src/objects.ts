@@ -1,4 +1,5 @@
 import { isRefueller } from './refueller-series';
+import type {TankOpening} from './facility-data';
 import {makeFacilityObject,makeTankAccess} from './facility-model';
 import * as THREE from 'three';
 import { FLEET_SPECS } from './fleet-specs';
@@ -8,7 +9,7 @@ import { makeGSE } from './gse-model';
 import type { Entity } from './scene-data';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
-export function makeObject(o: Entity, tankOpenings:number[]=[]) {
+export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
   const facility=makeFacilityObject(o);if(facility){applyTransform(facility,o);return facility;}
   if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}

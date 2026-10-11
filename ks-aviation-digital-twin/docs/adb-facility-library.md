@@ -71,3 +71,22 @@ kaydına test verisi yazılmadı.
   noktası sürükleme, gerçek 3D yüzey seçimi, duvarla hareket, kayıt ve ikinci
   cihaz görünümü, mobil panel ve ziyaretçi yetkisi. Bulut istekleri bu testte
   yalıtılmış sahte sunucuya yönlendirildi; üretim hesabında kayıt yapılmadı.
+
+## Köprü ve tank merdiveni düzeltmesi — 11 Ekim 2026, akşam
+
+- Köprü kartındaki **İki ucu seç**, ilk noktayı doğrudan tank çatısından alır.
+  İlk tık nesne yaratmaz; ikinci noktaya giderken yüksekte önizleme görünür.
+  İkinci tank veya yükseltilmiş platform gerçek kotuyla seçilir. Boş alandaki
+  bitiş noktası ilk tankın çatı kotunda kalır. Zemin ilk nokta olamaz.
+- Mevcut köprüde **Uçları yeniden seç**, aynı nesneyi yeni iki noktaya bağlar.
+  Vazgeç/Esc yarım yerleştirmeyi kaydetmeden kaldırır.
+- Bağlantı noktaları nesnelerle birlikte saklanır; tankın taşınmasını,
+  dönmesini ve yüksekliğini izler. Eğik köprülerin korkuluk açıklığı, köprünün
+  gerçek kesişiminden ve genişliğinden hesaplanır. Köprü silinince açıklık kapanır.
+- Merdiven revizyonu özellikle `84 (1).zip` içindeki üst sahanlık/köprü
+  fotoğrafları ve `90 (1).zip` içindeki Tank 2 taşıyıcı yakın planıyla
+  karşılaştırıldı: ızgara basamak, sac yan taşıyıcı, üçgen konsol, açık giriş,
+  üst yatay sahanlık ve devam eden çift sıra korkuluk. Varsayılan sarım
+  180 derece; mevcut açıkça kaydedilmiş açı ve genişlik ayarları korunur.
+- `npm run test:bridge` gerçek 3D ışınla çatı seçimini, çapraz köprü boyunca
+  korkuluk açıklığını, kalıcı bağlantıları, silme/geri almayı doğrular.

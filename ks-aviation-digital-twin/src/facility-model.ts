@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {Entity} from './scene-data';
-import {FACILITY_CATALOG,portPosition,isFoamStore} from './facility-data';
+import {FACILITY_CATALOG,portPosition,isFoamStore,type TankOpening} from './facility-data';
 import type {FacilityNetwork} from './facility-network';
 type V=[number,number,number];
 const steel='#aebbbe',dark='#354347',red='#bc302a',yellow='#e5d53f';
@@ -37,18 +37,50 @@ class Builder{
   }
 }
 
-export function makeTankAccess(o:Entity,openings:number[]=[]){
-  const b=new Builder(),f=o.facility||{},r=o.radius,H=o.height+.25,w=f.stairWidth??.9,R=r+w*.5+.12;
-  const N=Math.min(120,Math.max(12,Math.ceil(H/.19))),sign=f.clockwise===false?-1:1,start=(f.stairStart??0)*Math.PI/180,sweep=(f.sweep??255)*Math.PI/180*sign;
-  const p=(t:number,rad:number,y:number):V=>[Math.sin(start+t*sweep)*rad,y,Math.cos(start+t*sweep)*rad];
+export function makeTankAccess(o:Entity,openings:TankOpening[]=[]){
+  const b=new Builder(),f=o.facility||{},r=o.radius,H=o.height+.27,w=f.stairWidth??.9,R=r+w*.5+.12,paint='#e0e4dd';
+  const N=Math.min(180,Math.max(4,Math.ceil(H/.185))),sign=f.clockwise===false?-1:1,start=(f.stairStart??0)*Math.PI/180,sweep=(f.sweep??180)*Math.PI/180*sign;
+  const p=(a:number,rad:number,y:number,tangent=0):V=>[Math.sin(a)*rad+Math.cos(a)*tangent,y,Math.cos(a)*rad-Math.sin(a)*tangent];
+  const box=(width:number,height:number,depth:number,a:number,rad:number,y:number,tangent=0,color=paint)=>{const m=b.box(width,height,depth,p(a,rad,y,tangent),color);m.rotation.y=a-Math.PI/2;return m;};
+  const beam=(a:V,z:V,width=.04,height=.23)=>{const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...z),direction=bv.clone().sub(av),length=direction.length();direction.normalize();const right=new THREE.Vector3(0,1,0).cross(direction).normalize(),up=direction.clone().cross(right);const m=b.box(width,height,length,av.add(bv).multiplyScalar(.5).toArray() as V,paint);m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,direction));};
+  const deck=(a:number,inner:number,outer:number,depth:number,y:number,tangent=0)=>{
+    const width=outer-inner,mid=(inner+outer)/2,count=Math.max(4,Math.ceil(width/.065));
+    for(const side of [-1,1]){box(.035,.13,depth,a,mid+side*width/2,y-.065,tangent);box(width,.1,.04,a,mid,y-.05,tangent+side*depth/2);}
+    for(let i=0;i<=count;i++)box(.012,.032,depth,a,inner+width*i/count,y-.008,tangent,steel);
+    for(let z=-depth/2;z<=depth/2;z+=.13)box(width,.016,.013,a,mid,y-.019,tangent+z,steel);
+  };
+  const top=start+sweep,landingDepth=Math.max(1.1,w+.2),inner=r-.32,outer=R+w/2+.1;
   if(f.stairs!==false){
-    const run=Math.abs(sweep)*R/N;for(let i=0;i<N;i++){const t=(i+.5)/N,y=H*(i+1)/N,a=start+t*sweep;for(let j=0;j<5;j++){const q=p(t,R-w/2+w*(j+.5)/5,y),tread=b.box(w/5-.008,.055,Math.max(.24,run+.025),q,steel);tread.rotation.y=a+Math.PI/2;}for(const side of [-1,1]){const q1=p(i/N,R+side*w*.46,H*i/N-.08),q2=p((i+1)/N,R+side*w*.46,H*(i+1)/N-.08);b.rod(q1,q2,.052,steel);}if(i%5===0){b.rod(p(t,r,y-.16),p(t,R+w/2,y-.16),.045,steel);}}
-    for(const side of [-1,1]){const pts=Array.from({length:Math.ceil(N/4)+1},(_,i)=>{const t=i/Math.ceil(N/4);return p(t,R+side*w*.5,H*t);});b.rail(pts,steel);}
-    const top=b.box(w+.3,.12,1.25,p(1,R-.1,H-.035),steel);top.rotation.y=start+sweep+Math.PI/2;
+    const run=Math.abs(sweep)*R/N;
+    for(let i=0;i<N;i++){
+      const a=start+(i+.5)/N*sweep,y=H*(i+1)/N;
+      deck(a,R-w/2,R+w/2,run+.018,y);
+      for(const side of [-1,1])beam(p(start+i/N*sweep,R+side*(w/2+.025),Math.max(.14,H*i/N-.12)),p(start+(i+1)/N*sweep,R+side*(w/2+.025),Math.max(.14,H*(i+1)/N-.12)));
+      if(i>2&&i%6===0){box(.045,.38,.22,a,r+.035,y-.3);beam(p(a,r+.055,y-.14),p(a,R+w/2+.045,y-.14),.075,.1);beam(p(a,r+.055,Math.max(.08,y-.9)),p(a,R+w/2+.045,y-.19),.055,.075);}
+    }
+    const segments=Math.max(8,Math.ceil(Math.abs(sweep)*R/1.05));
+    for(const side of [-1,1])b.rail(Array.from({length:segments+1},(_,i)=>p(start+sweep*i/segments,R+side*(w/2+.025),Math.max(.135,H*i/segments))),paint,1.08);
+    // An open lower entry and a horizontal upper landing lead onto the roof.
+    deck(start,R-w/2-.03,R+w/2+.03,.8,.135,-sign*.4);
+    for(const side of [-1,1])b.rail([p(start,R+side*(w/2+.025),.135,-sign*.8),p(start,R+side*(w/2+.025),.135,0)],paint,1.08);
+    deck(top,inner,outer,landingDepth,H);
+    b.rail([p(top,outer,H,-landingDepth/2),p(top,outer,H,landingDepth/2)],paint,1.08);
+    b.rail([p(top,inner,H,sign*landingDepth/2),p(top,outer,H,sign*landingDepth/2)],paint,1.08);
+    b.rail([p(top,inner,H,-sign*landingDepth/2),p(top,r+.09,H,-sign*landingDepth/2)],paint,1.08);
+    for(const t of [-landingDepth*.35,landingDepth*.35]){beam(p(top,r,H-.8,t),p(top,outer,H-.12,t),.075,.1);box(.04,.3,.18,top,r+.02,H-.8,t);}
   }
-  const ring=Array.from({length:49},(_,i):V=>[Math.sin(i/48*Math.PI*2)*(r-.1),H,Math.cos(i/48*Math.PI*2)*(r-.1)]),gaps=[...openings,...(f.stairs!==false?[start+sweep]:[])];for(let i=1;i<ring.length;i++){const a=(i-.5)/48*Math.PI*2;if(gaps.some(q=>Math.abs(Math.atan2(Math.sin(a-q),Math.cos(a-q)))<.7/r))continue;b.rail([ring[i-1],ring[i]],steel);}
-  for(const a of gaps){const deck=b.box(1.2,.08,.9,[Math.sin(a)*(r+.03),H-.04,Math.cos(a)*(r+.03)],steel);deck.rotation.y=a;}
-  const waterRing=ring.map(v=>[v[0]*.98,H-.28,v[2]*.98] as V);b.tube(waterRing,.04,red);b.g.name='TANK_CURVED_ACCESS';return b.finish();
+  const tau=Math.PI*2,normalize=(a:number)=>(a%tau+tau)%tau,ringRadius=Math.max(.05,r-.1);
+  const gaps=[...openings,...(f.stairs!==false?[{angle:top,halfAngle:Math.asin(Math.min(.95,(landingDepth/2+.08)/ringRadius))}]:[])];
+  // Split at the exact opening boundaries, including a gap that crosses angle zero.
+  const angles=[...Array.from({length:65},(_,i)=>i/64*tau),...gaps.flatMap(g=>[normalize(g.angle-g.halfAngle),normalize(g.angle+g.halfAngle)])].sort((a,b)=>a-b);
+  const blocked=(a:number)=>gaps.some(g=>Math.abs(Math.atan2(Math.sin(a-g.angle),Math.cos(a-g.angle)))<g.halfAngle-1e-7);
+  const railGroup=new Builder();
+  for(let i=1;i<angles.length;i++){const a=angles[i-1],z=angles[i];if(z-a<1e-7||blocked((a+z)/2))continue;for(const h of [.54,1.08])railGroup.rod(p(a,ringRadius,H+h),p(z,ringRadius,H+h),h===1.08?.024:.017,paint);}
+  const postCount=Math.max(12,Math.ceil(tau*ringRadius/1.05)),postAngles=[...Array.from({length:postCount},(_,i)=>i/postCount*tau),...gaps.flatMap(g=>[normalize(g.angle-g.halfAngle),normalize(g.angle+g.halfAngle)])];
+  for(const a of postAngles)if(!blocked(a))railGroup.rod(p(a,ringRadius,H),p(a,ringRadius,H+1.08),.024,paint);
+  railGroup.g.name='TANK_ROOF_RAILING';b.g.add(railGroup.finish());
+  const waterRing=Array.from({length:65},(_,i)=>p(i/64*tau,r+.08,H-.32));b.tube(waterRing,.04,red);
+  b.g.name='TANK_CURVED_ACCESS';return b.finish();
 }
 
 function drawPath(b:Builder,o:Entity){

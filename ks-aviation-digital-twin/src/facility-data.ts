@@ -1,12 +1,15 @@
 import type {Entity, Kind} from './scene-data';
 
 export type FacilityCategory='fire'|'pipes'|'access'|'site'|'markings';
+export type BridgeAnchor={parentId?:string;point:[number,number,number]};
+export type TankOpening={angle:number;halfAngle:number};
 export type FacilitySettings={
   label?:string;textColor?:string;lineWidth?:number;pattern?:'solid'|'dash'|'footprints';
   open?:boolean;enabled?:boolean;supplyId?:string;concentrateId?:string;ratio?:number;
   capacity?:number;volume?:number;flowLpm?:number;tag?:string;
   sweep?:number;stairStart?:number;stairWidth?:number;clockwise?:boolean;stairs?:boolean;
   tankA?:string;tankB?:string;bridgeRise?:number;
+  bridgeStart?:BridgeAnchor;bridgeEnd?:BridgeAnchor;
   mount?:{parentId:string;point:[number,number,number];normal:[number,number,number]};
   stopTargets?:string[];
 };
@@ -74,12 +77,41 @@ export function validateFacility(raw:unknown):FacilitySettings|undefined{
   for(const [k,min,max] of [['lineWidth',.02,2],['ratio',0,6],['capacity',0,100000],['volume',0,100000],['flowLpm',0,5000],['sweep',30,330],['stairStart',-360,360],['stairWidth',.6,2],['bridgeRise',-100,100]] as const)if(typeof v[k]==='number'&&Number.isFinite(v[k]))o[k]=Math.max(min,Math.min(max,v[k]));
   if(['solid','dash','footprints'].includes(v.pattern))o.pattern=v.pattern;
   if(Array.isArray(v.stopTargets))o.stopTargets=v.stopTargets.filter((s:unknown)=>typeof s==='string').slice(0,30).map((s:string)=>s.slice(0,180));
+  for(const k of ['bridgeStart','bridgeEnd'] as const){const a=v[k];if(a&&Array.isArray(a.point)&&a.point.length===3&&a.point.every((n:unknown)=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<50000))o[k]={point:[...a.point] as [number,number,number],...(typeof a.parentId==='string'&&a.parentId?{parentId:a.parentId.slice(0,180)}:{})};}
   const m=v.mount;if(m&&typeof m.parentId==='string'&&[m.point,m.normal].every(a=>Array.isArray(a)&&a.length===3&&a.every((n:unknown)=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<50000)))o.mount={parentId:m.parentId.slice(0,180),point:[m.point[0],m.point[1],m.point[2]],normal:[m.normal[0],m.normal[1],m.normal[2]]};
   if(o.capacity!==undefined&&o.volume!==undefined)o.volume=Math.min(o.capacity,o.volume);
   return o;
 }
 export function localToWorld(o:Entity,p:[number,number,number]):[number,number,number]{const a=-o.heading*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [o.position[0]+(c*p[0]+s*p[2])*o.scale,o.position[1]+p[1]*o.scale,o.position[2]+(-s*p[0]+c*p[2])*o.scale];}
 export function worldToLocal(o:Entity,p:[number,number,number]):[number,number,number]{const a=o.heading*Math.PI/180,c=Math.cos(a),s=Math.sin(a),x=(p[0]-o.position[0])/o.scale,z=(p[2]-o.position[2])/o.scale;return [c*x+s*z,(p[1]-o.position[1])/o.scale,-s*x+c*z];}
+export function bridgeAnchorWorld(anchor:BridgeAnchor,entities:Entity[]):[number,number,number]|undefined{
+  if(!anchor.parentId)return [...anchor.point];
+  const parent=entities.find(o=>o.id===anchor.parentId);if(!parent)return;
+  const p:[number,number,number]=[...anchor.point];
+  if(parent.kind==='tank'){p[1]=parent.height+.28;const r=Math.hypot(p[0],p[2]),limit=Math.max(.05,parent.radius-.04);if(r>limit){p[0]*=limit/r;p[2]*=limit/r;}}
+  return localToWorld(parent,p);
+}
+/** Explicit roof clicks take precedence; older tank-pair bridges retain automatic attachment. */
+export function bridgeSpan(o:Entity,entities:Entity[]):{start:[number,number,number];end:[number,number,number]}|undefined{
+  const f=o.facility;if(o.preset!=='TANK_BRIDGE'||!f)return;
+  if(f.bridgeStart&&f.bridgeEnd){const start=bridgeAnchorWorld(f.bridgeStart,entities),end=bridgeAnchorWorld(f.bridgeEnd,entities);return start&&end?{start,end}:undefined;}
+  const a=entities.find(e=>e.id===f.tankA),b=entities.find(e=>e.id===f.tankB);if(a?.kind!=='tank'||b?.kind!=='tank'||a===b)return;
+  const dx=b.position[0]-a.position[0],dz=b.position[2]-a.position[2],d=Math.hypot(dx,dz);
+  if(d<=(a.radius*a.scale+b.radius*b.scale+.4))return;
+  // Both ends overlap the roof, so there is no unsupported gap at the handrail.
+  const ra=Math.max(.05,a.radius-.28)*a.scale,rb=Math.max(.05,b.radius-.28)*b.scale;
+  return {start:[a.position[0]+dx/d*ra,a.position[1]+(a.height+.28)*a.scale,a.position[2]+dz/d*ra],end:[b.position[0]-dx/d*rb,b.position[1]+(b.height+.28)*b.scale,b.position[2]-dz/d*rb]};
+}
+export function bridgeRailingOpenings(tank:Entity,entities:Entity[]):TankOpening[]{
+  const openings:TankOpening[]=[],r=Math.max(.05,tank.radius-.1);
+  for(const bridge of entities){const f=bridge.facility;if(!f||![f.tankA,f.tankB,f.bridgeStart?.parentId,f.bridgeEnd?.parentId].includes(tank.id))continue;
+    const span=bridgeSpan(bridge,entities);if(!span)continue;
+    const a=worldToLocal(tank,span.start),b=worldToLocal(tank,span.end),dx=b[0]-a[0],dz=b[2]-a[2],aa=dx*dx+dz*dz,bb=2*(a[0]*dx+a[2]*dz),cc=a[0]*a[0]+a[2]*a[2]-r*r,disc=bb*bb-4*aa*cc;
+    if(aa<.001||disc<0)continue;
+    for(const t of [(-bb-Math.sqrt(disc))/(2*aa),(-bb+Math.sqrt(disc))/(2*aa)])if(t>=0&&t<=1){const x=a[0]+t*dx,z=a[2]+t*dz,normal=Math.max(.15,Math.abs((x*dx+z*dz)/(r*Math.sqrt(aa)))),half=(bridge.width*.5+.12)/tank.scale;openings.push({angle:Math.atan2(x,z),halfAngle:Math.asin(Math.min(.95,half/(r*normal)))});}
+  }
+  return openings;
+}
 export function portPosition(o:Entity,port:'in'|'out'|'foam'='out'):[number,number,number]{
   if(o.points?.length){const p=o.points[port==='in'?0:o.points.length-1];return localToWorld(o,[p[0],o.height,p[1]]);}
   const y=isFoamStore(o)?.2:.65;return localToWorld(o,port==='foam'?[.36,.72,0]:[0,y,(port==='in'?-1:1)*o.length/2]);
@@ -89,8 +121,8 @@ export function updateFacilityAttachments(entities:Entity[]){
   const map=new Map(entities.map(o=>[o.id,o]));const done=new Set<string>(),visiting=new Set<string>();
   const update=(o:Entity)=>{if(done.has(o.id)||visiting.has(o.id))return;visiting.add(o.id);const f=o.facility,m=f?.mount,parent=m&&map.get(m.parentId);
     if(m&&parent&&parent!==o&&!visiting.has(parent.id)){update(parent);o.position=localToWorld(parent,m.point);o.heading=parent.heading-Math.atan2(m.normal[0],m.normal[2])*180/Math.PI;}
-    if(o.preset==='TANK_BRIDGE'&&f?.tankA&&f.tankB){const a=map.get(f.tankA),b=map.get(f.tankB);if(a?.kind==='tank'&&b?.kind==='tank'&&a!==b){const dx=b.position[0]-a.position[0],dz=b.position[2]-a.position[2],d=Math.hypot(dx,dz),ra=(a.radius+.32)*a.scale,rb=(b.radius+.32)*b.scale;if(d>ra+rb+.4){const ax=a.position[0]+dx/d*ra,az=a.position[2]+dz/d*ra,bx=b.position[0]-dx/d*rb,bz=b.position[2]-dz/d*rb,ay=a.position[1]+(a.height+.28)*a.scale,by=b.position[1]+(b.height+.28)*b.scale;o.position=[(ax+bx)/2,(ay+by)/2,(az+bz)/2];o.heading=-Math.atan2(dx,dz)*180/Math.PI;o.length=d-ra-rb;o.scale=1;f.bridgeRise=by-ay;}}}
+    if(o.preset==='TANK_BRIDGE'&&f){const span=bridgeSpan(o,entities);if(span){const a=span.start,b=span.end,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz);if(length>.05){o.position=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];o.heading=-Math.atan2(dx,dz)*180/Math.PI;o.length=length;o.scale=1;f.bridgeRise=b[1]-a[1];}}}
     visiting.delete(o.id);done.add(o.id);
   };entities.forEach(update);
 }
-export function remapFacilityReferences(copies:Entity[],mapping:Map<string,string>){for(const o of copies){const f=o.facility;if(!f)continue;for(const k of ['supplyId','concentrateId','tankA','tankB'] as const)if(f[k]&&mapping.has(f[k]!))f[k]=mapping.get(f[k]!);if(f.mount){if(mapping.has(f.mount.parentId))f.mount.parentId=mapping.get(f.mount.parentId)!;else delete f.mount;}if(f.stopTargets)f.stopTargets=f.stopTargets.map(id=>mapping.get(id)||id);}}
+export function remapFacilityReferences(copies:Entity[],mapping:Map<string,string>){for(const o of copies){const f=o.facility;if(!f)continue;for(const k of ['supplyId','concentrateId','tankA','tankB'] as const)if(f[k]&&mapping.has(f[k]!))f[k]=mapping.get(f[k]!);for(const a of [f.bridgeStart,f.bridgeEnd])if(a?.parentId&&mapping.has(a.parentId))a.parentId=mapping.get(a.parentId);if(f.mount){if(mapping.has(f.mount.parentId))f.mount.parentId=mapping.get(f.mount.parentId)!;else delete f.mount;}if(f.stopTargets)f.stopTargets=f.stopTargets.map(id=>mapping.get(id)||id);}}
