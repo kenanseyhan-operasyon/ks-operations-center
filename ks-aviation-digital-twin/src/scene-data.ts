@@ -1,4 +1,5 @@
 import { local } from './geo';
+import {FACILITY_CATALOG, facilityDefaults, validateFacility, type FacilitySettings} from './facility-data';
 import { validatePhoto, type GroundPhoto } from './photo-ground';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { FLEET_SPECS } from './fleet-specs';
@@ -17,6 +18,7 @@ export type Entity = {
   trailerAngle?: number;
   fuelLitres?: number;
   gateOpen?: boolean;
+  facility?: FacilitySettings;
 };
 export type GroundMode='ortho'|'photo'|'satellite'|'overlay'|'plan';
 export function groundModes(value:any):{airport:GroundMode;facility:GroundMode}{const allowed=['photo','satellite','overlay','plan'];return {airport:allowed.includes(value?.airport)?value.airport:'photo',facility:allowed.includes(value?.facility)?value.facility:'satellite'};}
@@ -36,7 +38,7 @@ export function validateScene(value: unknown): SceneData {
     if (o.points && (!Array.isArray(o.points) || o.points.length > 1000 || o.points.some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n) || Math.abs(n)>50000)))) throw new Error('Çizim noktaları geçersiz.');
     return { id: str(o.id), name: str(o.name, o.kind), kind: o.kind, preset: str(o.preset), color: color(o.color), position: [...o.position], heading: finite(o.heading), scale: Math.max(.02, Math.min(100, finite(o.scale,1))), groupId: str(o.groupId) || undefined, width: Math.max(.05, finite(o.width, 2)), length: Math.max(.05, finite(o.length,2)), height: Math.max(.05, finite(o.height,2)), radius: Math.max(.05,finite(o.radius,2)), thickness: Math.max(.02,finite(o.thickness,.2)), points: o.points?.map(p=>[...p]), wallStyle: str(o.wallStyle), flag: str(o.flag), doorSide: str(o.doorSide) };
   });
-  for(const [i,o] of entities.entries()){if(o.preset==='R14'&&d.entities[i].trailerAngle!==undefined)o.trailerAngle=Math.max(-R14.maxArticulation,Math.min(R14.maxArticulation,finite(d.entities[i].trailerAngle)));const fleet=FLEET_SPECS[o.preset];if(fleet&&o.kind==='aircraft'){o.width=fleet.span;o.length=fleet.length;o.height=fleet.height;}const gse=GSE_SPECS[o.preset];if(gse){o.width=gse.width;o.length=gse.length;o.height=gse.height;}const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
+  for(const [i,o] of entities.entries()){const f=validateFacility(d.entities[i].facility);if(f)o.facility=f;if(o.preset==='R14'&&d.entities[i].trailerAngle!==undefined)o.trailerAngle=Math.max(-R14.maxArticulation,Math.min(R14.maxArticulation,finite(d.entities[i].trailerAngle)));const fleet=FLEET_SPECS[o.preset];if(fleet&&o.kind==='aircraft'){o.width=fleet.span;o.length=fleet.length;o.height=fleet.height;}const gse=GSE_SPECS[o.preset];if(gse){o.width=gse.width;o.length=gse.length;o.height=gse.height;}const spec=AIRCRAFT_SPECS[o.preset];if(o.kind==='aircraft'&&spec){o.width=spec.span;o.length=spec.length;o.height=spec.height;}}
   for(const [i,o] of entities.entries())if(isRefueller(o.preset)){
     if(['R14','R14 · 38.000 L','R14 · 38,000 L'].includes(o.name))o.name=String(refuellerSeries(o.preset));
     if(d.entities[i].fuelLitres!==undefined)o.fuelLitres=Math.max(0,Math.min(38000,finite(d.entities[i].fuelLitres)));
@@ -57,6 +59,7 @@ export function importScene(input: any): SceneData {
   return validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities,groups:old.groups || [],source:typeof old.source==='string'?old.source:`Eski ADB kaydı · ${old.source?.date || '2026-09-15'}`});
 }
 export const CATALOG: Record<string, { tr: string; en: string; kind: Kind; width:number; length:number; height:number; radius?:number; color?:string; wallStyle?:string }> = {
+  ...FACILITY_CATALOG,
   ...Object.fromEntries(Object.values(FLEET_SPECS).map(s=>[s.id,{tr:s.model,en:s.model,kind:'aircraft' as const,width:s.span,length:s.length,height:s.height}])),
   ...Object.fromEntries(Object.values(GSE_SPECS).map(s=>[s.id,{tr:s.tr,en:s.en,kind:'vehicle' as const,width:s.width,length:s.length,height:s.height,color:s.color}])),
   ...Object.fromEntries(Object.entries(REFUELLERS).map(([id,s])=>[id,{tr:s.tr,en:s.en,kind:'vehicle' as const,width:2.55,length:13.5,height:3.6}])),
@@ -87,7 +90,7 @@ export const CATALOG: Record<string, { tr: string; en: string; kind: Kind; width
 export function newEntity(preset: string, x: number, z: number, lang='tr'): Entity {
   const c = CATALOG[preset];
   if (!c) throw new Error('Bilinmeyen nesne.');
-  return { id:id(), name:refuellerSeries(preset)?String(refuellerSeries(preset)):lang==='tr'?c.tr:c.en,kind:c.kind,preset,color:c.color||'#dce5e7',position:[x,0,z],heading:0,scale:1,width:c.width,length:c.length,height:c.height,radius:c.radius||2,thickness:c.width,wallStyle:c.wallStyle,flag:preset.startsWith('FLAG_')?preset.slice(5):undefined };
+  return { id:id(), name:refuellerSeries(preset)?String(refuellerSeries(preset)):lang==='tr'?c.tr:c.en,kind:c.kind,preset,color:c.color||'#dce5e7',position:[x,0,z],heading:0,scale:1,width:c.width,length:c.length,height:c.height,radius:c.radius||2,thickness:c.width,wallStyle:c.wallStyle,flag:preset.startsWith('FLAG_')?preset.slice(5):undefined,...(FACILITY_CATALOG[preset]?{facility:facilityDefaults(preset)}:{}) };
 }
 export function moveEntities(d: SceneData, ids: Set<string>, dx: number, dz: number, dy=0) { d.entities.filter(o=>ids.has(o.id)).forEach(o=>{o.position[0]+=dx;o.position[1]=Math.max(0,o.position[1]+dy);o.position[2]+=dz;}); }
 export class SceneHistory {

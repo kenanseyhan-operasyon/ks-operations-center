@@ -1,4 +1,5 @@
 import { isRefueller } from './refueller-series';
+import {makeFacilityObject,makeTankAccess} from './facility-model';
 import * as THREE from 'three';
 import { FLEET_SPECS } from './fleet-specs';
 import { makeFleetAircraft } from './fleet-model';
@@ -7,7 +8,8 @@ import { makeGSE } from './gse-model';
 import type { Entity } from './scene-data';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
-export function makeObject(o: Entity) {
+export function makeObject(o: Entity, tankOpenings:number[]=[]) {
+  const facility=makeFacilityObject(o);if(facility){applyTransform(facility,o);return facility;}
   if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
   if(o.kind==='aircraft'&&AIRCRAFT_SPECS[o.preset]){const g=makeAircraft(o);applyTransform(g,o);return g;}
@@ -51,8 +53,7 @@ export function makeObject(o: Entity) {
   } else if(o.kind==='tank'){
     cyl(o.radius+.25,.18,0,.09,0,'#b8b5ac');cyl(o.radius,H,0,H/2+.18,0);cyl(o.radius*.99,.14,0,H+.2,0,'#e7ebeb');
     cyl(.45,.3,0,H+.35,0,'#828d90');
-    for(const x of [-.35,.35])box(.065,H,.065,x,H/2,o.radius+.13,'#7a898b');
-    for(let y=.3;y<H;y+=.42)box(.76,.045,.05,0,y,o.radius+.13,'#7a898b');
+    g.add(makeTankAccess(o,tankOpenings));
   } else if(o.kind==='tree'){
     cyl(W*.07,H*.55,0,H*.275,0,'#755037');
     if(o.preset==='CYPRESS')cyl(W*.43,H*.85,0,H*.56,0,o.color,.04);
