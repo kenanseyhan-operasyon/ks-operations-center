@@ -90,3 +90,40 @@ kaydına test verisi yazılmadı.
   180 derece; mevcut açıkça kaydedilmiş açı ve genişlik ayarları korunur.
 - `npm run test:bridge` gerçek 3D ışınla çatı seçimini, çapraz köprü boyunca
   korkuluk açıklığını, kalıcı bağlantıları, silme/geri almayı doğrular.
+
+## Saha ayrıntıları — 12 Ekim 2026
+
+- Bekçi mobosunda ön, arka, sağ ve sol pencere kutuları hemen uygulanır.
+  Mevcut kayıtların varsayılanı ön/sağ/sol açık, arka kapalıdır. Yeni alanlar
+  isteğe bağlıdır; `false` değerleri de bulut kaydında korunur.
+- Levhaların dokusu kendi en/boy oranında üretilir. Yazı yatayda ezilmez,
+  cepheden doğru okunur; açık/koyu renkler kontrastlı bir zemine yerleşir.
+- Yürüme yolu, ayak izleri ve duba gövdeleri yalnız gece modunda düşük
+  sabit ışık yayar. Ayak izlerinde ayrı sağ/sol taban ve topuk kullanılır.
+- Şişeli göz yıkama istasyonunda iki kapağın yönü aşağıdır. Kütüphane kartı
+  doğrudan **Yüzeye tak** akışını başlatır; tıklanan yer parçanın merkezi olur.
+  Atık sahası ön örgüsü görünmez bir seçim yüzeyiyle boşluklardan da seçilir.
+  Yerleştirme geçerli yüzey seçilmeden nesne yaratmaz. Bağlantılar duvar veya
+  kulübenin taşınmasını izler; çatı ve döngü oluşturan bağlantılar reddedilir.
+- Motorin tankında yükseltilmiş beyaz çelik ayak, sızıntı tavası (seçenekli),
+  ön/yan MOTORİN levhaları, dispenser, hortumlar ve fotoğraftaki 30/1202
+  plakası bulunur. Mevcut nesnenin konumu veya kaydı değiştirilmez.
+- **Köpük tankı kulübesi** yangın kategorisindedir. Özelliklerdeki
+  **İçine köpük tankı ekle** her basışta bir tank ekler (en fazla iki); tanklar dekor değildir,
+  ayrı seçilir ve su/köpük bağlantı modelini kullanır. Kulübeyle hareket eder.
+- **Sigara içme alanı** saha kategorisindedir: açık ön/yan geçiş, oluklu
+  panel ve çatı, sarı bank, kül tablası, bordür ve yeşil levha.
+- Fotoğraftaki birleşik duşta yeşil çanak, iki sarı kapaklı göz nozulu,
+  yan itme kolu, üst duş çanı ve üçgen çekme kolu bulunur. Su girişine bir
+  besleme bağlayın. **Akış denemesi** sekmesinde göz yıkama ve üst duşu ayrı
+  çalıştırın. Hareketli su ancak su beslemesi varken görünür; üst vana
+  kapanınca kesilir. Köpük/konsantre yanlış akışkan olarak reddedilir.
+  Deneme kontrolleri kayıtlı başlangıç ayarlarını değiştirmez.
+
+Doğrulama: `npm test` içindeki mevcut 18 grup, `test:facility` (50 parça,
+369 mesh grubu), `test:bridge`, yeni `test:details` ve üretim derlemesi geçti.
+Chromium masaüstü ve 390×844 dokunmatik görünümde kutular, gerçek örgüye
+3D yerleştirme, iki tank ekleme, duş/vana kontrolleri, gece/gündüz geçişi,
+yazı oranları, yalıtılmış kayıt/ikinci cihazdan açma ve ziyaretçi yetkisi
+kontrol edildi. Modeller ekran görüntülerinde incelendi. Bulut testleri
+sahte sunucudadır; üretim sahnesine veya kullanıcı verisine yazılmadı.
