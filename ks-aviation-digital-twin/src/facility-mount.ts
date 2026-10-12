@@ -1,0 +1,8 @@
+import * as THREE from 'three';
+import type {Entity} from './scene-data';
+/** Pick a visible vertical surface. Fence proxies fill gaps without becoming visible geometry. */
+export function pickFacilitySurface(hits:THREE.Intersection[],entities:Entity[],childId:string,rayDirection:THREE.Vector3){
+ const candidates:{target:Entity;point:THREE.Vector3;normal:THREE.Vector3;distance:number;proxy:boolean}[]=[];
+ for(const hit of hits){if(!hit.face)continue;let node:THREE.Object3D|null=hit.object,id:string|undefined,skip=false;while(node){if(!node.visible||node.userData.facilityDecoration)skip=true;if(node.userData.entityId&&!id)id=node.userData.entityId;node=node.parent;}const target=entities.find(o=>o.id===id);if(skip||!target||target.id===childId||!['tank','wall','structure'].includes(target.kind))continue;const normal=hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();if(Math.abs(normal.y)>.5)continue;if(normal.dot(rayDirection)>0)normal.negate();normal.y=0;normal.normalize();candidates.push({target,point:hit.point.clone(),normal,distance:hit.distance,proxy:!!hit.object.userData.mountSurface});}
+ const nearest=candidates[0];if(!nearest)return;const chosen=candidates.find(c=>c.proxy&&c.target.id===nearest.target.id&&c.distance-nearest.distance<.12)||nearest;const seen=new Set([childId]);let ancestor:Entity|undefined=chosen.target;while(ancestor){if(seen.has(ancestor.id))return;seen.add(ancestor.id);const parentId:string|undefined=ancestor.facility?.mount?.parentId;ancestor=entities.find(e=>e.id===parentId);}return chosen;
+}

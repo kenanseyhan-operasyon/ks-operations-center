@@ -4,6 +4,8 @@ export type FacilityCategory='fire'|'pipes'|'access'|'site'|'markings';
 export type BridgeAnchor={parentId?:string;point:[number,number,number]};
 export type TankOpening={angle:number;halfAngle:number};
 export type FacilitySettings={
+  windowFront?:boolean;windowBack?:boolean;windowLeft?:boolean;windowRight?:boolean;
+  containment?:boolean;eyeOpen?:boolean;showerOpen?:boolean;
   label?:string;textColor?:string;lineWidth?:number;pattern?:'solid'|'dash'|'footprints';
   open?:boolean;enabled?:boolean;supplyId?:string;concentrateId?:string;ratio?:number;
   capacity?:number;volume?:number;flowLpm?:number;tag?:string;
@@ -45,7 +47,9 @@ export const FACILITY_CATALOG:Record<string,Spec>={
   GUARD_CABIN:spec('Bekçi mobosu','Guard cabin','site',2.4,3,2.6),
   DRIVER_WC:spec('Şoför WC','Driver WC','site',1.6,2,2.5,'#e3e7e5',{settings:{label:'ŞOFÖR WC'}}),
   WASTE_SHELTER:spec('Tehlikeli atık sahası','Hazardous waste shelter','site',3.5,4,2.5,'#e1e4db',{settings:{label:'TEHLİKELİ ATIK'}}),
-  DIESEL_UNIT:spec('Motorin tankı ve dispenser','Diesel tank and dispenser','site',2.1,3.8,2.6,'#e6e8e3'),
+  SMOKING_AREA:spec('Sigara içme alanı','Smoking shelter','site',3,3,2.6,'#e3e7e5',{settings:{label:'SİGARA İÇME ALANI'}}),
+  FOAM_SHELTER:spec('Köpük tankı kulübesi','Foam tank shelter','fire',3.2,2.6,2.7,'#e3e7e5',{settings:{label:'KÖPÜK TANKLARI'}}),
+  DIESEL_UNIT:spec('Motorin tankı ve dispenser','Diesel tank and dispenser','site',2.1,3.8,2.6,'#e6e8e3',{settings:{label:'MOTORİN',containment:true}}),
   BOLLARD:spec('Sabit duba','Fixed bollard','site',.15,.15,1,'#e78334'),
   TRAFFIC_CONE:spec('Trafik konisi','Traffic cone','site',.5,.5,.75,'#ee8130'),
   CHAIN_POSTS:spec('Zincirli yaya ayrımı','Posts with pedestrian chain','site',.15,3,1,'#e78334'),
@@ -54,7 +58,7 @@ export const FACILITY_CATALOG:Record<string,Spec>={
   DRAIN:spec('Izgaralı kanal çiz','Draw grated drain','site',.45,3,.06,'#555f60',{draw:'line'}),
   MANHOLE:spec('Yeşil rögar kapağı','Green manhole cover','site',.8,.8,.08,'#49854c'),
   SPILL_KIT:spec('Döküntü müdahale seti','Spill response bin','site',.6,.6,1,'#d04c43',{settings:{label:'SPILL KIT'}}),
-  SAFETY_SHOWER:spec('Göz ve vücut duşu','Eyewash and safety shower','site',.75,.9,2.25,'#499754'),
+  SAFETY_SHOWER:spec('Göz ve vücut duşu','Eyewash and safety shower','site',.75,.9,2.25,'#26774b',{network:true,settings:{eyeOpen:false,showerOpen:false}}),
   BOTTLE_EYEWASH:spec('Şişeli göz yıkama','Bottled eyewash station','site',.4,.14,.42,'#368552',{mountable:true}),
   SURFACE_SIGN:spec('Yüzeye takılan levha','Surface mounted sign','markings',1,.035,.6,'#247845',{mountable:true,settings:{label:'ACİL TOPLANMA YERİ',textColor:'#ffffff'}}),
   GROUND_TEXT:spec('Zemin yazısı','Ground text','markings',3,1,.02,'#ffffff',{settings:{label:'DUR',textColor:'#ffffff'}}),
@@ -66,14 +70,14 @@ export const FACILITY_CATALOG:Record<string,Spec>={
   HATCH_AREA:spec('Taralı yasak alan','Hatched exclusion area','markings',3,3,.02,'#e0bb36',{kind:'ground',draw:'area',settings:{lineWidth:.15}})
 };
 export const isNetwork=(o:Entity)=>!!FACILITY_CATALOG[o.preset]?.network;
-export const isOutlet=(o:Entity)=>['FIRE_MONITOR','HYDRANT_POINT','TANK_COOLING','SPRINKLER'].includes(o.preset);
+export const isOutlet=(o:Entity)=>['FIRE_MONITOR','HYDRANT_POINT','TANK_COOLING','SPRINKLER','SAFETY_SHOWER'].includes(o.preset);
 export const isFoamStore=(o:Entity)=>['FOAM_DRUM','FOAM_TANK'].includes(o.preset);
 export function facilityDefaults(preset:string):FacilitySettings|undefined {const c=FACILITY_CATALOG[preset];return c?{...c.settings}:undefined;}
 export function validateFacility(raw:unknown):FacilitySettings|undefined{
   if(!raw||typeof raw!=='object')return undefined;const v=raw as Record<string,any>,o:FacilitySettings={};
   for(const k of ['label','tag','supplyId','concentrateId','tankA','tankB'] as const)if(typeof v[k]==='string')o[k]=v[k].slice(0,k==='label'?300:180);
   if(/^#[a-f\d]{6}$/i.test(v.textColor||''))o.textColor=v.textColor;
-  for(const k of ['open','enabled','clockwise','stairs'] as const)if(typeof v[k]==='boolean')o[k]=v[k];
+  for(const k of ['open','enabled','clockwise','stairs','windowFront','windowBack','windowLeft','windowRight','containment','eyeOpen','showerOpen'] as const)if(typeof v[k]==='boolean')o[k]=v[k];
   for(const [k,min,max] of [['lineWidth',.02,2],['ratio',0,6],['capacity',0,100000],['volume',0,100000],['flowLpm',0,5000],['sweep',30,330],['stairStart',-360,360],['stairWidth',.6,2],['bridgeRise',-100,100]] as const)if(typeof v[k]==='number'&&Number.isFinite(v[k]))o[k]=Math.max(min,Math.min(max,v[k]));
   if(['solid','dash','footprints'].includes(v.pattern))o.pattern=v.pattern;
   if(Array.isArray(v.stopTargets))o.stopTargets=v.stopTargets.filter((s:unknown)=>typeof s==='string').slice(0,30).map((s:string)=>s.slice(0,180));
@@ -113,6 +117,7 @@ export function bridgeRailingOpenings(tank:Entity,entities:Entity[]):TankOpening
   return openings;
 }
 export function portPosition(o:Entity,port:'in'|'out'|'foam'='out'):[number,number,number]{
+  if(o.preset==='SAFETY_SHOWER')return localToWorld(o,[0,.22,-.12]);
   if(o.points?.length){const p=o.points[port==='in'?0:o.points.length-1];return localToWorld(o,[p[0],o.height,p[1]]);}
   const y=isFoamStore(o)?.2:.65;return localToWorld(o,port==='foam'?[.36,.72,0]:[0,y,(port==='in'?-1:1)*o.length/2]);
 }

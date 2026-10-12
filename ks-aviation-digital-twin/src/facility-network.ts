@@ -6,8 +6,9 @@ export type TrainingEvent={seconds:number;id:string;name:string;action:string};
 const empty=(reason:FlowState['reason']='no-supply'):FlowState=>({fluid:'none',available:false,flowing:false,ratio:0,reason,path:[],foamPath:[]});
 /** A directed connectivity model. No inferred pressure, discharge capacity or fire outcome. */
 export class FacilityNetwork{
+  eyeOpen=new Map<string,boolean>();showerOpen=new Map<string,boolean>();
   active=false;seconds=0;events:TrainingEvent[]=[];open=new Map<string,boolean>();enabled=new Map<string,boolean>();levels=new Map<string,number>();alarms=new Set<string>();states=new Map<string,FlowState>();
-  reset(entities:Entity[]){this.seconds=0;this.events=[];this.open.clear();this.enabled.clear();this.levels.clear();this.alarms.clear();for(const o of entities){this.open.set(o.id,o.facility?.open??true);this.enabled.set(o.id,o.facility?.enabled??true);if(isFoamStore(o))this.levels.set(o.id,Math.min(o.facility?.capacity??1000,o.facility?.volume??o.facility?.capacity??1000));}this.evaluate(entities);}
+  reset(entities:Entity[]){this.seconds=0;this.events=[];this.open.clear();this.eyeOpen.clear();this.showerOpen.clear();this.enabled.clear();this.levels.clear();this.alarms.clear();for(const o of entities){this.eyeOpen.set(o.id,!!o.facility?.eyeOpen);this.showerOpen.set(o.id,!!o.facility?.showerOpen);this.open.set(o.id,o.preset==='SAFETY_SHOWER'?!!(o.facility?.eyeOpen||o.facility?.showerOpen):(o.facility?.open??true));this.enabled.set(o.id,o.facility?.enabled??true);if(isFoamStore(o))this.levels.set(o.id,Math.min(o.facility?.capacity??1000,o.facility?.volume??o.facility?.capacity??1000));}this.evaluate(entities);}
   start(entities:Entity[]){this.active=true;this.reset(entities);}
   stop(){this.active=false;this.states.clear();this.alarms.clear();}
   log(o:Entity,action:string){this.events.push({seconds:Math.round(this.seconds*10)/10,id:o.id,name:o.facility?.tag||o.name,action});if(this.events.length>500)this.events.shift();}
@@ -19,12 +20,13 @@ export class FacilityNetwork{
     else{const on=!(this.open.get(o.id)??true);this.open.set(o.id,on);this.log(o,on?'open':'close');}
     this.evaluate(entities);
   }
+  operateShower(o:Entity,part:'eyes'|'body',entities:Entity[]){if(!this.active||o.preset!=='SAFETY_SHOWER')return;const controls=part==='eyes'?this.eyeOpen:this.showerOpen,on=!controls.get(o.id);controls.set(o.id,on);this.open.set(o.id,!!(this.eyeOpen.get(o.id)||this.showerOpen.get(o.id)));this.log(o,(part==='eyes'?'eyewash':'shower')+(on?'-on':'-off'));this.evaluate(entities);}
   evaluate(entities:Entity[]){
     const nodes=new Map(entities.filter(isNetwork).map(o=>[o.id,o]));const cache=new Map<string,FlowState>(),visiting=new Set<string>();
     const read=(id:string|undefined):FlowState=>{
       if(!id||!nodes.has(id))return empty();if(cache.has(id))return cache.get(id)!;if(visiting.has(id))return empty('cycle');visiting.add(id);
       const o=nodes.get(id)!,f=o.facility||{};let s:FlowState;
-      const on=this.active?(this.open.get(id)??f.open??true):(f.open??true),enabled=this.active?(this.enabled.get(id)??f.enabled??true):(f.enabled??true);
+      const initialOpen=o.preset==='SAFETY_SHOWER'?!!(f.eyeOpen||f.showerOpen):(f.open??true),on=this.active?(this.open.get(id)??initialOpen):initialOpen,enabled=this.active?(this.enabled.get(id)??f.enabled??true):(f.enabled??true);
       if(!enabled||((o.preset==='PIPE_VALVE'||isOutlet(o))&&!on))s=empty('closed');
       else if(o.preset==='WATER_SOURCE')s={...empty('ready'),fluid:'water',available:true,path:[id]};
       else if(isFoamStore(o)){const litres=this.active?(this.levels.get(id)??f.volume??0):(f.volume??f.capacity??1000);s=litres>0?{...empty('ready'),fluid:'concentrate',available:true,path:[id],foamTank:id}:empty('empty');}
@@ -34,6 +36,7 @@ export class FacilityNetwork{
           if(upstream.fluid!=='water')s=empty('wrong-fluid');
           else{const foam=read(f.concentrateId);const ratio=f.ratio??3;s=foam.available&&foam.fluid==='concentrate'&&ratio>0?{...s,fluid:'solution',ratio,foamTank:foam.foamTank,foamPath:[...foam.path],eductor:id,reason:'ready'}:{...s,fluid:'water',ratio:0,reason:'water-only',eductor:id};}
         }
+        if(o.preset==='SAFETY_SHOWER'&&s.available&&s.fluid!=='water')s=empty('wrong-fluid');
         if(isOutlet(o)&&s.fluid==='concentrate')s=empty('wrong-fluid');
       }
       visiting.delete(id);cache.set(id,s);return s;
