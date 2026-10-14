@@ -3,3 +3,5 @@ dist/
 public/models/*.glb
 
 supabase/.temp/
+
+public/models/personnel/*.glb

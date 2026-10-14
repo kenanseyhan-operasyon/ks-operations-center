@@ -1,3 +1,5 @@
+import {NATHAN_PRESET} from './nathan-data';
+import {makeNathanPlaceholder} from './nathan-model';
 import {makePersonnel} from './personnel-model';
 import { isRefueller } from './refueller-series';
 import type {TankOpening} from './facility-data';
@@ -11,7 +13,7 @@ import type { Entity } from './scene-data';
 import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
 export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
-  if(o.kind==='person'){const g=makePersonnel(o);applyTransform(g,o);return g;}
+  if(o.kind==='person'){const g=o.preset===NATHAN_PRESET?makeNathanPlaceholder(o):makePersonnel(o);applyTransform(g,o);return g;}
   const facility=makeFacilityObject(o);if(facility){applyTransform(facility,o);return facility;}
   if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
@@ -124,5 +126,5 @@ export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
   const bounds=new THREE.Box3().setFromObject(g);if(Number.isFinite(bounds.min.y)&&bounds.min.y<0)g.children.forEach(child=>child.position.y-=bounds.min.y);
   applyTransform(g,o);return g;
 }
-export function applyTransform(g:THREE.Object3D,o:Entity){g.position.fromArray(o.position);g.rotation.y=-THREE.MathUtils.degToRad(o.heading);g.scale.setScalar(o.scale);g.name=o.name;}
+export function applyTransform(g:THREE.Object3D,o:Entity){g.position.fromArray(o.position);if(o.preset===NATHAN_PRESET)g.position.y=Math.max(0,g.position.y);g.rotation.y=-THREE.MathUtils.degToRad(o.heading);g.scale.setScalar(o.scale);g.name=o.name;}
 export function disposeObject(g:THREE.Object3D){g.traverse(n=>{if(n instanceof THREE.Mesh && !n.userData.sharedAsset){n.geometry.dispose();const mats=Array.isArray(n.material)?n.material:[n.material];mats.forEach(m=>{if(m instanceof THREE.MeshStandardMaterial)m.map?.dispose();m.dispose();});}});}

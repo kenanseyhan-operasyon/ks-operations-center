@@ -1,3 +1,4 @@
+import {NATHAN_PRESET,NATHAN_HEIGHT,validateNathan,type NathanSettings} from './nathan-data';
 import {PERSON_PRESET,personnelDefaults,validatePersonnel,type PersonnelSettings} from './personnel-data';
 import { local } from './geo';
 import {FACILITY_CATALOG, facilityDefaults, validateFacility, type FacilitySettings} from './facility-data';
@@ -21,6 +22,7 @@ export type Entity = {
   gateOpen?: boolean;
   facility?: FacilitySettings;
   personnel?: PersonnelSettings;
+  nathan?: NathanSettings;
 };
 export type GroundMode='ortho'|'photo'|'satellite'|'overlay'|'plan';
 export function groundModes(value:any):{airport:GroundMode;facility:GroundMode}{const allowed=['photo','satellite','overlay','plan'];return {airport:allowed.includes(value?.airport)?value.airport:'photo',facility:allowed.includes(value?.facility)?value.facility:'satellite'};}
@@ -46,7 +48,7 @@ export function validateScene(value: unknown): SceneData {
     if(d.entities[i].fuelLitres!==undefined)o.fuelLitres=Math.max(0,Math.min(38000,finite(d.entities[i].fuelLitres)));
   }
   for(const [i,o] of entities.entries())if(o.kind==='wall'&&(o.wallStyle==='gate'||o.preset==='MAIN_GATE')&&typeof d.entities[i].gateOpen==='boolean')o.gateOpen=d.entities[i].gateOpen;
-  for(const [i,o] of entities.entries())if(o.kind==='person'){o.preset=PERSON_PRESET;o.height=Math.max(1.5,Math.min(2.05,o.height));o.width=.56;o.length=.36;o.personnel=validatePersonnel(d.entities[i].personnel);const a=o.personnel.attachment;if(a&&!entities.some(target=>target.id===a.targetId&&target.id!==o.id&&target.kind!=='person'))delete o.personnel.attachment;}
+  for(const [i,o] of entities.entries())if(o.kind==='person'){if(o.preset===NATHAN_PRESET){o.height=NATHAN_HEIGHT;o.width=.56;o.length=.36;o.position[1]=Math.max(0,o.position[1]);o.nathan=validateNathan(d.entities[i].nathan);continue;}o.preset=PERSON_PRESET;o.height=Math.max(1.5,Math.min(2.05,o.height));o.width=.56;o.length=.36;o.personnel=validatePersonnel(d.entities[i].personnel);const a=o.personnel.attachment;if(a&&!entities.some(target=>target.id===a.targetId&&target.id!==o.id&&target.kind!=='person'))delete o.personnel.attachment;}
   const routes=validateRoutes(d.routes),driving=validateDriveCheckpoints(d.driving,entities,routes),fleetNumbers=validateFleetNumbers(d.fleetNumbers,entities);
   return { schema:'KS_DIGITAL_TWIN_V1', airport:'ADB', entities, routes, ...(driving.length?{driving}:{}), ...(Object.keys(fleetNumbers).length?{fleetNumbers}:{}), groups:d.groups.filter(g=>g && typeof g.id==='string').map(g=>({id:str(g.id),name:str(g.name,'Grup')})), source:str(d.source), updatedAt:str(d.updatedAt), sharedGround:['ortho','photo','plan'].includes(d.sharedGround||'')?d.sharedGround:'ortho', groundPhoto:validatePhoto(d.groundPhoto),groundModes:groundModes(d.groundModes) };
 }
@@ -62,6 +64,7 @@ export function importScene(input: any): SceneData {
   return validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities,groups:old.groups || [],source:typeof old.source==='string'?old.source:`Eski ADB kaydı · ${old.source?.date || '2026-09-15'}`});
 }
 export const CATALOG: Record<string, { tr: string; en: string; kind: Kind; width:number; length:number; height:number; radius?:number; color?:string; wallStyle?:string }> = {
+  [NATHAN_PRESET]:{tr:'İkmal Personeli — Nathan',en:'Refuelling Operator — Nathan',kind:'person',width:.56,length:.36,height:NATHAN_HEIGHT,color:'#437b91'},
   [PERSON_PRESET]:{tr:'İkmal personeli · hareketli',en:'Refuelling operator · animated',kind:'person',width:.56,length:.36,height:1.78,color:'#233c53'},
   ...FACILITY_CATALOG,
   ...Object.fromEntries(Object.values(FLEET_SPECS).map(s=>[s.id,{tr:s.model,en:s.model,kind:'aircraft' as const,width:s.span,length:s.length,height:s.height}])),
@@ -94,7 +97,7 @@ export const CATALOG: Record<string, { tr: string; en: string; kind: Kind; width
 export function newEntity(preset: string, x: number, z: number, lang='tr'): Entity {
   const c = CATALOG[preset];
   if (!c) throw new Error('Bilinmeyen nesne.');
-  return { id:id(), name:refuellerSeries(preset)?String(refuellerSeries(preset)):lang==='tr'?c.tr:c.en,kind:c.kind,preset,color:c.color||'#dce5e7',position:[x,0,z],heading:0,scale:1,width:c.width,length:c.length,height:c.height,radius:c.radius||2,thickness:c.width,wallStyle:c.wallStyle,flag:preset.startsWith('FLAG_')?preset.slice(5):undefined,...(FACILITY_CATALOG[preset]?{facility:facilityDefaults(preset)}:{}),...(preset===PERSON_PRESET?{personnel:personnelDefaults()}:{}) };
+  return { id:id(), name:refuellerSeries(preset)?String(refuellerSeries(preset)):lang==='tr'?c.tr:c.en,kind:c.kind,preset,color:c.color||'#dce5e7',position:[x,0,z],heading:0,scale:1,width:c.width,length:c.length,height:c.height,radius:c.radius||2,thickness:c.width,wallStyle:c.wallStyle,flag:preset.startsWith('FLAG_')?preset.slice(5):undefined,...(FACILITY_CATALOG[preset]?{facility:facilityDefaults(preset)}:{}),...(preset===PERSON_PRESET?{personnel:personnelDefaults()}:{}),...(preset===NATHAN_PRESET?{nathan:validateNathan()}:{}) };
 }
 export function moveEntities(d: SceneData, ids: Set<string>, dx: number, dz: number, dy=0) { d.entities.filter(o=>ids.has(o.id)).forEach(o=>{o.position[0]+=dx;o.position[1]=Math.max(0,o.position[1]+dy);o.position[2]+=dz;}); }
 export class SceneHistory {

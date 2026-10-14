@@ -1,0 +1,16 @@
+import {readFile,readdir,mkdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const parts=new URL('../model-parts/nathan/',import.meta.url);
+const manifest=JSON.parse(await readFile(new URL('manifest.json',parts),'utf8'));
+const names=(await readdir(parts)).filter(name=>/^\d{3}\.b64$/.test(name)).sort();
+if(names.length!==manifest.parts)throw new Error('Nathan model parts are missing');
+const chunks=[];
+for(const name of names)chunks.push(Buffer.from(await readFile(new URL(name,parts),'utf8'),'base64'));
+const model=Buffer.concat(chunks);
+if(model.length!==manifest.bytes||createHash('sha256').update(model).digest('hex')!==manifest.sha256)throw new Error('Nathan model checksum mismatch');
+if(model.toString('ascii',0,4)!=='glTF'||model.readUInt32LE(4)!==2||model.readUInt32LE(8)!==model.length)throw new Error('Invalid Nathan GLB');
+const doc=JSON.parse(model.toString('utf8',20,20+model.readUInt32LE(12)));
+if(JSON.stringify(doc.animations.map(a=>a.name))!==JSON.stringify(manifest.animations))throw new Error('Nathan animation list changed');
+const dir=new URL('../public/models/personnel/',import.meta.url);await mkdir(dir,{recursive:true});
+await writeFile(new URL(manifest.file,dir),model);
+console.log(`Nathan GLB verified: ${model.length} bytes, ${doc.animations.length} animations`);

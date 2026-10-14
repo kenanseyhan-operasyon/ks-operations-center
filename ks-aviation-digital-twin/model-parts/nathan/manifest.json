@@ -1,0 +1,24 @@
+{
+  "file": "KS_Nathan_15_Hareket.glb",
+  "bytes": 25874096,
+  "sha256": "579deba138d7311119821ffd37cf10694533322d79bcbe63dabffcbb6b65c3ef",
+  "parts": 5,
+  "animations": [
+    "Climbing",
+    "Climbing_Ladder",
+    "Climbing_To_Top",
+    "Crouch_To_Stand",
+    "Driving",
+    "Idle",
+    "Jumping_Down",
+    "Kneeling_Down",
+    "Nathan_Original_Walk",
+    "Opening",
+    "Opening_1",
+    "Pulling_Lever",
+    "Running",
+    "Running_Up_Stairs",
+    "Shaking_Hands_2",
+    "Walking_Turn_180"
+  ]
+}
