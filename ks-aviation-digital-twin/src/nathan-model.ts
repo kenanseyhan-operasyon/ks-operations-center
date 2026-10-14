@@ -26,6 +26,8 @@ export class NathanActor {
   readonly actions: T.AnimationAction[];
   index = 0;
   playing = false;
+  controlled = false;
+  private motionRate = 1;
   settings: NathanSettings;
   private meshes: T.Mesh[] = [];
   private anchor: T.Object3D;
@@ -65,6 +67,8 @@ export class NathanActor {
       throw new Error('Nathan GLB has invalid bounds');
     }
     this.normalizer.scale.setScalar(height / rawHeight);
+    // The supplied Nathan faces +Z; entity heading 0 (vehicles/editor) faces -Z.
+    this.normalizer.rotation.y = Math.PI;
     this.mixer = new T.AnimationMixer(this.model);
     this.actions = this.clips.map(clip => this.mixer.clipAction(clip));
     this.mixer.addEventListener('finished', event => {
@@ -106,7 +110,7 @@ export class NathanActor {
     this.root.worldToLocal(this.point);
     this.offset.position.x = -this.point.x;
     this.offset.position.z = -this.point.z;
-    // Stage 1 is an in-place clip preview, with no world-space locomotion/physics.
+    // Cancel clip root motion. The controller owns the world-space foot position.
     this.offset.position.y = .005 - this.measure().min.y;
     this.root.updateWorldMatrix(true, false);
     this.root.updateMatrixWorld(true);
@@ -133,6 +137,7 @@ export class NathanActor {
     this.changed();
   }
   configure(settings?: NathanSettings) {
+    if (this.controlled) return;
     const next = validateNathan(settings);
     if (next.clip !== this.settings.clip) {
       const index = this.clips.findIndex(c => c.name === next.clip);
@@ -150,9 +155,25 @@ export class NathanActor {
   }
   pause() { this.playing = false; this.changed(); }
   stop() { this.playing = false; this.select(this.index, false); }
+  /** Locomotion playback is ephemeral; never overwrite the saved preview settings. */
+  motion(clip: string, rate = 1, reverse = false) {
+    const index = this.clips.findIndex(c => c.name === clip);
+    if (index < 0) return false;
+    this.controlled = true;
+    if (index !== this.index) this.select(index);
+    const action = this.actions[index], direction = reverse ? -1 : 1;
+    const changedDirection = Math.sign(action.getEffectiveTimeScale()) !== direction;
+    action.setLoop(T.LoopRepeat, Infinity);
+    if (reverse && (changedDirection || action.time <= 0)) action.time = this.clips[index].duration;
+    action.paused = false; action.setEffectiveTimeScale(direction); action.play();
+    this.motionRate = Math.max(.02, Math.min(2, rate));
+    if (!this.playing) { this.playing = true; this.changed(); }
+    return true;
+  }
+  release() { this.controlled = false; this.playing = false; }
   update(dt: number) {
     if (!this.playing || this.disposed || !Number.isFinite(dt)) return;
-    const step = Math.max(0, Math.min(dt, .1)) * this.settings.speed;
+    const step = Math.max(0, Math.min(dt, .1)) * (this.controlled ? this.motionRate : this.settings.speed);
     this.mixer.update(step);
     this.fading = this.fading.filter(f => { f.left -= step; if (f.left <= 0) f.action.stop(); return f.left > 0; });
     this.ground();
