@@ -1,0 +1,4776 @@
+{
+  "groups": [
+    {
+      "id": "mtfij5v840ifws",
+      "name": "TESİS AĞAÇLARI"
+    },
+    {
+      "id": "mtfit0k5ajhzy5",
+      "name": "TESİS"
+    },
+    {
+      "id": "mtfitqafvth22u",
+      "name": "YOL AĞAÇLARI"
+    },
+    {
+      "id": "mtfjkui5k4jr8q",
+      "name": "UÇAK"
+    }
+  ],
+  "routes": [
+    {
+      "id": "0a877134-1a2d-4ac9-9054-d07029f38f0f",
+      "name": "3000 → A320-200 · CFM56 · Sharklets",
+      "points": [
+        [
+          4.84594460709787,
+          3.8506116864645463
+        ],
+        [
+          9.297085634205303,
+          14.035110346931958
+        ],
+        [
+          13.008145005258541,
+          18.458449896987076
+        ],
+        [
+          18.95870600140698,
+          21.754657565137293
+        ]
+      ],
+      "speedKmh": 20,
+      "vehicleId": "795bb6d3-b737-45d6-8f80-56f824494095",
+      "aircraftId": "c80946a1-b7b2-4549-a518-93d7cd7f850b",
+      "approachKmh": 2,
+      "approachDistance": 20
+    },
+    {
+      "id": "0f7bf25c-e047-4850-814a-e786183f2c08",
+      "name": "3000 → A320-200 · CFM56 · Sharklets",
+      "points": [
+        [
+          6.278083642334386,
+          9.195427329469894
+        ],
+        [
+          6.917933379887748,
+          11.915326353954516
+        ],
+        [
+          7.620200144201412,
+          15.751328513499827
+        ],
+        [
+          9.4620180365269,
+          18.59725494731513
+        ],
+        [
+          12.337203348490007,
+          21.155295767499133
+        ],
+        [
+          16.169834756812897,
+          23.000909073665085
+        ],
+        [
+          19.127352557060362,
+          23.877666156099707
+        ],
+        [
+          23.62425479038079,
+          24.458497520364524
+        ],
+        [
+          29.12275110381638,
+          23.460255669465198
+        ],
+        [
+          33.99930383639505,
+          21.012604593310087
+        ],
+        [
+          37.711560799364094,
+          17.507588145983135
+        ],
+        [
+          41.457783008283265,
+          10.994953585082108
+        ],
+        [
+          42.0738869805119,
+          -1.4741594046068474
+        ],
+        [
+          -23.47052899848707,
+          -243.334426543789
+        ],
+        [
+          -28.174956428429972,
+          -257.5502651160041
+        ],
+        [
+          -26.196612415921493,
+          -272.3740645392783
+        ],
+        [
+          -9.405956619491459,
+          -282.96200186456974
+        ],
+        [
+          34.14302137153255,
+          -289.89411227969987
+        ],
+        [
+          96.53768909255294,
+          -292.5484240551882
+        ],
+        [
+          110.72820230997294,
+          -290.1817261233892
+        ],
+        [
+          119.08887371078684,
+          -277.8803901409758
+        ],
+        [
+          123.20093238289637,
+          -265.1894954376882
+        ],
+        [
+          125.64201931551703,
+          -248.1372230721529
+        ],
+        [
+          125.21792815571483,
+          -235.1076837964938
+        ],
+        [
+          205.0339471686388,
+          106.7720449563094
+        ],
+        [
+          232.73241167548787,
+          127.8008235632381
+        ],
+        [
+          260.00627388507047,
+          118.71214255200317
+        ],
+        [
+          269.28091218486406,
+          91.41314923401518
+        ],
+        [
+          260.32829914215745,
+          71.0010866449617
+        ],
+        [
+          251.3393108389615,
+          57.66659651805037
+        ],
+        [
+          235.43750340180367,
+          56.210283045361706
+        ],
+        [
+          223.93975345873804,
+          64.33226962959775
+        ]
+      ],
+      "speedKmh": 20,
+      "reference": "front-axle",
+      "vehicleId": "795bb6d3-b737-45d6-8f80-56f824494095",
+      "aircraftId": "c80946a1-b7b2-4549-a518-93d7cd7f850b",
+      "approachKmh": 2,
+      "startHeading": 2.8797932657906435,
+      "approachDistance": 20
+    }
+  ],
+  "schema": "KS_DIGITAL_TWIN_V1",
+  "source": "Eski ADB kaydı · 2026-09-15",
+  "airport": "ADB",
+  "entities": [
+    {
+      "id": "mtdyz8k594yla5",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 1",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        111.49365407688926,
+        0,
+        -469.07283468104686
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mte43dzzh1vr0m",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 2",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 64.8,
+      "height": 18.5,
+      "length": 73.9,
+      "preset": "B777",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        333.1370661330182,
+        0,
+        -12.509040112955745
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mte43kcwbcs6sr",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 3",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 60.3,
+      "height": 16.8,
+      "length": 63.7,
+      "preset": "A330",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        282.9066295692036,
+        0,
+        -205.2993642436315
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mte43o0ks97ox7",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 4",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 11,
+      "height": 2.7,
+      "length": 8.3,
+      "preset": "GA",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        126.50729089193027,
+        0,
+        -318.5480202550443
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mte43xrrkks2a6",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 5",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 26.31,
+      "height": 7.77,
+      "length": 27.79,
+      "preset": "GULFSTREAM",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        120.28316758965315,
+        0,
+        -379.5083228213651
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgd0f5ucmhs2",
+      "flag": "",
+      "kind": "tank",
+      "name": "T1",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2,
+      "height": 11,
+      "length": 2,
+      "preset": "TANK",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -13.365873299930612,
+        0,
+        -2.0136587342428243
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgdsfpr7rq8i",
+      "flag": "",
+      "kind": "tank",
+      "name": "T2",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2,
+      "height": 11,
+      "length": 2,
+      "preset": "TANK",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -18.486476419971257,
+        0,
+        -16.97629915925561
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgxtghpljrum",
+      "flag": "",
+      "kind": "structure",
+      "name": "N3",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2,
+      "height": 2.5,
+      "length": 3,
+      "preset": "PUMP",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        0.39795355176394587,
+        0,
+        -12.434999102914244
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgxtgly8vqxd",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "ARAÇ 4",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.4,
+      "height": 2.8,
+      "length": 7,
+      "preset": "HYDRANT",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        7.608156859737511,
+        0,
+        -7.522794205787026
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgxtgq8facra",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "ARAÇ 5",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.55,
+      "height": 3.6,
+      "length": 13.5,
+      "preset": "REF45",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        4.519524211483581,
+        0,
+        -19.50469983783141
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfgxtgub0vkjj",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "ARAÇ 6",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 2.5,
+      "height": 3.2,
+      "length": 9,
+      "preset": "REF20",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 75,
+      "doorSide": "",
+      "position": [
+        11.413815635850272,
+        0,
+        35.16763831224362
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfhc483jg7zz9",
+      "flag": "",
+      "kind": "structure",
+      "name": "N2",
+      "color": "#ffffff",
+      "scale": 1.1500000000000001,
+      "width": 6,
+      "height": 4,
+      "length": 10,
+      "preset": "CANOPY",
+      "radius": 4.4,
+      "groupId": "mtfit0k5ajhzy5",
+      "heading": 345,
+      "doorSide": "",
+      "position": [
+        -0.19069218323794246,
+        0,
+        -13.100884649175512
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi4k7o2j1lie",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 6",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "height": 12,
+      "length": 37.57,
+      "preset": "A320",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 75,
+      "doorSide": "",
+      "position": [
+        575.7213239400443,
+        0,
+        -184.93823531730794
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi59bt36osc3",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 7",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.8,
+      "height": 12,
+      "length": 37.57,
+      "preset": "A320",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 350,
+      "doorSide": "",
+      "position": [
+        458.59033285292765,
+        0,
+        -1211.72079906044
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi5ykaa9rax4",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 8",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        -345.63382245381865,
+        0,
+        -2151.081218670056
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi6k5myw4ywy",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 9",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 60.3,
+      "height": 16.8,
+      "length": 63.7,
+      "preset": "A330",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        -325.3907640344071,
+        0,
+        -2081.7059559838776
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi7c5qtd9jk0",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 10",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -147.97000801786365,
+        0,
+        -2126.716298303517
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi860j3o4g26",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 11",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -131.1062648190666,
+        0,
+        -2051.8022556749993
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi8gocyaascu",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 12",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -116.47641852208638,
+        0,
+        -1993.6626285837685
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi8vqe7w4vkq",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 13",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -101.26552557846209,
+        0,
+        -1936.7555936999
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi9d2qpud7rn",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 14",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -78.95579914785503,
+        0,
+        -1830.0536147083292
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi9jr5kkh29a",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 15",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 75,
+      "doorSide": "",
+      "position": [
+        -67.15373643594032,
+        0,
+        -1775.1526674001982
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfi9zwby1iv9r",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 16",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -40.32680169614948,
+        0,
+        -1666.5644550417196
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfia37x1dbqyd",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 17",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        -27.841643988077767,
+        0,
+        -1612.5538371585594
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfiatdas0x52d",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 18",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 64.8,
+      "height": 18.5,
+      "length": 73.9,
+      "preset": "B777",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        -317.82269818474356,
+        0,
+        -1987.9382917862276
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfig0xoapk9fl",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 1",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        19.35857833627631,
+        0,
+        9.020635718736724
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfig7e18y0dsy",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 2",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        17.88503623546747,
+        0,
+        3.571305151821843
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfigas8drjk15",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 3",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        16.311377350251547,
+        0,
+        -1.7973666259492838
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfige0ujzjx06",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 4",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        14.924827057339089,
+        0,
+        -6.8548876471525215
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfigi1lvyzqr8",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        13.758507639855218,
+        0,
+        -11.745180181938432
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfihsrgroppq1",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 6",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        12.46912337426447,
+        0,
+        -16.634325131214762
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfihxafk381sq",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 7",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "groupId": "mtfij5v840ifws",
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        11.278986556142899,
+        0,
+        -21.49579941326163
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfilpzhheq3yc",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 8",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "height": 11,
+      "length": 2,
+      "preset": "PLANE",
+      "radius": 4.4,
+      "groupId": "mtfitqafvth22u",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        19.587462942136355,
+        0,
+        -36.219923041209775
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfiluxbbp9r0m",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 9",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "height": 11,
+      "length": 2,
+      "preset": "PLANE",
+      "radius": 4.4,
+      "groupId": "mtfitqafvth22u",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        21.656926259830847,
+        0,
+        -27.250561686994907
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfilzdhz7yd8n",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 10",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "height": 11,
+      "length": 2,
+      "preset": "PLANE",
+      "radius": 4.4,
+      "groupId": "mtfitqafvth22u",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        23.393174058345632,
+        0,
+        -19.61569027152791
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfim305e9d7gk",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 11",
+      "color": "#4a783d",
+      "scale": 0.5499999999999996,
+      "width": 7,
+      "height": 11,
+      "length": 2,
+      "preset": "PLANE",
+      "radius": 4.4,
+      "groupId": "mtfitqafvth22u",
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        25.07160059776966,
+        0,
+        -11.192952234230159
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfj93sihqw46y",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 19",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        -212.47316554247067,
+        0,
+        -1782.8230829069096
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfja26omu9aqp",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 20",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        -166.99305367373756,
+        0,
+        -1585.0556070616542
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjah19rlf7q6",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 21",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        -111.11981400661654,
+        0,
+        -1357.1720839067598
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjapvdanbzg7",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 22",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        17.510948718802734,
+        0,
+        -912.856577317485
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjashiz230vr",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 23",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        28.98979044473959,
+        0,
+        -869.9135572246947
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjavjjtub0gu",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 24",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        36.37600560116751,
+        0,
+        -828.2230208689357
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjbs5ocfjfvw",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 25",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        72.26066090246078,
+        0,
+        -680.212563905799
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjbs5shj6ybk",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 26",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        81.3368673176586,
+        0,
+        -638.5082769650234
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjcoecuzah0x",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 27",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        385.2002215744966,
+        0,
+        205.1411658203164
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjcoegy7kr70",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 28",
+      "color": "#eeeeee",
+      "scale": 1,
+      "width": 35.79,
+      "height": 12.55,
+      "length": 39.47,
+      "preset": "B737",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 80,
+      "doorSide": "",
+      "position": [
+        495.05479640257687,
+        0,
+        234.8964563309593
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjegcg9xldut",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 29",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 26.31,
+      "height": 7.77,
+      "length": 27.79,
+      "preset": "GULFSTREAM",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        166.67574941577342,
+        0,
+        -180.12509501428784
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjfg73yeke5j",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 30",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 22.05,
+      "height": 6.38,
+      "length": 18.97,
+      "preset": "CITATION",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 260,
+      "doorSide": "",
+      "position": [
+        140.47512952232023,
+        0,
+        -249.73246507676245
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjfwesco43vy",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 31",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 17.65,
+      "height": 4.4,
+      "length": 14.2,
+      "preset": "TURBOPROP",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        186.17933922118354,
+        0,
+        -82.58785829574025
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtfjgo52meon3n",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "UÇAK 32",
+      "color": "#f4f4f4",
+      "scale": 1,
+      "width": 11,
+      "height": 2.7,
+      "length": 8.3,
+      "preset": "GA",
+      "radius": 4.4,
+      "groupId": "mtfjkui5k4jr8q",
+      "heading": 255,
+      "doorSide": "",
+      "position": [
+        191.06249645815055,
+        0,
+        -37.912100929997905
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mth2tgcw0e7uce",
+      "flag": "",
+      "kind": "wall",
+      "name": "D3",
+      "color": "#60686a",
+      "scale": 1,
+      "width": 2,
+      "height": 2.2,
+      "length": 2,
+      "points": [
+        [
+          6.270106362255353,
+          25.16756174894286
+        ],
+        [
+          -6.270106362255353,
+          -25.16756174894286
+        ]
+      ],
+      "preset": "FENCE_WALL",
+      "radius": 4.4,
+      "heading": -1.217601573824336,
+      "doorSide": "",
+      "position": [
+        13.08228356003962,
+        0,
+        -11.226892452407402
+      ],
+      "thickness": 0.08,
+      "wallStyle": "fence"
+    },
+    {
+      "id": "mth3xxcgq09qx9",
+      "flag": "TR",
+      "kind": "structure",
+      "name": "N4",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_TR",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        14.424180873467456,
+        0,
+        29.821125609320987
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mth3y49bzxkiuc",
+      "flag": "SOCAR",
+      "kind": "structure",
+      "name": "N5",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_SOCAR",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        11.4986151400677,
+        0,
+        30.457399206366084
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mth46dm5pcof9u",
+      "flag": "",
+      "kind": "structure",
+      "name": "N8",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.45,
+      "height": 10,
+      "length": 0.45,
+      "preset": "LIGHT_CAM",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        21.43,
+        0,
+        28.18
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mth6j6kj8p8p40",
+      "flag": "",
+      "kind": "structure",
+      "name": "OFİS BİNASI 2",
+      "color": "#d0cbc0",
+      "scale": 1,
+      "width": 13.2,
+      "height": 4.6,
+      "length": 10,
+      "preset": "BUILDING",
+      "radius": 4.4,
+      "heading": 78.5,
+      "doorSide": "short",
+      "position": [
+        -4.481269790463825,
+        0,
+        17.724468445580115
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mth6nbtbcjj0ds",
+      "flag": "",
+      "kind": "structure",
+      "name": "OFİS BİNASI 1",
+      "color": "#d0cbc0",
+      "scale": 1,
+      "width": 10,
+      "height": 4.6,
+      "length": 6.25,
+      "preset": "BUILDING",
+      "radius": 4.4,
+      "heading": 350,
+      "doorSide": "short",
+      "position": [
+        0.6377184184144555,
+        0,
+        26.464314297418436
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mthbzu8tubt3bb",
+      "flag": "AZ",
+      "kind": "structure",
+      "name": "N9",
+      "color": "#b9bec0",
+      "scale": 1,
+      "width": 0.25,
+      "height": 9,
+      "length": 0.25,
+      "preset": "FLAG_AZ",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        17.35,
+        0,
+        29.1
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "mtlmdvtqajml89",
+      "flag": "",
+      "kind": "wall",
+      "name": "D4",
+      "color": "#636b6d",
+      "scale": 1,
+      "width": 2,
+      "height": 2.2,
+      "length": 1.5,
+      "points": [
+        [
+          -2.3234835780641383,
+          -6.547994142631616
+        ],
+        [
+          2.3234835780641347,
+          6.547994142631616
+        ]
+      ],
+      "preset": "MAIN_GATE",
+      "radius": 4.4,
+      "heading": 4.9078404676371745,
+      "doorSide": "long",
+      "gateOpen": false,
+      "position": [
+        21.46442137932255,
+        0,
+        19.25512276332852
+      ],
+      "thickness": 0.1,
+      "wallStyle": "gate"
+    },
+    {
+      "id": "795bb6d3-b737-45d6-8f80-56f824494095",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "3000",
+      "color": "#dce5e7",
+      "scale": 1,
+      "width": 2.55,
+      "height": 3.6,
+      "length": 13.5,
+      "preset": "R14",
+      "radius": 2,
+      "heading": 165,
+      "doorSide": "",
+      "position": [
+        6.529031184612338,
+        0,
+        9.946599526004327
+      ],
+      "thickness": 2.55,
+      "wallStyle": "",
+      "fuelLitres": 38000,
+      "trailerAngle": 0
+    },
+    {
+      "id": "ed4fce29-ab14-4d70-a66a-e544200f50c2",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Apron yolcu otobüsü",
+      "color": "#e4ebec",
+      "scale": 1,
+      "width": 3.17,
+      "height": 3.1,
+      "length": 14.72,
+      "preset": "APRON_BUS",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -85.65751876948846,
+        0,
+        -1015.9468171844085
+      ],
+      "thickness": 3.17,
+      "wallStyle": ""
+    },
+    {
+      "id": "ed3dae8d-a330-4a8c-8f4d-fb8436ed7704",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj traktörü",
+      "color": "#f0c82f",
+      "scale": 1,
+      "width": 1.45,
+      "height": 2.22,
+      "length": 2.94,
+      "preset": "BAGGAGE_TRACTOR",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -72.07343395410325,
+        0,
+        -1010.4990659519084
+      ],
+      "thickness": 1.45,
+      "wallStyle": ""
+    },
+    {
+      "id": "de863dd4-3591-4ef2-a1df-771c95c7bf94",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj römorku · boş",
+      "color": "#d7e4e6",
+      "scale": 1,
+      "width": 1.5,
+      "height": 1.262,
+      "length": 4.141,
+      "preset": "BAGGAGE_CART",
+      "radius": 2,
+      "heading": 180,
+      "doorSide": "",
+      "position": [
+        -72.3422913554712,
+        0,
+        -1013.942284023512
+      ],
+      "thickness": 1.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "3b8ba088-b48a-4ec5-9395-8ffdf299303b",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj römorku · dolu",
+      "color": "#d7e4e6",
+      "scale": 1,
+      "width": 1.5,
+      "height": 1.262,
+      "length": 4.141,
+      "preset": "BAGGAGE_CART_LOADED",
+      "radius": 2,
+      "heading": 180,
+      "doorSide": "",
+      "position": [
+        -72.34410632353672,
+        0,
+        -1018.1785831475568
+      ],
+      "thickness": 1.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "0e39933f-10e6-4a17-9dbb-8222cdea97de",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bantlı bagaj yükleyici",
+      "color": "#e4ebec",
+      "scale": 1,
+      "width": 2.19,
+      "height": 2.109,
+      "length": 7.8,
+      "preset": "BELT_LOADER",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -75.88219962207725,
+        0,
+        -1023.9360780147125
+      ],
+      "thickness": 2.19,
+      "wallStyle": ""
+    },
+    {
+      "id": "41e02e52-36c9-40e8-adcf-8ec4c75ebac1",
+      "flag": "",
+      "kind": "wall",
+      "name": "Kapı çiz",
+      "color": "#60686a",
+      "scale": 1,
+      "width": 0.1,
+      "height": 2.2,
+      "length": 8,
+      "points": [
+        [
+          6.983126552224694,
+          -2.0278842778109762
+        ],
+        [
+          -6.983126552224694,
+          2.0278842778109833
+        ]
+      ],
+      "preset": "MAIN_GATE",
+      "radius": 2,
+      "heading": 3.1,
+      "doorSide": "long",
+      "position": [
+        -4.725116123611536,
+        0,
+        -33.8004248708938
+      ],
+      "thickness": 0.1,
+      "wallStyle": "gate"
+    },
+    {
+      "id": "3ba64a79-c9f4-4004-8133-894080f0e30a",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "3000",
+      "color": "#dce5e7",
+      "scale": 1,
+      "width": 2.55,
+      "height": 3.6,
+      "length": 13.5,
+      "preset": "R14",
+      "radius": 2,
+      "heading": -107.92287280811115,
+      "doorSide": "",
+      "position": [
+        229.15313868334772,
+        0,
+        66.5865558184
+      ],
+      "thickness": 2.55,
+      "wallStyle": ""
+    },
+    {
+      "id": "676067cc-9d56-4df3-a4b1-3e7c78cf1d43",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Apron yolcu otobüsü",
+      "color": "#e4ebec",
+      "scale": 1,
+      "width": 3.17,
+      "height": 3.1,
+      "length": 14.72,
+      "preset": "APRON_BUS",
+      "radius": 2,
+      "heading": -105,
+      "doorSide": "",
+      "position": [
+        218.14175943909837,
+        0,
+        95.25428914915649
+      ],
+      "thickness": 3.17,
+      "wallStyle": ""
+    },
+    {
+      "id": "636761b6-f576-4892-9439-f96bdc58dab1",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj traktörü",
+      "color": "#f0c82f",
+      "scale": 1,
+      "width": 1.45,
+      "height": 2.22,
+      "length": 2.94,
+      "preset": "BAGGAGE_TRACTOR",
+      "radius": 2,
+      "heading": -105,
+      "doorSide": "",
+      "position": [
+        209.93972804736555,
+        0,
+        70.73285998765408
+      ],
+      "thickness": 1.45,
+      "wallStyle": ""
+    },
+    {
+      "id": "7dd77140-7938-4f19-8e9d-94613490a89f",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj römorku · boş",
+      "color": "#d7e4e6",
+      "scale": 1,
+      "width": 1.5,
+      "height": 1.262,
+      "length": 4.141,
+      "preset": "BAGGAGE_CART",
+      "radius": 2,
+      "heading": -105,
+      "doorSide": "",
+      "position": [
+        213.31520321153369,
+        0,
+        69.95354843849604
+      ],
+      "thickness": 1.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "17b47c71-0fa7-406e-81e9-9b04881b983d",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bagaj römorku · boş",
+      "color": "#d7e4e6",
+      "scale": 1,
+      "width": 1.5,
+      "height": 1.262,
+      "length": 4.141,
+      "preset": "BAGGAGE_CART",
+      "radius": 2,
+      "heading": -145,
+      "doorSide": "",
+      "position": [
+        216.4593888620859,
+        0,
+        68.22593250947864
+      ],
+      "thickness": 1.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "195bf373-8b30-4ded-bb67-4544d057c995",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "Bantlı bagaj yükleyici",
+      "color": "#e4ebec",
+      "scale": 1,
+      "width": 2.19,
+      "height": 2.109,
+      "length": 7.8,
+      "preset": "BELT_LOADER",
+      "radius": 2,
+      "heading": -195,
+      "doorSide": "",
+      "position": [
+        216.27080443576244,
+        0,
+        75.3214474327324
+      ],
+      "thickness": 2.19,
+      "wallStyle": ""
+    },
+    {
+      "id": "c80946a1-b7b2-4549-a518-93d7cd7f850b",
+      "flag": "",
+      "kind": "aircraft",
+      "name": "A320-200 · CFM56 · Sharklets",
+      "color": "#dce5e7",
+      "scale": 1,
+      "width": 35.8,
+      "height": 12,
+      "length": 37.57,
+      "preset": "A320",
+      "radius": 2,
+      "heading": -105,
+      "doorSide": "",
+      "position": [
+        228.3633200913595,
+        0,
+        77.36764918522009
+      ],
+      "thickness": 35.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "308a6d67-ec14-4f25-908c-f044d2e87a4b",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 8.8,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        120.20675237480252,
+        0,
+        56.82517639029398
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "7fd566e1-e398-4813-8e2f-4e58bee5867d",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 8.8,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 4.4,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        117.16501522349625,
+        0,
+        45.77387405459036
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "0106d7f9-aa1f-4e5d-8794-181cd71be830",
+      "flag": "",
+      "kind": "vehicle",
+      "name": "3000",
+      "color": "#dce5e7",
+      "scale": 1,
+      "width": 2.55,
+      "height": 3.6,
+      "length": 13.5,
+      "preset": "R14",
+      "radius": 2,
+      "heading": -100,
+      "doorSide": "",
+      "position": [
+        111.72,
+        0,
+        27.73
+      ],
+      "thickness": 2.55,
+      "wallStyle": "",
+      "fuelLitres": 25000
+    },
+    {
+      "id": "2f57a641-b2cc-4ee2-bd9c-073ae2f17150",
+      "flag": "",
+      "kind": "structure",
+      "name": "Tesis binası",
+      "color": "#d0cbc0",
+      "scale": 1,
+      "width": 8,
+      "height": 4.6,
+      "length": 12,
+      "preset": "BUILDING",
+      "radius": 2,
+      "heading": -10,
+      "doorSide": "",
+      "position": [
+        69.9878736171592,
+        0,
+        72.60590238559512
+      ],
+      "thickness": 8,
+      "wallStyle": ""
+    },
+    {
+      "id": "ef5513e5-d312-4c30-a94a-e06f2a890aec",
+      "flag": "",
+      "kind": "wall",
+      "name": "Beton duvar çiz",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "width": 0.25,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          7.901972901864681,
+          10.612576696244162
+        ],
+        [
+          0.3658078948107999,
+          -19.027336625766722
+        ],
+        [
+          -11.705966378899518,
+          -15.846813333933405
+        ],
+        [
+          -4.463787319640602,
+          13.648996567211768
+        ],
+        [
+          7.901972901864681,
+          10.612576696244162
+        ]
+      ],
+      "preset": "WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        121.5499168052135,
+        0,
+        55.35367984511886
+      ],
+      "thickness": 0.25,
+      "wallStyle": "solid"
+    },
+    {
+      "id": "3a9bc452-ffbb-416a-8ec8-88184a9a152d",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 5.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        106.64363460733854,
+        0,
+        -45.947027786144986
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "d248dfaf-e7d5-455e-999b-eeddeb297ddb",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 5.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        90.0230004016973,
+        0,
+        -42.47511066181508
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "e0611248-5dd0-437e-9a45-f1039d6ec1a3",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 5.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        73.55736165493053,
+        0,
+        -38.4261665235237
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "19fa360d-214f-4dd4-b28f-fec7fb192c2f",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 11,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 5.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        122.2835756381272,
+        0,
+        -49.430930302097
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "25290bde-0151-402d-b6ce-86c36cffb581",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 13,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 7.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        95.09947462547784,
+        0,
+        -7.608454446299884
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "dbe3a0ba-b642-48c5-b4f8-ad97e9aea0f0",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 10,
+      "height": 13,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 7.5,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        116.77952382637415,
+        0,
+        -13.006501475930317
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "9806faf0-e4b7-4d8f-89ea-284bc791702e",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 8.8,
+      "height": 13,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 4,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        162.65907484890158,
+        0,
+        50.52911574443994
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "5ae26577-c89a-40dd-a257-06085e942554",
+      "flag": "",
+      "kind": "tank",
+      "name": "Dikey tank kopya kopya kopya",
+      "color": "#ffffff",
+      "scale": 1,
+      "width": 8.8,
+      "height": 13,
+      "length": 8.8,
+      "preset": "TANK",
+      "radius": 4,
+      "heading": 0,
+      "doorSide": "long",
+      "position": [
+        175.12437343866466,
+        0,
+        48.236591001103015
+      ],
+      "thickness": 8.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "b7e1bd29-eefb-43b3-9ea2-b50b79bdbd04",
+      "flag": "",
+      "kind": "wall",
+      "name": "Beton duvar çiz",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "width": 0.25,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          -13.470509543418629,
+          16.482242668451565
+        ],
+        [
+          -20.855729703920275,
+          -15.019303596709971
+        ],
+        [
+          20.209579362288764,
+          -25.631569725195472
+        ],
+        [
+          27.601172962032336,
+          7.84130340044327
+        ],
+        [
+          -13.48451307698221,
+          16.327327253010605
+        ]
+      ],
+      "preset": "WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        101.93037161210324,
+        0,
+        -8.50460955674016
+      ],
+      "thickness": 0.25,
+      "wallStyle": "solid"
+    },
+    {
+      "id": "34af9232-8c6a-4e57-8841-673232b63353",
+      "flag": "",
+      "kind": "wall",
+      "name": "Beton duvar çiz",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "width": 0.25,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          -24.354108198426417,
+          17.09250388889483
+        ],
+        [
+          43.49896498696273,
+          2.987959844378139
+        ],
+        [
+          36.25114320528954,
+          -26.077947362911758
+        ],
+        [
+          -31.025779064186032,
+          -10.94056496420562
+        ],
+        [
+          -24.370220929639842,
+          16.93804859384439
+        ]
+      ],
+      "preset": "WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        91.90833001737346,
+        0,
+        -44.1075137670134
+      ],
+      "thickness": 0.25,
+      "wallStyle": "solid"
+    },
+    {
+      "id": "f818123b-af7b-483f-822f-548a2ce99ad5",
+      "flag": "",
+      "kind": "wall",
+      "name": "Tel çit çiz",
+      "color": "#60686a",
+      "scale": 1,
+      "width": 0.08,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          -40.35423559066318,
+          6.819916868233719
+        ],
+        [
+          -20.566535492397634,
+          90.95684240989463
+        ],
+        [
+          99.05113284297487,
+          59.92063038684254
+        ],
+        [
+          62.16291524046305,
+          -87.3357599986983
+        ],
+        [
+          -54.393038860016574,
+          -54.003280688889944
+        ],
+        [
+          -45.90023814036056,
+          -16.358348977382676
+        ]
+      ],
+      "preset": "FENCE_WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        71.06503842440505,
+        0,
+        -69.29980571200643
+      ],
+      "thickness": 0.08,
+      "wallStyle": "fence"
+    },
+    {
+      "id": "5e2fa166-cc3d-4d5b-84a6-579742296586",
+      "flag": "",
+      "kind": "wall",
+      "name": "Beton duvar çiz",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "width": 0.25,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          -8.788774630764266,
+          7.845234121366595
+        ],
+        [
+          -11.612144347804389,
+          -5.962476149549936
+        ],
+        [
+          13.111603590418383,
+          -11.58233781325682
+        ],
+        [
+          16.187701120796447,
+          1.8795773530837891
+        ],
+        [
+          -8.898385732646261,
+          7.820002488356373
+        ]
+      ],
+      "preset": "WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        167.31340193863008,
+        0,
+        51.74478636036755
+      ],
+      "thickness": 0.25,
+      "wallStyle": "solid"
+    },
+    {
+      "id": "c7099df7-7bac-420b-8f3f-37969c62d650",
+      "flag": "",
+      "kind": "wall",
+      "name": "Kapı çiz",
+      "color": "#60686a",
+      "scale": 1,
+      "width": 0.1,
+      "height": 2.6,
+      "length": 8,
+      "points": [
+        [
+          2.8753620437089076,
+          11.694149472996315
+        ],
+        [
+          -2.8753620437089076,
+          -11.694149472996315
+        ]
+      ],
+      "preset": "MAIN_GATE",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        27.912613052096184,
+        0,
+        -74.13086384560206
+      ],
+      "thickness": 0.1,
+      "wallStyle": "gate"
+    },
+    {
+      "id": "09e04049-dad8-4d8f-8c94-f72cf472ca4d",
+      "flag": "",
+      "kind": "structure",
+      "name": "Havuz duvarı geçiş merdiveni",
+      "color": "#dce142",
+      "scale": 1,
+      "width": 1.05,
+      "height": 2.4,
+      "length": 5.3,
+      "preset": "CROSSOVER_STAIR",
+      "radius": 2,
+      "heading": 74.2,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        -11.404041693288617,
+        0,
+        -26.17948621157164
+      ],
+      "thickness": 1.05,
+      "wallStyle": ""
+    },
+    {
+      "id": "271b17cb-99b0-46b5-a229-b12ec5ddf7ca",
+      "flag": "",
+      "kind": "wall",
+      "name": "Beton duvar çiz",
+      "color": "#ddd8ce",
+      "scale": 1,
+      "width": 0.25,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          0.7122203275963077,
+          -16.337755650973932
+        ],
+        [
+          -19.77661651150634,
+          -11.238368971721757
+        ],
+        [
+          -3.4910341396730065,
+          19.084101629080898
+        ],
+        [
+          7.833408424173223,
+          16.331701263443044
+        ],
+        [
+          5.0497970415212405,
+          5.727668149075226
+        ],
+        [
+          2.522055898236239,
+          6.326644896944009
+        ],
+        [
+          0.3427601316084026,
+          -0.4298211609242468
+        ],
+        [
+          2.958689773232365,
+          -1.1953158118334724
+        ],
+        [
+          3.250135077847503,
+          -1.5249640572861907
+        ],
+        [
+          0.5985839769640915,
+          -16.743890285803573
+        ]
+      ],
+      "preset": "WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -12.556422732070766,
+        0,
+        -12.440362724717167
+      ],
+      "thickness": 0.25,
+      "wallStyle": "solid"
+    },
+    {
+      "id": "efe2b18a-22a7-4e0c-9142-2bb292b9a3a2",
+      "flag": "",
+      "kind": "wall",
+      "name": "Tel çit çiz",
+      "color": "#60686a",
+      "scale": 1,
+      "width": 0.08,
+      "height": 2.2,
+      "length": 10,
+      "points": [
+        [
+          -10.321055026346823,
+          -38.740690163807365
+        ],
+        [
+          -35.19911474533062,
+          -32.86416945348214
+        ],
+        [
+          -5.202747650924287,
+          29.316152506943528
+        ],
+        [
+          25.482514718117308,
+          21.575974310308304
+        ],
+        [
+          25.240402704484424,
+          20.71273280003768
+        ]
+      ],
+      "preset": "FENCE_WALL",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -1.7343443064404056,
+        0,
+        6.5183983361894375
+      ],
+      "thickness": 0.08,
+      "wallStyle": "fence"
+    },
+    {
+      "id": "f52674f6-decf-4f5d-8082-533a70bfeb60",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 1 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        10.06812973158126,
+        0,
+        -26.536114647870356
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "945be84f-0b83-48ef-9dcb-c86455a128dc",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 2 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        8.675066862193148,
+        0,
+        -31.406541335726903
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "f1a026e6-cae9-4ac0-9fd7-33d4f5447150",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 3 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        7.06923876609592,
+        0,
+        -36.8568706542079
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "d250b192-495d-495d-b31c-1f950acdeb3f",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 4 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        5.670887880865134,
+        0,
+        -41.85093871334085
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "45c10db1-d2c9-446a-a15a-66ace0e8191b",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        4.6285725803262,
+        0,
+        -46.34293062592293
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "ff277b7a-17ca-4644-b0e0-5d31ea2ce7cb",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 6 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        9.3364462525055,
+        0,
+        -28.822378560058496
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "2d82f507-4761-4111-94a9-bf2a461d0d05",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 7 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        7.79741396525862,
+        0,
+        -34.09396258762837
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "2033eea0-a3bb-4eab-9864-50d2eddb5d9e",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        6.484716094527167,
+        0,
+        -39.41759930244228
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "4b53a166-fe45-49c3-a1fe-72f7ed7b49fd",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        5.0276836256443165,
+        0,
+        -43.98997385852067
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "bede9851-e67b-4da8-a022-cfc1d6938a73",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 3 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        15.512575058730015,
+        0,
+        -4.522906167287317
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "4ed6b597-3d83-42c0-9fd5-4298c3c2e749",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 4 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        13.006154256537718,
+        0,
+        -14.343729045723318
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "ff936aeb-caa1-4a23-946a-fb5155ea3ee8",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        10.551484721559444,
+        0,
+        -24.156765981028688
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "95544e21-d3f4-48a3-894e-df5c20881107",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 7 kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        17.138544522159087,
+        0,
+        0.889988106141562
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "fac9ae1e-ff68-4357-b498-f3f6e248a641",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        14.359837084762678,
+        0,
+        -9.393512222714515
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "2a3a373c-34dc-4946-ac05-bd882a26e543",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 5 kopya kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        11.792942068726376,
+        0,
+        -19.20749999016009
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "c042b040-27ae-439d-9dc6-c3c1b7ca61fd",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 7 kopya kopya kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        18.574177256467433,
+        0,
+        6.4006277951771615
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "7f9edd63-d9cb-4718-9d38-e4b184963a0e",
+      "flag": "",
+      "kind": "tree",
+      "name": "AĞAÇ 1 kopya",
+      "color": "#315f32",
+      "scale": 0.5999999999999996,
+      "width": 2.8,
+      "height": 11,
+      "length": 2,
+      "preset": "CYPRESS",
+      "radius": 4.4,
+      "heading": 1.3622438318247605,
+      "doorSide": "",
+      "position": [
+        20.219531887845942,
+        0,
+        11.612443628934702
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "aacfa855-5c42-41a2-89d5-2eca1c475e69",
+      "flag": "",
+      "kind": "structure",
+      "name": "İki tank arası köprü",
+      "color": "#b9c5c6",
+      "scale": 1,
+      "width": 1.05,
+      "height": 0.18,
+      "length": 7.544933747059968,
+      "preset": "TANK_BRIDGE",
+      "radius": 2,
+      "heading": -17.47792648280259,
+      "doorSide": "",
+      "facility": {
+        "tankA": "mtfgdsfpr7rq8i",
+        "tankB": "mtfgd0f5ucmhs2",
+        "bridgeEnd": {
+          "point": [
+            -1.4187524923845114,
+            11.28,
+            -3.8771848210069484
+          ],
+          "parentId": "mtfgd0f5ucmhs2"
+        },
+        "bridgeRise": 0,
+        "bridgeStart": {
+          "point": [
+            1.4358176567436338,
+            11.28,
+            3.888850861332955
+          ],
+          "parentId": "mtfgdsfpr7rq8i"
+        }
+      },
+      "position": [
+        -15.917642277771375,
+        11.28,
+        -9.489145926586215
+      ],
+      "thickness": 1.05,
+      "wallStyle": ""
+    },
+    {
+      "id": "f2b6efb5-6255-4775-b2cf-0fd44d9ed068",
+      "flag": "",
+      "kind": "structure",
+      "name": "Bekçi mobosu",
+      "color": "#e3e7e5",
+      "scale": 1,
+      "width": 1.5,
+      "height": 2.4,
+      "length": 2,
+      "preset": "GUARD_CABIN",
+      "radius": 2,
+      "heading": -10,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        4.642503176492796,
+        0,
+        -34.893287469008634
+      ],
+      "thickness": 2.4,
+      "wallStyle": ""
+    },
+    {
+      "id": "044d4ca2-8464-4a74-8528-8f8e2545f76c",
+      "flag": "",
+      "kind": "structure",
+      "name": "Şoför WC",
+      "color": "#e3e7e5",
+      "scale": 1,
+      "width": 1,
+      "height": 2.4,
+      "length": 1.8,
+      "preset": "DRIVER_WC",
+      "radius": 2,
+      "heading": -10,
+      "doorSide": "long",
+      "facility": {
+        "label": "ŞOFÖR WC"
+      },
+      "position": [
+        5.806302203594776,
+        0,
+        -35.134891269703694
+      ],
+      "thickness": 1.6,
+      "wallStyle": ""
+    },
+    {
+      "id": "a72acb4a-389c-489b-8e7c-16a363dff870",
+      "flag": "",
+      "kind": "structure",
+      "name": "Tehlikeli atık sahası",
+      "color": "#e1e4db",
+      "scale": 1,
+      "width": 2.5,
+      "height": 2.5,
+      "length": 1.3,
+      "preset": "WASTE_SHELTER",
+      "radius": 2,
+      "heading": 75.1,
+      "doorSide": "long",
+      "facility": {
+        "label": "TEHLİKELİ ATIK"
+      },
+      "position": [
+        15.511976699379833,
+        0,
+        0.9847640557718211
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "a8f86e3f-0dfa-463b-9502-8038c1a4f513",
+      "flag": "",
+      "kind": "structure",
+      "name": "Panik barlı yaya kapısı",
+      "color": "#e4e5df",
+      "scale": 1,
+      "width": 1.1,
+      "height": 2.2,
+      "length": 0.1,
+      "preset": "PEDESTRIAN_GATE",
+      "radius": 2,
+      "heading": -11.642386333803627,
+      "doorSide": "long",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        3.05022240799016,
+        0,
+        -35.648582012809484
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "cc69e1f3-82f1-424e-b66e-17d39663776b",
+      "flag": "",
+      "kind": "structure",
+      "name": "Ayak izli güzergâh çiz",
+      "color": "#eccd36",
+      "scale": 1,
+      "width": 0.7,
+      "height": 0.05,
+      "length": 3,
+      "points": [
+        [
+          -7.423110361973688,
+          -25.897623725791803
+        ],
+        [
+          -0.8642894878382315,
+          0.5196975721256312
+        ],
+        [
+          1.137194878708426,
+          1.3915147703271433
+        ],
+        [
+          7.1502049711034985,
+          23.986411383339025
+        ]
+      ],
+      "preset": "FOOTPRINTS",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "facility": {
+        "pattern": "footprints"
+      },
+      "position": [
+        10.528102789253893,
+        0,
+        -9.631565867013814
+      ],
+      "thickness": 0.7,
+      "wallStyle": ""
+    },
+    {
+      "id": "e53258ee-dc09-433b-9572-7959b7b4f55f",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        2.918346264790095,
+        0,
+        -33.833385898134516
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "7ccc7440-72d3-4242-906a-af781c9c9c7e",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        3.7334095512584193,
+        0,
+        -30.697603472988522
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "563ecae4-dcec-462d-9977-a4871d4eba9c",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        4.5237121182328375,
+        0,
+        -27.602801058564147
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "22955b6e-cbab-4ea5-a61c-62864e4cf2f0",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        5.3387754047011615,
+        0,
+        -24.467018633418153
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "4f7194b4-b669-47b7-856e-6ff2ad20943d",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        6.14384368383015,
+        0,
+        -21.376779507063336
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "7d298146-4483-4b58-ae21-2829f3d03de4",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        6.958906970298474,
+        0,
+        -18.240997081917342
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "f0bcd2ec-bda0-4ab0-aaf2-ef3a61b4787a",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        7.749209537272892,
+        0,
+        -15.146194667492967
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "8ee19894-5e26-47aa-90f7-84ff31cbca20",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        8.564272823741216,
+        0,
+        -12.010412242346973
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "304757eb-7ab2-43b1-8d5e-05fcfafc7920",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 1.5,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.4,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        9.17040600681991,
+        0,
+        -9.643890553969488
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "720aba28-dfd2-4338-9087-76f2c8fd02b4",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 1.7,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -66.46875800516526,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        10.190762392889223,
+        0,
+        -8.372995272073638
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "35928bb1-3a79-4c2c-8534-f16e2e34f1ec",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 2.5,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -17.197813788216898,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        11.40805759536388,
+        0,
+        -6.638484280023069
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "69a6881d-9c7d-425b-af0b-3682e2c29824",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 1.5,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.4,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        12.709544358030529,
+        0,
+        -2.196848974896534
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "4b7f717b-e26e-4ee9-b904-514e00cdffc0",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        13.329915307541015,
+        0,
+        0.14166919380588183
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "438d4311-2810-4da9-9a2c-68923b94f6bb",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        14.144978594009338,
+        0,
+        3.2774516189518756
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "ac20865f-98b6-43e2-b09b-a1a873be42ad",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        14.955021447167798,
+        0,
+        6.40878388825643
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "ad75031f-4bf2-4c3f-b487-3c7caa3fb243",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 3,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.367946551487057,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        15.770084733636121,
+        0,
+        9.544566313402424
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "a897f47b-31f4-40cb-8ae6-60357b9a8829",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 2,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.4,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        16.467949678823114,
+        0,
+        12.180024434692392
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "4fea50ca-e4a7-40e8-af8d-465bef4ff527",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 1,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -44.76480975918694,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        17.117646328016278,
+        0,
+        13.691463482502028
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "8d3c50cf-90aa-4655-89df-3af373f183ca",
+      "flag": "",
+      "kind": "structure",
+      "name": "Panik barlı yaya kapısı",
+      "color": "#e4e5df",
+      "scale": 1,
+      "width": 1.1,
+      "height": 2.1,
+      "length": 0.1,
+      "preset": "PEDESTRIAN_GATE",
+      "radius": 2,
+      "heading": 75.90848670092421,
+      "doorSide": "",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        23.33535712784347,
+        0,
+        26.631400821344258
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "25b7bb73-7d55-4371-9d40-2b4aea78f2b5",
+      "flag": "",
+      "kind": "structure",
+      "name": "Zincirli yaya ayrımı kopya kopya kopya kopya kopya",
+      "color": "#e78334",
+      "scale": 1,
+      "width": 0.15,
+      "height": 1,
+      "length": 1,
+      "preset": "CHAIN_POSTS",
+      "radius": 2,
+      "heading": -14.4,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        11.976086686594822,
+        0,
+        -4.773289585073764
+      ],
+      "thickness": 0.15,
+      "wallStyle": ""
+    },
+    {
+      "id": "cbfda2c0-ed5e-4289-bf6c-2f635eeaf5c8",
+      "flag": "",
+      "kind": "structure",
+      "name": "Göz ve vücut duşu",
+      "color": "#499754",
+      "scale": 1,
+      "width": 0.75,
+      "height": 2.25,
+      "length": 0.9,
+      "preset": "SAFETY_SHOWER",
+      "radius": 2,
+      "heading": 73.53886955887414,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        13.982168667564318,
+        0,
+        -4.059935694973832
+      ],
+      "thickness": 0.75,
+      "wallStyle": ""
+    },
+    {
+      "id": "3228602d-01b5-4c54-8a16-b09e1a2b3bba",
+      "flag": "",
+      "kind": "structure",
+      "name": "Ayak izli güzergâh çiz",
+      "color": "#eccd36",
+      "scale": 1,
+      "width": 0.7,
+      "height": 0.05,
+      "length": 3,
+      "points": [
+        [
+          8.30984621100671,
+          -2.319501347420635
+        ],
+        [
+          -8.30984621100671,
+          2.319501347420635
+        ]
+      ],
+      "preset": "FOOTPRINTS",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "facility": {
+        "pattern": "footprints"
+      },
+      "position": [
+        4.08184909547634,
+        0,
+        -1.3399549881849853
+      ],
+      "thickness": 0.7,
+      "wallStyle": ""
+    },
+    {
+      "id": "48d146ae-ccad-422c-b6e6-22a5509f926c",
+      "flag": "",
+      "kind": "structure",
+      "name": "Ayak izli güzergâh çiz",
+      "color": "#eccd36",
+      "scale": 1,
+      "width": 0.7,
+      "height": 0.05,
+      "length": 3,
+      "points": [
+        [
+          6.039961213059575,
+          -3.3387394012745695
+        ],
+        [
+          -6.039961213059575,
+          3.338739401274566
+        ]
+      ],
+      "preset": "FOOTPRINTS",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "facility": {
+        "pattern": "footprints"
+      },
+      "position": [
+        11.923708143514274,
+        0,
+        17.99690802335983
+      ],
+      "thickness": 0.7,
+      "wallStyle": ""
+    },
+    {
+      "id": "5a9138fe-6ac2-498c-bdfe-3b0f2d535f5a",
+      "flag": "",
+      "kind": "structure",
+      "name": "Ayak izli güzergâh çiz",
+      "color": "#eccd36",
+      "scale": 1,
+      "width": 0.7,
+      "height": 0.05,
+      "length": 3,
+      "points": [
+        [
+          -1.7856868957529777,
+          -4.102993154718694
+        ],
+        [
+          -0.43106372401159376,
+          -2.695233550808057
+        ],
+        [
+          2.2167506197645714,
+          6.798226705526751
+        ]
+      ],
+      "preset": "FOOTPRINTS",
+      "radius": 2,
+      "heading": 1.921476701977475,
+      "doorSide": "",
+      "facility": {
+        "pattern": "footprints"
+      },
+      "position": [
+        19.59581506303111,
+        0,
+        17.85622916639734
+      ],
+      "thickness": 0.7,
+      "wallStyle": ""
+    },
+    {
+      "id": "086071fa-6ed5-4bdd-8554-a3ce3df12bb2",
+      "flag": "",
+      "kind": "structure",
+      "name": "Izgaralı kanal çiz",
+      "color": "#555f60",
+      "scale": 1,
+      "width": 0.45,
+      "height": 0.05,
+      "length": 3.2,
+      "points": [
+        [
+          1.4416523194646054,
+          5.358373688695654
+        ],
+        [
+          -1.4416523194646054,
+          -5.358373688695654
+        ]
+      ],
+      "preset": "DRAIN",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        20.97422596654918,
+        0,
+        19.86738273950078
+      ],
+      "thickness": 0.45,
+      "wallStyle": ""
+    },
+    {
+      "id": "86f4d8c5-9824-492a-abd5-535fec1b1ff3",
+      "flag": "",
+      "kind": "structure",
+      "name": "Motorin tankı ve dispenser",
+      "color": "#e6e8e3",
+      "scale": 0.67,
+      "width": 2.1,
+      "height": 5,
+      "length": 3.8,
+      "preset": "DIESEL_UNIT",
+      "radius": 2,
+      "heading": -104.7,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        8.783074818454125,
+        0,
+        31.034232059692073
+      ],
+      "thickness": 2.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "8f197c33-0436-46a9-8cd5-1ed51c70fecf",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yeşil rögar kapağı",
+      "color": "#49854c",
+      "scale": 1,
+      "width": 0.8,
+      "height": 0.08,
+      "length": 0.8,
+      "preset": "MANHOLE",
+      "radius": 2,
+      "heading": -21.479705502563206,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        10.747521822925915,
+        0,
+        -10.536984677918436
+      ],
+      "thickness": 0.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "d3719849-50e3-439f-a548-9c7b04e52e6e",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yeşil rögar kapağı kopya",
+      "color": "#49854c",
+      "scale": 1,
+      "width": 0.8,
+      "height": 0.08,
+      "length": 0.8,
+      "preset": "MANHOLE",
+      "radius": 2,
+      "heading": -21.479705502563206,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        10.193001743282773,
+        0,
+        -13.315431538694938
+      ],
+      "thickness": 0.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "1f274d98-c72c-4020-ad37-c4edd241eb2b",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yeşil rögar kapağı kopya kopya",
+      "color": "#49854c",
+      "scale": 1,
+      "width": 0.8,
+      "height": 0.08,
+      "length": 0.8,
+      "preset": "MANHOLE",
+      "radius": 2,
+      "heading": -21.479705502563206,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        9.593376185057108,
+        0,
+        -15.92982289998002
+      ],
+      "thickness": 0.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "0c1f1b46-837d-423f-9524-6a25f67adff4",
+      "flag": "",
+      "kind": "structure",
+      "name": "Tekerlekli platform merdiveni",
+      "color": "#b2bec3",
+      "scale": 1,
+      "width": 0.8,
+      "height": 1,
+      "length": 2,
+      "preset": "MOBILE_STAIR",
+      "radius": 2,
+      "heading": 74.6,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        4.700864675061805,
+        0,
+        31.09310608553785
+      ],
+      "thickness": 1,
+      "wallStyle": ""
+    },
+    {
+      "id": "88b9db18-6de5-49c1-b4a1-c83d00e9efd4",
+      "flag": "",
+      "kind": "structure",
+      "name": "Duvar tipi yangın dolabı",
+      "color": "#bc302c",
+      "scale": 1,
+      "width": 0.8,
+      "height": 0.9,
+      "length": 0.25,
+      "preset": "WALL_HOSE_CABINET",
+      "radius": 2,
+      "heading": -8.734916123675976,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        5.454108093392573,
+        0,
+        28.971885150910122
+      ],
+      "thickness": 0.8,
+      "wallStyle": ""
+    },
+    {
+      "id": "4c3732df-c2c1-4018-b043-15ac3a5a8452",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük tankı · 1.000 L",
+      "color": "#aebdbd",
+      "scale": 1,
+      "width": 1.1,
+      "height": 3,
+      "length": 1,
+      "preset": "FOAM_TANK",
+      "radius": 2,
+      "heading": 165.7,
+      "doorSide": "long",
+      "facility": {
+        "tag": "KPT01",
+        "volume": 1000,
+        "capacity": 1000
+      },
+      "position": [
+        4.205469931276962,
+        0,
+        32.31264350521383
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "3e640ed3-218e-4828-925a-2f8fb72bcc80",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yay biçimli monitör duvarı",
+      "color": "#b72b29",
+      "scale": 0.5264958434255911,
+      "width": 3.5,
+      "height": 1.5,
+      "length": 3.5,
+      "preset": "MONITOR_SHIELD",
+      "radius": 2,
+      "heading": 89.30708479437835,
+      "doorSide": "",
+      "facility": {
+        "sweep": 230
+      },
+      "position": [
+        18.61265289016108,
+        0,
+        12.06034535098426
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "24b73628-9d60-42f1-9e81-e59fada1b947",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 109.35509965047639,
+      "doorSide": "",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        18.40578474461467,
+        0,
+        12.168543758752193
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "0b49dcf4-9031-47e7-b2f1-b1cd5d18c03e",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük bidonu · 200 L",
+      "color": "#c12c28",
+      "scale": 0.7140647248306826,
+      "width": 0.62,
+      "height": 0.95,
+      "length": 0.62,
+      "preset": "FOAM_DRUM",
+      "radius": 2,
+      "heading": 32.82538496232879,
+      "doorSide": "",
+      "facility": {
+        "volume": 200,
+        "capacity": 200
+      },
+      "position": [
+        18.28033562833824,
+        0,
+        11.70731641331956
+      ],
+      "thickness": 0.62,
+      "wallStyle": ""
+    },
+    {
+      "id": "2f087ac9-fd26-4b06-83f5-f9abe56cbc8b",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yay biçimli monitör duvarı kopya",
+      "color": "#b72b29",
+      "scale": 0.5264958434255911,
+      "width": 3.5,
+      "height": 1.5,
+      "length": 3.5,
+      "preset": "MONITOR_SHIELD",
+      "radius": 2,
+      "heading": 89.30708479437835,
+      "doorSide": "",
+      "facility": {
+        "sweep": 230
+      },
+      "position": [
+        12.18761450446693,
+        0,
+        -9.843825170609998
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "a51cb392-2737-46ac-9c2a-9830e63109e3",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 109.35509965047639,
+      "doorSide": "",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        12.068524337031667,
+        0,
+        -9.86760156776385
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "5a1c7446-aed7-4a9a-9158-25bd42fc20c2",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük bidonu · 200 L kopya",
+      "color": "#c12c28",
+      "scale": 0.7140647248306826,
+      "width": 0.62,
+      "height": 0.95,
+      "length": 0.62,
+      "preset": "FOAM_DRUM",
+      "radius": 2,
+      "heading": 32.82538496232879,
+      "doorSide": "",
+      "facility": {
+        "volume": 200,
+        "capacity": 200
+      },
+      "position": [
+        11.943075220755235,
+        0,
+        -10.291788359969598
+      ],
+      "thickness": 0.62,
+      "wallStyle": ""
+    },
+    {
+      "id": "8eba96b7-0da6-4fdc-a477-4f50dbfec700",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yay biçimli monitör duvarı kopya kopya",
+      "color": "#b72b29",
+      "scale": 0.5264958434255911,
+      "width": 3.5,
+      "height": 1.5,
+      "length": 3.5,
+      "preset": "MONITOR_SHIELD",
+      "radius": 2,
+      "heading": 68.73164581277636,
+      "doorSide": "",
+      "facility": {
+        "sweep": 230
+      },
+      "position": [
+        6.3969504767154195,
+        0,
+        -29.678655713660184
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "246150dc-cb83-4f89-812a-1128f9aaae2b",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 78.20165664604828,
+      "doorSide": "",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        6.277860309280156,
+        0,
+        -29.702432110814037
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "e7c08f05-3263-482d-8f7e-a7af7bab0ea9",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük bidonu · 200 L kopya kopya",
+      "color": "#c12c28",
+      "scale": 0.7140647248306826,
+      "width": 0.62,
+      "height": 0.95,
+      "length": 0.62,
+      "preset": "FOAM_DRUM",
+      "radius": 2,
+      "heading": -259.5050688406657,
+      "doorSide": "",
+      "facility": {
+        "volume": 200,
+        "capacity": 200
+      },
+      "position": [
+        6.63829981428118,
+        0,
+        -29.079358419611847
+      ],
+      "thickness": 0.62,
+      "wallStyle": ""
+    },
+    {
+      "id": "a46f7606-c3b0-4493-806f-b6edf228884f",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yay biçimli monitör duvarı kopya kopya kopya",
+      "color": "#b72b29",
+      "scale": 0.5264958434255911,
+      "width": 3.5,
+      "height": 1.5,
+      "length": 3.5,
+      "preset": "MONITOR_SHIELD",
+      "radius": 2,
+      "heading": 183.19776913838956,
+      "doorSide": "",
+      "facility": {
+        "sweep": 230
+      },
+      "position": [
+        -14.351586487539956,
+        0,
+        15.024359419198841
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "8467e638-4199-4838-abcc-e165465cd34e",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya kopya kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 192.6677799716615,
+      "doorSide": "",
+      "facility": {
+        "open": false
+      },
+      "position": [
+        -14.280623255190523,
+        0,
+        14.925809915415732
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "ec3dbbc7-9dab-4fbc-a4fd-af82d11ef7a5",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük bidonu · 200 L kopya kopya kopya",
+      "color": "#c12c28",
+      "scale": 0.7140647248306826,
+      "width": 0.62,
+      "height": 0.95,
+      "length": 0.62,
+      "preset": "FOAM_DRUM",
+      "radius": 2,
+      "heading": -23.579947852130168,
+      "doorSide": "",
+      "facility": {
+        "volume": 200,
+        "capacity": 200
+      },
+      "position": [
+        -14.997026732396472,
+        0,
+        14.995835048624663
+      ],
+      "thickness": 0.62,
+      "wallStyle": ""
+    },
+    {
+      "id": "48f75653-0b08-44c8-bde5-b651712c9837",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük tankı · 1.000 L kopya",
+      "color": "#aebdbd",
+      "scale": 1,
+      "width": 1.1,
+      "height": 3,
+      "length": 1,
+      "preset": "FOAM_TANK",
+      "radius": 2,
+      "heading": 165.7,
+      "doorSide": "long",
+      "facility": {
+        "tag": "KPT01",
+        "volume": 1000,
+        "capacity": 1000
+      },
+      "position": [
+        5.413958472194594,
+        0,
+        31.92986714629771
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "35c8daad-2f6a-49cc-919d-71e9a1a48f22",
+      "flag": "",
+      "kind": "ground",
+      "name": "Zemin alanı çiz",
+      "color": "#9b8060",
+      "scale": 1,
+      "width": 10,
+      "height": 0.05,
+      "length": 10,
+      "points": [
+        [
+          -26.866011460395008,
+          -21.377953171189656
+        ],
+        [
+          3.207918127757268,
+          40.90671435957401
+        ],
+        [
+          33.93482256115477,
+          33.109952450916246
+        ],
+        [
+          16.467450338051883,
+          -31.27034818913575
+        ],
+        [
+          -26.74417956656891,
+          -21.36836545016485
+        ]
+      ],
+      "preset": "GROUND",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        -10.10602922348933,
+        0,
+        -4.900069628532494
+      ],
+      "thickness": 10,
+      "wallStyle": ""
+    },
+    {
+      "id": "15e56fb5-9d20-4a03-b615-7917bfe3cb04",
+      "flag": "",
+      "kind": "structure",
+      "name": "Şişeli göz yıkama",
+      "color": "#368552",
+      "scale": 1,
+      "width": 0.4,
+      "height": 0.42,
+      "length": 0.14,
+      "preset": "BOTTLE_EYEWASH",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "facility": {},
+      "position": [
+        142.34511268168325,
+        0,
+        -25.90351353305404
+      ],
+      "thickness": 0.4,
+      "wallStyle": ""
+    },
+    {
+      "id": "11e75291-da83-4025-9a88-e1767bdc8c57",
+      "flag": "",
+      "kind": "structure",
+      "name": "Şişeli göz yıkama",
+      "color": "#368552",
+      "scale": 1,
+      "width": 0.4,
+      "height": 0.42,
+      "length": 0.14,
+      "preset": "BOTTLE_EYEWASH",
+      "radius": 2,
+      "heading": 75.1,
+      "doorSide": "",
+      "facility": {
+        "mount": {
+          "point": [
+            0.5555093065464254,
+            1.59096547515647,
+            0.6879999999403952
+          ],
+          "normal": [
+            0,
+            0,
+            1
+          ],
+          "parentId": "a72acb4a-389c-489b-8e7c-16a363dff870"
+        }
+      },
+      "position": [
+        14.98994961648007,
+        1.59096547515647,
+        1.6985023231337708
+      ],
+      "thickness": 0.4,
+      "wallStyle": ""
+    },
+    {
+      "id": "73c822ac-1206-4e75-a890-6dfe849b2bf2",
+      "flag": "",
+      "kind": "structure",
+      "name": "Acil toplanma zemin işareti",
+      "color": "#258451",
+      "scale": 0.7429301875818326,
+      "width": 3.5,
+      "height": 0.05,
+      "length": 3.5,
+      "preset": "ASSEMBLY_MARK",
+      "radius": 2,
+      "heading": 163.63373656121277,
+      "doorSide": "",
+      "facility": {
+        "label": "ACİL TOPLANMA NOKTASI"
+      },
+      "position": [
+        19.69360417464358,
+        0,
+        25.62130148688191
+      ],
+      "thickness": 3.5,
+      "wallStyle": ""
+    },
+    {
+      "id": "6410648c-3a78-4837-bfda-a8921383cd68",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sarı beyaz bordür çiz",
+      "color": "#ded13d",
+      "scale": 1,
+      "width": 0.15,
+      "height": 0.1,
+      "length": 3,
+      "points": [
+        [
+          13.696874437652053,
+          1.3215946645239107
+        ],
+        [
+          -1.8825519609674686,
+          5.703894229972629
+        ],
+        [
+          -3.57497232057806,
+          -2.3621697603420593
+        ],
+        [
+          -3.7086096202157197,
+          -2.447881703682814
+        ],
+        [
+          -4.530740535890805,
+          -2.215437430471674
+        ]
+      ],
+      "preset": "CURB",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        9.51,
+        0,
+        24.77
+      ],
+      "thickness": 0.22,
+      "wallStyle": ""
+    },
+    {
+      "id": "b58b26b6-63b7-4c7f-808c-c78f60fa6065",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sarı beyaz bordür çiz",
+      "color": "#ded13d",
+      "scale": 1,
+      "width": 0.15,
+      "height": 0.1,
+      "length": 3,
+      "points": [
+        [
+          2.453218449271702,
+          5.731122395672855
+        ],
+        [
+          1.945519151623401,
+          5.825771132734474
+        ],
+        [
+          0.6014749000007455,
+          5.008076381377441
+        ],
+        [
+          -5.000212500895847,
+          -16.564969909784768
+        ]
+      ],
+      "preset": "CURB",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        17.14,
+        0,
+        7.96
+      ],
+      "thickness": 0.22,
+      "wallStyle": ""
+    },
+    {
+      "id": "460f7792-4df1-4001-8529-9568ba612e9d",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sarı beyaz bordür çiz",
+      "color": "#ded13d",
+      "scale": 1,
+      "width": 0.15,
+      "height": 0.1,
+      "length": 3,
+      "points": [
+        [
+          -4.927802117374896,
+          -17.754712005242997
+        ],
+        [
+          0.8208826986644144,
+          5.512309173928594
+        ],
+        [
+          1.9550126843310487,
+          6.138739504914064
+        ],
+        [
+          2.1519067343794376,
+          6.10366332640033
+        ]
+      ],
+      "preset": "CURB",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        9.14,
+        0,
+        -15.52
+      ],
+      "thickness": 0.22,
+      "wallStyle": ""
+    },
+    {
+      "id": "6ffe11f2-6e1b-4560-b340-bc5353e87595",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sarı beyaz bordür çiz",
+      "color": "#ded13d",
+      "scale": 1,
+      "width": 0.15,
+      "height": 0.1,
+      "length": 3,
+      "points": [
+        [
+          7.508051595781902,
+          32.526653327671696
+        ],
+        [
+          9.959676902337746,
+          32.05617740164099
+        ],
+        [
+          10.165322137032236,
+          31.73913117857621
+        ],
+        [
+          -8.159577192980528,
+          -33.475440179285044
+        ],
+        [
+          -10.321297519263783,
+          -33.4410792025906
+        ],
+        [
+          -9.152175922907574,
+          -29.405442526013246
+        ]
+      ],
+      "preset": "CURB",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        12.55,
+        0,
+        -18.84
+      ],
+      "thickness": 0.22,
+      "wallStyle": ""
+    },
+    {
+      "id": "fe4063ed-bcd8-411a-b6b3-81a1f1f12b7a",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sigara içme alanı",
+      "color": "#e3e7e5",
+      "scale": 1,
+      "width": 3,
+      "height": 2.3,
+      "length": 1.5,
+      "preset": "SMOKING_AREA",
+      "radius": 2,
+      "heading": 77.89541629888295,
+      "doorSide": "long",
+      "facility": {
+        "label": "SİGARA İÇME ALANI"
+      },
+      "position": [
+        5.058174618417348,
+        0,
+        -37.48967106168728
+      ],
+      "thickness": 3,
+      "wallStyle": ""
+    },
+    {
+      "id": "e6dcf027-68d2-460b-9d16-512b3ff3aa35",
+      "flag": "",
+      "kind": "structure",
+      "name": "Döküntü müdahale seti",
+      "color": "#d04c43",
+      "scale": 1,
+      "width": 0.6,
+      "height": 1,
+      "length": 0.6,
+      "preset": "SPILL_KIT",
+      "radius": 2,
+      "heading": 165.229585785786,
+      "doorSide": "",
+      "facility": {
+        "label": "SPILL KIT"
+      },
+      "position": [
+        13.879369701817382,
+        0,
+        30.19042854169556
+      ],
+      "thickness": 0.6,
+      "wallStyle": ""
+    },
+    {
+      "id": "8444f9d9-384b-4ae1-8638-9693b9be70d4",
+      "flag": "",
+      "kind": "structure",
+      "name": "Döküntü müdahale seti kopya",
+      "color": "#d04c43",
+      "scale": 1,
+      "width": 0.6,
+      "height": 1,
+      "length": 0.6,
+      "preset": "SPILL_KIT",
+      "radius": 2,
+      "heading": 165.229585785786,
+      "doorSide": "",
+      "facility": {
+        "label": "SPILL KIT"
+      },
+      "position": [
+        12.999118657978158,
+        0,
+        30.404361903151482
+      ],
+      "thickness": 0.6,
+      "wallStyle": ""
+    },
+    {
+      "id": "5cc824c6-19b3-4937-9fb5-750066fa0e4a",
+      "flag": "",
+      "kind": "structure",
+      "name": "Döküntü müdahale seti kopya",
+      "color": "#d04c43",
+      "scale": 1,
+      "width": 0.6,
+      "height": 1,
+      "length": 0.6,
+      "preset": "SPILL_KIT",
+      "radius": 2,
+      "heading": 165.229585785786,
+      "doorSide": "",
+      "facility": {
+        "label": "SPILL KIT"
+      },
+      "position": [
+        12.155824198209553,
+        0,
+        30.587273031664505
+      ],
+      "thickness": 0.6,
+      "wallStyle": ""
+    },
+    {
+      "id": "e5b41f26-dc68-4fe1-bc21-a80a28b1009c",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın söndürücü",
+      "color": "#d52b1e",
+      "scale": 1,
+      "width": 0.6,
+      "height": 1.3,
+      "length": 0.6,
+      "preset": "FIRE_EXT",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "",
+      "position": [
+        1.893680324335588,
+        0,
+        22.852284105672755
+      ],
+      "thickness": 0.6,
+      "wallStyle": ""
+    },
+    {
+      "id": "40c8de52-bbe6-43e4-9ec0-c1241be76f50",
+      "flag": "",
+      "kind": "structure",
+      "name": "Köpük tankı kulübesi",
+      "color": "#e3e7e5",
+      "scale": 1,
+      "width": 3.2,
+      "height": 3,
+      "length": 1.5,
+      "preset": "FOAM_SHELTER",
+      "radius": 2,
+      "heading": 165.5,
+      "doorSide": "long",
+      "facility": {
+        "label": "KÖPÜK TANKLARI"
+      },
+      "position": [
+        5.089790428338631,
+        0,
+        31.851189363117896
+      ],
+      "thickness": 3.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "d96ab946-c34c-4095-8f37-55a8d1f61f47",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın alarm butonu",
+      "color": "#c32e2b",
+      "scale": 1,
+      "width": 0.18,
+      "height": 0.22,
+      "length": 0.09,
+      "preset": "FIRE_ALARM",
+      "radius": 2,
+      "heading": -101.49999999999994,
+      "doorSide": "",
+      "facility": {
+        "tag": "FA",
+        "label": "YANGIN / FIRE",
+        "mount": {
+          "point": [
+            3.8955591078134635,
+            2.2805079710870846,
+            -5.051999999105929
+          ],
+          "normal": [
+            8.881784197001252e-16,
+            0,
+            -1
+          ],
+          "parentId": "mth6j6kj8p8p40"
+        }
+      },
+      "position": [
+        1.2459593891293546,
+        2.2805079710870846,
+        20.534616249139773
+      ],
+      "thickness": 0.18,
+      "wallStyle": ""
+    },
+    {
+      "id": "98add888-c4e7-4425-9482-191341f670e3",
+      "flag": "",
+      "kind": "structure",
+      "name": "Acil durdurma butonu",
+      "color": "#f4cd31",
+      "scale": 1,
+      "width": 0.2,
+      "height": 0.22,
+      "length": 0.12,
+      "preset": "EMERGENCY_STOP",
+      "radius": 2,
+      "heading": -101.49999999999994,
+      "doorSide": "",
+      "facility": {
+        "label": "ACİL STOP",
+        "mount": {
+          "point": [
+            3.9192657865527916,
+            1.799202481950818,
+            -5.051999999105931
+          ],
+          "normal": [
+            1.3322676295501878e-15,
+            0,
+            -1
+          ],
+          "parentId": "mth6j6kj8p8p40"
+        }
+      },
+      "position": [
+        1.250685740701508,
+        1.799202481950818,
+        20.55784700930095
+      ],
+      "thickness": 0.2,
+      "wallStyle": ""
+    },
+    {
+      "id": "400e8ced-f553-4052-ab49-ac7fb5c75eb2",
+      "flag": "",
+      "kind": "structure",
+      "name": "Sarı beyaz bordür çiz",
+      "color": "#ded13d",
+      "scale": 1,
+      "width": 0.15,
+      "height": 0.1,
+      "length": 3,
+      "points": [
+        [
+          -1.6511037523069128,
+          -0.3314429949397173
+        ],
+        [
+          -0.01042790713920283,
+          -0.8527950314288617
+        ],
+        [
+          1.6615316594461227,
+          1.184238026368579
+        ]
+      ],
+      "preset": "CURB",
+      "radius": 2,
+      "heading": 0,
+      "doorSide": "long",
+      "facility": {},
+      "position": [
+        25.04,
+        0,
+        26.26
+      ],
+      "thickness": 0.22,
+      "wallStyle": ""
+    }
+  ],
+  "updatedAt": "2026-10-13T09:19:53.719Z",
+  "groundModes": {
+    "airport": "photo",
+    "facility": "satellite"
+  },
+  "groundPhoto": {
+    "x": -40.19719225446513,
+    "z": -1021.9775424217576,
+    "width": 3700,
+    "height": 1233,
+    "enabled": false,
+    "opacity": 1,
+    "rotation": -103
+  },
+  "sharedGround": "ortho"
+}
