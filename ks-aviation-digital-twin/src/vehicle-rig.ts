@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { R14 } from './r14-spec';
 import { FuelGauge, refitTankMarkings, tankLift, clearCouplingSweep } from './refueller-details';
 import {VehicleCab} from './vehicle-cab';
+import {completeVehicleSteps,clarifyFrontIndicators} from './vehicle-access';
 type Wheel={pivot:THREE.Group;spin:THREE.Group;front:boolean;trailer:boolean};
 
 /** Prepare one cloned R14 in native coordinates, before scaling/grounding.
@@ -124,6 +125,7 @@ export class VehicleRig {
       }
       if(articulated&&index===2)attach(pivot);this.wheels.push({pivot,spin,front:index===0,trailer:articulated&&index===2});
     }
+    completeVehicleSteps(model,g=>this.own(g),silver);clarifyFrontIndicators(model,g=>this.own(g));
     this.cab=new VehicleCab(model);model.updateMatrixWorld(true);
   }
   private own<T extends THREE.BufferGeometry>(g:T):T{this.geometries.add(g);return g;}

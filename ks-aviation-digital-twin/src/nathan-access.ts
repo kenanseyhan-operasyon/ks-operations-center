@@ -3,19 +3,24 @@ import type { Entity } from './scene-data';
 import { accessPath, type V3 } from './personnel-navigation';
 import { NathanNavigation } from './nathan-navigation';
 import { localToWorld } from './facility-data';
-export type NathanAccessKind = 'rear' | 'platform' | 'steps' | 'tank';
-export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V3[]; heading: number; length: number; crest: number; crossingSide?: -1 | 1 };
+import {stairPose,type StairContacts} from './nathan-stair-gait';
+import {makeDriverAccess,driverPose,type DriverLanding} from './nathan-driver';
+export type NathanAccessKind = 'driver' | 'rear' | 'platform' | 'steps' | 'tank';
+export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V3[]; heading: number; length: number; crest: number; crossingSide?: -1 | 1; contacts?:StairContacts; driver?:DriverLanding };
 
 /** Match actual picked ladder, stringer, stair tread or landing mesh. */
 export function nathanAccessKind(node: T.Object3D, e: Entity): NathanAccessKind | undefined {
   if (e.kind === 'tank' && e.facility?.stairs !== false) return 'tank';
   if (['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(e.preset)) return 'steps';
   for (let n: T.Object3D | null = node; n; n = n.parent) {
+    if (/DRIVER_DOOR|PASSENGER_DOOR|CAB_ACCESS_STEP|KS_LOW_CAB_C3/.test(n.name)) return 'driver';
     if (/Rear_Ladder|Tank_Top_Walkway|Rear_Fold.*Hand/i.test(n.name)) return 'rear';
     if (/Fixed_Step|Platform_Grey_Floor|Platform_Gate/i.test(n.name)) return 'platform';
   }
 }
 export function sampleAccess(access: NathanAccess, progress: number): V3 {
+  if(access.driver)return driverPose(access,progress).root;
+  if(access.contacts)return stairPose(access.contacts,progress).root;
   let left = T.MathUtils.clamp(progress, 0, 1) * access.length;
   for (let i = 1; i < access.points.length; i++) {
     const a = new T.Vector3(...access.points[i - 1]), b = new T.Vector3(...access.points[i]), length = a.distanceTo(b);
@@ -26,7 +31,8 @@ export function sampleAccess(access: NathanAccess, progress: number): V3 {
 }
 export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: NathanAccessKind,
   nav: NathanNavigation, crossingSide?: -1 | 1): NathanAccess | undefined {
-  let points: V3[] | undefined;
+  if(kind==='driver')return root?makeDriverAccess(e,root,nav):undefined;
+  let points: V3[] | undefined,contacts:StairContacts|undefined;
   if (kind === 'tank') {
     if (e.kind !== 'tank' || e.facility?.stairs === false || (e.facility?.stairWidth??.9)*e.scale < 2*nav.clearance+.1 || Math.abs(e.position[1])>.05) return;
     const flight=accessPath(e,root); if (!flight) return;
@@ -77,7 +83,16 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     points = [bottom, ...steps.map(p => p.clone().addScaledVector(outward, .12)),
       // Feet clear the last rung before crossing onto the landing.
       last.clone().addScaledVector(outward, .12).setY(landing.y), landing]
-      .map(p => root.localToWorld(p).toArray() as V3);
+      .map(p => root.localToWorld(p.clone()).toArray() as V3);
+    const stops:T.Vector3[]=[bottom.clone()],near=first.clone().addScaledVector(outward,.28);near.y=0;
+    const count=Math.max(1,Math.ceil(bottom.distanceTo(near)/.32));for(let i=1;i<=count;i++)stops.push(bottom.clone().lerp(near,i/count));
+    stops.push(...steps.map(p=>p.clone().addScaledVector(outward,.035)),landing.clone());
+    const grips:[V3,V3][]=[];
+    root.traverse(n=>{if(!(n instanceof T.Mesh)||!(kind==='rear'?/Rear_Ladder_Close_Stringer|Rear_Fold.*Hand|Rear_Ladder.*Handhold/:/Platform_Outside_Grab_Handle/).test(n.name))return;
+      n.geometry.computeBoundingBox();const b=n.geometry.boundingBox!,s=b.getSize(new T.Vector3()),a=b.getCenter(new T.Vector3()),z=a.clone(),axis=s.y>=s.x&&s.y>=s.z?'y':s.x>=s.z?'x':'z';a[axis]=b.min[axis];z[axis]=b.max[axis];grips.push([n.localToWorld(a).toArray() as V3,n.localToWorld(z).toArray() as V3]);
+    });
+    const worldOut=outward.clone().transformDirection(root.matrixWorld);
+    contacts={stops:stops.map(p=>root.localToWorld(p.clone()).toArray() as V3),outward:worldOut.toArray() as V3,heading:Math.atan2(-worldOut.x,worldOut.z)*180/Math.PI,scale:e.scale,ladder:true,grips};
   }
   if (!points || points.length < 3) return;
   points[0][1] = 0;
@@ -87,6 +102,7 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     points[0][0] += outward.x * .1; points[0][2] += outward.z * .1;
   }
   if (nav.blocked(points[0])) return;
+  if(contacts)contacts.stops[0]=[...points[0]];
   if (crossingSide) {
     const exit = points.at(-1)!;
     for (let i = 0; i < 30 && nav.blocked(exit); i++) { exit[0] -= outward.x * .1; exit[2] -= outward.z * .1; }
@@ -97,5 +113,5 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
   const lengths = points.slice(1).map((p, i) => new T.Vector3(...p).distanceTo(new T.Vector3(...points![i])));
   const length = lengths.reduce((a, b) => a + b, 0);
   return { targetId: e.id, kind, points, length, crest: 1 - lengths.at(-1)! / length,
-    heading: Math.atan2(-outward.x, outward.z) * 180 / Math.PI, ...(crossingSide ? {crossingSide} : {}) };
+    heading: Math.atan2(-outward.x, outward.z) * 180 / Math.PI, ...(crossingSide ? {crossingSide} : {}),...(contacts?{contacts}:{}) };
 }

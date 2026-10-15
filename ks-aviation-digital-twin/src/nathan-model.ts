@@ -4,6 +4,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Entity } from './scene-data';
 import { NATHAN_MODEL_URL, NATHAN_PRESET, validateNathan, type NathanSettings } from './nathan-data';
 import { nathanWalkLoop } from './nathan-walk-loop';
+import { NathanContactRig, type NathanContact } from './nathan-contact';
 
 export function makeNathanPlaceholder(e: Entity) {
   const root = new T.Group();
@@ -39,13 +40,26 @@ export class NathanActor {
   private point = new T.Vector3();
   private localBox = new T.Box3();
   private bounds = new T.Box3();
+  contactRig?: NathanContactRig;
+  private contactPose?: NathanContact;
+  private headless=new Map<T.Mesh,{full:T.BufferGeometry;cut:T.BufferGeometry}>();
+  private eyes=false;
 
   constructor(readonly root: T.Group, gltf: Pick<GLTF, 'scene' | 'animations'>, height: number,
     settings?: NathanSettings, private changed = () => {}) {
     if (!gltf.animations.length) throw new Error('Nathan GLB has no animations');
     this.settings = validateNathan(settings);
     this.model = clone(gltf.scene);
-    this.clips = gltf.animations.map(nathanWalkLoop);
+    gltf.scene.updateWorldMatrix(true,true);
+    const ladderRoot=gltf.scene.getObjectByName('rp_nathan_animated_003_walking_root')!;
+    const parent=ladderRoot.parent!.getWorldQuaternion(new T.Quaternion());
+    const correction=parent.clone().invert().multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI)).multiply(parent);
+    this.clips = gltf.animations.map(source=>{
+      if(source.name!=='Climbing_Ladder')return nathanWalkLoop(source);
+      const clip=source.clone(),q=new T.Quaternion();
+      for(const track of clip.tracks)if(track.name===ladderRoot.name+'.quaternion')for(let i=0;i<track.values.length;i+=4)q.fromArray(track.values,i).premultiply(correction).toArray(track.values,i);
+      return clip;
+    });
     this.model.traverse(node => {
       if (node instanceof T.Mesh) {
         node.userData.sharedAsset = true;
@@ -76,6 +90,8 @@ export class NathanActor {
       if (event.action === this.actions[this.index]) { this.playing = false; this.changed(); }
     });
     this.select(Math.max(0, this.clips.findIndex(c => c.name === this.settings.clip)), false);
+    const selected=this.index;this.select(this.clips.findIndex(c=>c.name==='Idle'),false);
+    this.contactRig=new NathanContactRig(root,this.model,this.offset);this.select(selected,false);
   }
 
   /** Exact skinned bounds in entity space; also repair local bounds used by raycasts. */
@@ -119,6 +135,7 @@ export class NathanActor {
 
   select(index: number, fade = true) {
     if (this.disposed || !Number.isInteger(index) || index < 0 || index >= this.clips.length) return;
+    this.contactRig?.restore();
     const previous = this.actions[this.index], next = this.actions[index];
     const blend = fade && this.playing && previous !== next;
     // Interrupted transitions keep the complete current pose. Weights always sum
@@ -175,9 +192,27 @@ export class NathanActor {
     if (!this.playing) { this.playing = true; this.changed(); }
     return true;
   }
-  release() { this.controlled = false; this.playing = false; }
+  release() { this.controlled = false; this.playing = false;this.contact(); }
+  contact(pose?:NathanContact){this.contactPose=pose;if(!pose)this.contactRig?.restore();}
+  eyePoint(){const head=this.model.getObjectByName('rp_nathan_animated_003_walking_head')!,scale=this.root.getWorldScale(new T.Vector3()).y;return head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.055*scale,-.11*scale).applyQuaternion(this.root.getWorldQuaternion(new T.Quaternion())));}
+  firstPerson(on:boolean){
+    if(on===this.eyes)return;this.eyes=on;
+    for(const mesh of this.meshes){
+      if(!(mesh instanceof T.SkinnedMesh))continue;
+      let pair=this.headless.get(mesh);
+      if(on&&!pair){
+        const full=mesh.geometry,indices=full.index?.array||Array.from({length:full.attributes.position.count},(_,i)=>i),skin=full.attributes.skinIndex,weights=full.attributes.skinWeight;
+        const head=new Set(mesh.skeleton.bones.map((b,i)=>/_(head|head_end|neck)$/.test(b.name)?i:-1)),kept:number[]=[];
+        const weight=(i:number)=>{let w=0;for(let k=0;k<4;k++)if(head.has(skin.array[i*4+k]))w+=weights.array[i*4+k];return w;};
+        for(let i=0;i<indices.length;i+=3)if(Math.max(weight(indices[i]),weight(indices[i+1]),weight(indices[i+2]))<.45)kept.push(indices[i],indices[i+1],indices[i+2]);
+        const cut=full.clone();cut.setIndex(kept);pair={full,cut};this.headless.set(mesh,pair);
+      }
+      if(pair)mesh.geometry=on?pair.cut:pair.full;
+    }
+  }
   update(dt: number) {
-    if (!this.playing || this.disposed || !Number.isFinite(dt)) return;
+    if ((!this.playing&&!this.contactPose) || this.disposed || !Number.isFinite(dt)) return;
+    this.contactRig?.restore();
     const step = Math.max(0, Math.min(dt, .1)) * (this.controlled ? this.motionRate : this.settings.speed);
     if (this.blend) {
       this.blend.elapsed += Math.max(0, Math.min(dt, .1));
@@ -188,13 +223,15 @@ export class NathanActor {
       });
       if (t === 1) this.blend = undefined;
     }
-    this.mixer.update(step);
+    this.mixer.update(this.playing?step:0);
     this.ground();
+    if(this.contactPose){this.contactRig?.apply(this.contactPose);this.measure();}
   }
   dispose() {
     if (this.disposed) return;
     this.disposed = true; this.playing = false;
     this.mixer.stopAllAction(); this.mixer.uncacheRoot(this.model);
+    this.firstPerson(false);this.headless.forEach(p=>p.cut.dispose());this.headless.clear();
     // Cloned skeletons own their bone texture; geometry/materials belong to the cache.
     const skeletons = new Set<T.Skeleton>();
     this.meshes.forEach(m => { if (m instanceof T.SkinnedMesh) skeletons.add(m.skeleton); });

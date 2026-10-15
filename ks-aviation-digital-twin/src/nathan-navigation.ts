@@ -24,6 +24,11 @@ export class NathanNavigation {
       if (e.id === ignore || e.kind === 'ground' || e.height * e.scale < .08) continue;
       if (isFacilityGate(e) && (gateAmount?.(e.id) ?? (e.gateOpen ? 1 : 0)) > .98) continue;
       const extent = { id: e.id, bottom: e.position[1], top: e.position[1] + e.height * e.scale };
+      if(e.preset==='PEDESTRIAN_GATE'){
+        const amount=gateAmount?.(e.id)??(e.facility?.open?1:0),theta=amount*Math.PI*.48;
+        const a=localToWorld(e,[-e.width/2,0,0]),b=localToWorld(e,[-e.width/2+e.width*Math.cos(theta),0,-e.width*Math.sin(theta)]),post=localToWorld(e,[e.width/2,0,0]);
+        this.obstacles.push({...extent,hit:p=>segmentDistance(p,[a[0],a[2]],[b[0],b[2]])<radius+.03*e.scale||Math.hypot(p[0]-post[0],p[2]-post[2])<radius+.03*e.scale});continue;
+      }
       if (e.kind === 'wall' && e.points?.length) {
         const segments = gateSegments(e), pad = radius + e.thickness * e.scale / 2;
         this.obstacles.push({ ...extent, hit: p => segments.some(([a, b]) => segmentDistance(p, a, b) < pad) });

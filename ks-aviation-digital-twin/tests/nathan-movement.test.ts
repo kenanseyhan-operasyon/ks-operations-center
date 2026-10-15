@@ -75,7 +75,7 @@ for(const kind of ['rear','platform'] as NathanAccessKind[]){
   person.position=[access!.points[0][0]-2,0,access!.points[0][2]+2];applyTransform(personRoot,person);control.open(person);
   assert.ok(control.climb(truck.id,kind),notices.at(-1));assert.equal(control.blocksVehicle(truck.id),true);
   tick(7);assert.ok(['climbing','aligning','preparing','walking'].includes(control.phase),control.phase);
-  tick(35);assert.equal(control.phase,'standing',notices.at(-1));assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...top))<.03);soles();
+  tick(35);assert.equal(control.phase,'standing',notices.at(-1));assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...top))<.03,`Landing ${kind}: actual ${person.position}, expected ${top}`);soles();
   assert.equal(person.nathan?.support?.kind,kind);assert.equal(control.blocksVehicle(truck.id),true);
   assert.equal(control.walkTo([8,0,30]),false,'Never walk off a platform into empty air');
   const saved=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});assert.deepEqual(saved.entities[0].nathan?.support,person.nathan?.support);

@@ -62,6 +62,8 @@ export class VehicleCab{
   readonly interior=new T.Group();readonly eye=new T.Object3D();readonly mirrors:CabMirror[]=[];
   readonly glass=new T.MeshStandardMaterial({color:'#a4c8d2',transparent:true,opacity:.16,roughness:.18,metalness:.05,side:T.DoubleSide,depthWrite:false});
   readonly wheel=new T.Group();private speedNeedle!:T.Group;private rpmNeedle!:T.Group;
+  readonly seat=new T.Object3D();
+  readonly doors=new Map<'left'|'right',{hinge:T.Group;amount:number;open:boolean;side:number;handle:T.Object3D}>();
   private inside=false;private pillars?:T.Mesh;private sightlines:{mesh:T.Mesh;normal:T.BufferGeometry;open:T.BufferGeometry}[]=[];
   get isInside(){return this.inside;}
   private geometries=new Set<T.BufferGeometry>();private materials=new Set<T.Material>();private textures=new Set<T.Texture>();
@@ -84,6 +86,18 @@ export class VehicleCab{
     if(shell){shell.geometry=openWindows(shell,cuts);this.geometries.add(shell.geometry);}
     const material=(color:string,roughness=.85)=>{const m=new T.MeshStandardMaterial({color,roughness});this.materials.add(m);return m;};
     const dark=material('#202b31'),soft=material('#34434a'),trim=material('#6b777c'),black=material('#111a20'),seat=material('#40505a');
+    if(shell)for(const side of [-1,1]){
+      const z=side>0?.335:-.025,hinge=new T.Group();hinge.name=side>0?'DRIVER_DOOR_HINGE':'PASSENGER_DOOR_HINGE';hinge.position.set(-.836,-.12,z);model.add(hinge);model.updateWorldMatrix(true,true);
+      const cut:Cut={axis:2,min:z-.028,max:z+.028,polygon:[[-.833,-.26],[-.604,-.26],[-.604,.023],[-.833,.023]].map(([x,y])=>new T.Vector2(x,y))};
+      const geometry=openWindows(shell,[cut],part=>{
+        this.geometries.add(part);const paint=(Array.isArray(shell.material)?shell.material[0]:shell.material).clone();paint.side=T.DoubleSide;this.materials.add(paint);
+        const leaf=new T.Mesh(part,paint);leaf.name=side>0?'DRIVER_DOOR_PANEL':'PASSENGER_DOOR_PANEL';leaf.position.copy(shell.position);leaf.quaternion.copy(shell.quaternion);leaf.scale.copy(shell.scale);leaf.userData.sharedAsset=true;shell.parent!.add(leaf);model.updateWorldMatrix(true,true);hinge.attach(leaf);
+      });this.geometries.add(geometry);shell.geometry=geometry;
+      const existing=[cab.getObjectByName('Door_Left'),cab.getObjectByName('Door_Right')].find(n=>n&&Math.sign(new T.Box3().setFromObject(n).getCenter(new T.Vector3()).z-.155)===side);
+      if(existing)hinge.attach(existing);
+      const handle=new T.Object3D();handle.name=side>0?'DRIVER_DOOR_HANDLE':'PASSENGER_DOOR_HANDLE';handle.position.set(-.635,-.135,z+side*.013);model.add(handle);model.updateWorldMatrix(true,true);hinge.attach(handle);
+      this.doors.set(side>0?'left':'right',{hinge,amount:0,open:false,side,handle});
+    }
     // Keep the white paint outside and use a dark lining on the cabin-facing side.
     for(const name of ['Low_Short_Cab_Shell','Low_Roof_Cap']){
       const outer=cab.getObjectByName(name) as T.Mesh;if(!outer||Array.isArray(outer.material))continue;
@@ -100,6 +114,10 @@ export class VehicleCab{
         this.pillars.position.copy(shell.position);this.pillars.quaternion.copy(shell.quaternion);this.pillars.scale.copy(shell.scale);shell.parent!.add(this.pillars);
       });this.geometries.add(opened);
       for(const mesh of [shell,cab.getObjectByName('CAB_INNER_Low_Short_Cab_Shell') as T.Mesh])if(mesh)this.sightlines.push({mesh,normal:mesh.geometry,open:opened});
+      for(const door of this.doors.values()){
+        const leaf=door.hinge.getObjectByName(door.side>0?'DRIVER_DOOR_PANEL':'PASSENGER_DOOR_PANEL') as T.Mesh;
+        if(leaf){const open=openWindows(leaf,[corner]);this.geometries.add(open);this.sightlines.push({mesh:leaf,normal:leaf.geometry,open});}
+      }
     }
     const light=new T.MeshBasicMaterial({color:'#d7ece3'}),red=new T.MeshBasicMaterial({color:'#e95f47'});this.materials.add(light);this.materials.add(red);
     const mesh=(name:string,geometry:T.BufferGeometry,mat:T.Material,parent:T.Object3D=this.interior)=>{this.geometries.add(geometry);const m=new T.Mesh(geometry,mat);m.name=name;m.userData.sharedAsset=true;parent.add(m);return m;};
@@ -114,15 +132,17 @@ export class VehicleCab{
       box('SEAT_HEADREST',[.027,.034,.060],[-.642,-.068,z],dark);
     }
     for(const z of [-.012,.322]){
-      box('DOOR_LINER',[.227,.09,.012],[-.733,-.165,z],soft);
-      box('DOOR_ARMREST',[.09,.012,.023],[-.720,-.135,z],dark);
-      box('INTERIOR_DOOR_HANDLE',[.037,.008,.008],[-.663,-.109,z+(z<0?.01:-.01)],trim);
+      const parts=[box('DOOR_LINER',[.227,.09,.012],[-.733,-.165,z],soft),
+        box('DOOR_ARMREST',[.09,.012,.023],[-.720,-.135,z],dark),
+        box('INTERIOR_DOOR_HANDLE',[.037,.008,.008],[-.663,-.109,z+(z<0?.01:-.01)],trim)];
+      model.updateWorldMatrix(true,true);const door=this.doors.get(z>0?'left':'right');if(door)parts.forEach(p=>door.hinge.attach(p));
     }
     for(const z of [.028,.111,.187,.300]){box('DASH_VENT',[.003,.016,.024],[-.788,-.147,z],black);for(let i=0;i<3;i++)box('VENT_SLAT',[.004,.0015,.022],[-.786,-.153+i*.005,z],trim);}
     box('CENTRE_CONSOLE',[.03,.062,.054],[-.804,-.170,.150],black);
     for(let i=0;i<4;i++)box('DASH_SWITCH',[.005,.008,.006],[-.786,-.157,.131+i*.012],trim);
     for(const z of [.230,.270]){const pedal=box('PEDAL',[.020,.005,.014],[-.806,-.234,z],black);pedal.rotation.z=-.35;}
     this.eye.name='DRIVER_EYE';this.eye.position.set(-.688,-.042,.253);this.interior.add(this.eye);
+    this.seat.name='DRIVER_SEAT';this.seat.position.set(-.710,-.174,.253);this.interior.add(this.seat);
     const wheelTilt=new T.Group();wheelTilt.position.set(-.787,-.126,.253);wheelTilt.rotation.set(0,Math.PI/2,.4);this.interior.add(wheelTilt);wheelTilt.add(this.wheel);this.wheel.name='DRIVER_STEERING_WHEEL';
     mesh('STEERING_RIM',new T.TorusGeometry(.043,.0042,8,48),black,this.wheel);
     mesh('STEERING_HUB',new T.CylinderGeometry(.011,.011,.011,20).rotateX(Math.PI/2),dark,this.wheel);
@@ -150,6 +170,13 @@ export class VehicleCab{
     this.update({speed:0,rpm:0,gear:0,steer:0,running:false,night:false});
   }
   setInside(inside:boolean){this.inside=inside;this.glass.opacity=inside?.055:.16;for(const part of this.sightlines)part.mesh.geometry=inside?part.open:part.normal;if(this.pillars)this.pillars.visible=inside;}
+  setDoor(side:'left'|'right',open:boolean){const door=this.doors.get(side);if(door)door.open=open;}
+  doorAmount(side:'left'|'right'='left'){return this.doors.get(side)?.amount??0;}
+  get doorsClosed(){return [...this.doors.values()].every(d=>!d.open&&d.amount<.001);}
+  updateDoors(dt:number){for(const d of this.doors.values()){
+    d.amount=T.MathUtils.clamp(d.amount+(d.open?1:-1)*Math.max(0,Math.min(.1,dt))/.85,0,1);
+    const t=d.amount*d.amount*(3-2*d.amount);d.hinge.rotation.y=-d.side*t*Math.PI*.46;
+  }this.model.updateWorldMatrix(true,true);}
   update(state:CabInstruments){
     this.wheel.rotation.z=-state.steer*14;
     if(this.speedNeedle)this.speedNeedle.rotation.z=(225-270*Math.min(1,Math.abs(state.speed)*3.6/40))*Math.PI/180;

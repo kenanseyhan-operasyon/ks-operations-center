@@ -7,6 +7,16 @@
 .nathan-help{font-size:12px;line-height:1.5;color:#b8d3d9}.nathan-motion{font-size:13px;color:#9ce9dd;line-height:1.45}.ws-nathan details{margin-top:14px;border-top:1px solid #42616a;padding-top:10px}.ws-nathan summary{cursor:pointer;min-height:30px;font-size:13px}.nathan-access-label{display:block;font-size:12px;margin:14px 0}.nathan-access-label select{display:block;width:100%;margin-top:6px}
 .nathan-managing .ws-person-button,.nathan-managing .ws-animations,.nathan-managing .ws-gate-controls,.nathan-managing .ws-move-pad{display:none!important}
 .nathan-target{pointer-events:none}.nathan-input #wsStage{cursor:crosshair}
+.nathan-views{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.nathan-views button{flex:1;font-size:11px;white-space:nowrap}.nathan-views [aria-pressed="true"]{background:#237d77}
 .workspace.has-savebar .ws-person-button{bottom:116px}
 @media(max-width:640px){.ws-nathan{width:min(320px,calc(100% - 16px));max-height:calc(100% - 184px)}.workspace.has-savebar .ws-person-button{bottom:132px}}
 @media(max-height:500px){.ws-nathan{top:44px;max-height:calc(100% - 140px)}}
+
+.nathan-driving .ws-driving{display:none!important}
+.nathan-drive-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nathan-drive-pad button{min-height:40px;touch-action:none}
+
+/* Cabin mirrors, pedals and the Nathan panel must not cover one another. */
+.workspace.cab-driving.nathan-managing .ws-nathan{top:10px;right:12px;max-height:102px;width:270px}
+.workspace.cab-driving.nathan-managing .ws-nathan> :not(header):not(.nathan-views){display:none}
+.workspace.cab-driving.nathan-managing .ws-nathan header small{display:none}
+.workspace.cab-driving.nathan-managing .nathan-views{margin:5px 0}

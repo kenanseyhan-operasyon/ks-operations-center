@@ -9,6 +9,10 @@ import type { V3 } from './personnel-navigation';
 import { localToWorld, worldToLocal } from './facility-data';
 import { planNathanRoute, type NathanRouteLeg } from './nathan-route';
 import { bridgeTanks, makeRoofBridge, onTankRoof, planRoofRoute, remainingRoofBridge, roofBridgeIds, roofHeight, tankRoofPoint, type RoofLeg } from './nathan-roof';
+import {stairPose} from './nathan-stair-gait';
+import {standingContact} from './nathan-contact';
+import {driverPose,driverLanding} from './nathan-driver';
+import type {NathanView} from './nathan-camera';
 
 type Hooks = {
   entities: () => Entity[]; object: (id: string) => T.Group | undefined;
@@ -16,6 +20,13 @@ type Hooks = {
   prepare: (id: string, kind: NathanAccessKind) => boolean;
   checkpoint: () => void; changed: () => void; ui: () => void;
   input: (person: boolean) => void; notify: (text: string) => void;
+  view?:(mode:NathanView)=>void;
+  platform?:(id:string)=>void;
+  driver?:(id:string,on:boolean)=>void;
+  driveKey?:(key:string,down:boolean)=>boolean;
+  door?:(id:string,open:boolean)=>void;
+  doorHandle?:(id:string)=>V3|undefined;
+  operate?:(id:string)=>void;
 };
 export type NathanPhase = 'idle' | 'walking' | 'roofwalking' | 'aligning' | 'preparing' | 'climbing' | 'standing' | 'descending' | 'paused';
 const distance = (a: V3, b: V3) => Math.hypot(a[0] - b[0], a[2] - b[2]);
@@ -25,6 +36,7 @@ const angle = (a: number, b: number) => ((b - a + 540) % 360 + 360) % 360 - 180;
 export class NathanController {
   id?: string;
   mode: 'person' | 'camera' | 'closed' = 'closed';
+  view:NathanView='free';
   phase: NathanPhase = 'idle';
   message = 'Zemine veya merdivene tıklayın / dokunun.';
   private route: V3[] = [];
@@ -37,6 +49,8 @@ export class NathanController {
   private roofAfterDescent = false;
   private roofTravel = 0;
   private destination?: { tankId?: string; point: V3 };
+  private operation?:string;
+  private operationTime=0;
   private velocity = 0;
   private nav?: NathanNavigation;
   private navAge = 0;
@@ -46,6 +60,8 @@ export class NathanController {
   private entityRef?: Entity;
   constructor(private actors: NathanActors, private hooks: Hooks) {}
   get active() { return this.mode !== 'closed'; }
+  get seated(){const s=this.entity?.nathan?.support;return s?.kind==='driver'&&s.progress===1;}
+  driveKey(key:string,down:boolean){return this.seated?this.hooks.driveKey?.(key,down):false;}
   get capturing() { return this.mode === 'person'; }
   get entity() { return this.hooks.entities().find(e => e.id === this.id && e.preset === NATHAN_PRESET); }
   private get actor() { return this.id ? this.actors.states.get(this.id)?.actor : undefined; }
@@ -54,7 +70,7 @@ export class NathanController {
   private begin() { if (!this.marked) { this.hooks.checkpoint(); this.marked = true; } }
   private commit() { if (this.marked) { this.marked = false; this.hooks.changed(); } }
   private transform() { const e = this.entity, root = e && this.hooks.object(e.id); if (e && root) applyTransform(root, e); }
-  private idle() { this.velocity = 0; this.actor?.motion('Idle'); }
+  private idle() { this.velocity = 0; this.actor?.contact();this.actor?.motion('Idle'); }
   private nextLeg() {
     const leg = this.journey.shift(); if (!leg) return false;
     this.route = leg.route; this.access = leg.access; this.goal = leg.route.at(-1) || leg.access?.points[0];
@@ -69,28 +85,38 @@ export class NathanController {
       const standing = e.nathan.support?.progress === 1 && !e.nathan.support.crossingSide;
       this.status(standing ? 'Platformda bekliyor. İn düğmesini veya merdiveni seçin.' : 'Merdivende duraklatıldı. Devam et veya İn seçin.', standing ? 'standing' : 'paused');
     } else this.status('Zemine veya merdivene tıklayın / dokunun.', 'idle');
-    this.idle();
+    this.idle();this.restoreContact();if(this.seated)this.hooks.driver?.(e.nathan!.support!.targetId,true);
   }
   setMode(mode: 'person' | 'camera') {
     if (!this.active) return;
-    this.mode = mode; this.hooks.input(mode === 'person'); this.hooks.ui();
+    if(mode==='camera')this.setView('free');this.mode = mode; this.hooks.input(mode === 'person'); this.hooks.ui();
   }
+  setView(mode:NathanView){this.view=mode;this.hooks.view?.(mode);this.hooks.ui();}
   close() {
+    if(this.seated)this.hooks.driver?.(this.entity!.nathan!.support!.targetId,false);
+    this.setView('free');
     this.pause(); this.actor?.release(); this.mode = 'closed'; this.id = undefined; this.entityRef = undefined;
     this.hooks.input(false); this.hooks.ui();
   }
   pause() {
+    this.operation=undefined;this.operationTime=0;
     this.route = []; this.goal = undefined; this.journey = []; this.queuedTarget = undefined; this.velocity = 0;
     this.roofLeg = undefined; this.roofLegs = []; this.roofAfterDescent = false; this.destination = undefined;
     const support = this.entity?.nathan?.support;
     if(support && support.progress < 1) this.actor?.pause(); else this.idle(); this.status(support ? (support.progress === 1 ? 'Platformda bekliyor.' : 'Merdivende duraklatıldı. Devam et veya İn seçin.') : 'Durdu. Yeni bir hedef seçin.', support ? (support.progress === 1 ? 'standing' : 'paused') : 'idle');
-    this.commit();
+    if(this.seated)this.hooks.driveKey?.('escape',true);this.restoreContact();this.commit();
   }
-  preview() { this.route=[];this.goal=undefined;this.journey=[];this.queuedTarget=undefined;this.roofLeg=undefined;this.roofLegs=[];this.roofAfterDescent=false;this.destination=undefined;this.velocity=0;const support=this.entity?.nathan?.support;this.phase=support?(support.progress===1&&!support.crossingSide?'standing':'paused'):'idle';this.actor?.release();this.commit();this.setMode('camera');this.status('Animasyon önizlemesi. Yürümek için Personeli Yönet seçin.'); }
+  preview() { if(this.entity?.nathan?.support){this.hooks.notify('Animasyon önizlemesi için önce zemine inin.');return false;}this.route=[];this.goal=undefined;this.journey=[];this.queuedTarget=undefined;this.roofLeg=undefined;this.roofLegs=[];this.roofAfterDescent=false;this.destination=undefined;this.velocity=0;const support=this.entity?.nathan?.support;this.phase=support?(support.progress===1&&!support.crossingSide?'standing':'paused'):'idle';this.actor?.release();this.commit();this.setMode('camera');this.status('Animasyon önizlemesi. Yürümek için Personeli Yönet seçin.');return true; }
   blocksVehicle(id: string) {
     return this.access?.targetId === id && ['walking', 'aligning', 'preparing', 'climbing', 'descending'].includes(this.phase) ||
-      this.hooks.entities().some(e => e.preset === NATHAN_PRESET && e.nathan?.support?.targetId === id);
+      this.hooks.entities().some(e => e.preset === NATHAN_PRESET && e.nathan?.support?.targetId === id && !(e.nathan.support.kind==='driver'&&e.nathan.support.progress===1));
   }
+  blocksAnimation(id:string,clip:string){
+    if(!this.blocksVehicle(id))return false;
+    const people=this.hooks.entities().filter(e=>e.nathan?.support?.targetId===id&&!(e.nathan.support.kind==='driver'&&e.nathan.support.progress===1));
+    return !people.length||people.some(e=>e.nathan!.support!.kind!=='platform'||e.nathan!.support!.progress<1)||!['Platform_Raise_4s','Platform_Gate_Open'].includes(clip);
+  }
+  togglePlatform(){const s=this.entity?.nathan?.support;if(s?.kind==='platform'&&s.progress===1)this.hooks.platform?.(s.targetId);else this.fail('Önce platformun üzerinde durun.');}
   private fail(message: string) { this.pause(); this.status(message); this.hooks.notify(message); return false; }
   walkTo(point: V3) {
     if (!this.entity || !this.actor) return this.fail('Nathan modelinin yüklenmesini bekleyin.');
@@ -112,12 +138,13 @@ export class NathanController {
     this.nav = this.navigation(); this.navAge = 0;
     const legs = planNathanRoute(this.entity.position, target, this.nav, this.hooks.entities(), this.hooks.object);
     if (!legs) return this.fail('Güvenli yol bulunamadı. Merdiven girişlerini ve hedefin boş olduğunu kontrol edin (en fazla 120 m).');
-    this.begin(); this.journey = legs; this.queuedTarget = undefined; this.nextLeg();
+    this.operation=undefined;this.begin(); this.journey = legs; this.queuedTarget = undefined; this.nextLeg();
     this.setMode('person'); this.status(this.access?.crossingSide ? 'Hedefe geçiş merdiveni üzerinden yürüyor…' : 'Hedefe yürüyor… Yeni bir hedef seçebilirsiniz.', 'walking'); return true;
   }
   climb(targetId: string, kind: NathanAccessKind) {
     const e = this.entity, target = this.hooks.entities().find(o => o.id === targetId);
     if (!e || !this.actor || !target) return this.fail('Önce Nathan ve araç modelinin yüklenmesini bekleyin.');
+    if(kind==='driver'&&this.hooks.entities().some(o=>o.id!==e.id&&o.nathan?.support?.targetId===targetId&&o.nathan.support.kind==='driver'))return this.fail('Sürücü koltuğu dolu.');
     const support = e.nathan?.support;
     if (support) {
       if (support.targetId === targetId && support.kind === kind) return this.descend();
@@ -130,7 +157,7 @@ export class NathanController {
     const candidates = sides.map(side => makeNathanAccess(target, this.hooks.object(targetId), kind, this.nav!, side))
       .filter((a): a is NathanAccess => !!a);
     if (!candidates.length) return this.fail('Merdiven yolu uygun değil. Platformu alçaltın ve merdivenin iki girişini boşaltın.');
-    const reachable = candidates.map(access => ({ access, legs: kind === 'tank'
+    const reachable = candidates.map(access => ({ access, legs: ['tank','driver'].includes(kind)
       ? planNathanRoute(e.position, access.points[0], this.nav!, this.hooks.entities(), this.hooks.object)
       : (()=>{const route=this.nav!.path(e.position,access.points[0]);return route?[{route}]:undefined;})() }))
       .filter(item => !!item.legs).sort((a, b) => distance(e.position, a.access.points[0]) - distance(e.position, b.access.points[0]))[0];
@@ -151,8 +178,11 @@ export class NathanController {
       if(distance(e.position,access.points.at(-1)!)>.03)return this.startRoof(path,true);
       this.access=access;
     }
-    if (!e || !support || !this.restoreSupport()) return this.fail('İnilecek kayıtlı bir merdiven bulunamadı.');
-    if (Math.abs(this.hooks.speed(support.targetId)) > .01) return this.fail('Önce aracı durdurun.');
+    if(e&&support?.kind==='platform'&&support.progress===1){
+      this.access=makeNathanAccess(this.hooks.entities().find(t=>t.id===support.targetId)!,this.hooks.object(support.targetId),'platform',this.navigation())||{targetId:support.targetId,kind:'platform',points:[[...e.position]],heading:e.heading,length:1,crest:0};
+    }else if (!e || !support || !this.restoreSupport()) return this.fail('İnilecek kayıtlı bir merdiven bulunamadı.');
+    if (Math.abs(this.hooks.speed(support.targetId)) > .01) {this.hooks.notify('İnmeden önce aracı durdurun.');return false;}
+    if(support.kind==='driver'){this.hooks.driver?.(support.targetId,false);this.setView('free');}
     this.begin(); this.setMode('person'); this.afterPrepare = 'descending'; this.preparingTime = 0;
     this.status('İniş için merdiven ve korkuluk hazırlanıyor…', 'preparing'); return true;
   }
@@ -167,7 +197,7 @@ export class NathanController {
     return this.hooks.entities().filter(o => o.id !== e.id && distance(o.position, e.position) < 35 &&
       (o.kind === 'vehicle' || o.kind === 'tank' || ['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(o.preset)))
       .sort((a, b) => distance(a.position, e.position) - distance(b.position, e.position)).slice(0, 6)
-      .flatMap(o => (o.kind === 'tank' ? ['tank'] : ['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(o.preset) ? ['steps'] : ['rear', 'platform']).map(kind => ({ id: o.id, name: o.name, kind: kind as NathanAccessKind })))
+      .flatMap(o => (o.kind === 'tank' ? ['tank'] : ['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(o.preset) ? ['steps'] : ['rear', 'platform','driver']).map(kind => ({ id: o.id, name: o.name, kind: kind as NathanAccessKind })))
       .filter(item => {
         const target = this.hooks.entities().find(o => o.id === item.id)!;
         return makeNathanAccess(target, this.hooks.object(item.id), item.kind, this.navigation(), target.preset === 'CROSSOVER_STAIR' ? -1 : undefined);
@@ -190,14 +220,14 @@ export class NathanController {
     const access = makeNathanAccess(target, this.hooks.object(target.id), support.kind, this.navigation(), support.crossingSide);
     if (!access) return false;
     if(new T.Vector3(...sampleAccess(access,support.progress)).distanceTo(new T.Vector3(...e.position))>.4)return false;
-    this.access = access; return true;
+    this.access = access;this.restoreContact(); return true;
   }
   sync() {
     for (const e of this.hooks.entities()) {
       const support = e.nathan?.support; if (!support) continue;
       const target = this.hooks.entities().find(t => t.id === support.targetId);
       if (!target) { delete e.nathan!.support; e.position[1] = 0; }
-      else if (support.local) { e.position = localToWorld(target, support.local); e.heading = target.heading + (support.heading || 0); }
+      else if (support.local) { const node=support.anchor&&this.hooks.object(target.id)?.getObjectByName(support.anchor);if(support.anchor&&!node)continue;e.position = node?node.localToWorld(new T.Vector3(...support.local)).toArray() as V3:localToWorld(target, support.local); e.heading = target.heading + (support.heading || 0); }
       const root = this.hooks.object(e.id); if (root) applyTransform(root, e);
     }
     if (!this.id) return;
@@ -211,9 +241,17 @@ export class NathanController {
     return Math.abs(angle(e.heading, target));
   }
   tick(dt: number) {
+    this.followSupports();
     const e = this.entity;
     if (!this.active || !e || !this.actor || !Number.isFinite(dt)) return;
     dt = T.MathUtils.clamp(dt, 0, .1);
+    if(this.operation&&this.phase==='idle'){
+      const gate=this.hooks.entities().find(o=>o.id===this.operation);if(!gate){this.operation=undefined;return;}
+      const h=Math.atan2(gate.position[0]-e.position[0],-(gate.position[2]-e.position[2]))*180/Math.PI;
+      if(this.turn(h,dt)>3){this.transform();return;}this.transform();this.operationTime+=dt;this.actor.motion('Opening');
+      const root=this.hooks.object(e.id)!;this.actor.contact({...standingContact(root),lean:.18,grips:[[localToWorld(gate,[-gate.width*.42,1,.07]),localToWorld(gate,[gate.width*.42,1,.07])]]});
+      if(this.operationTime>1.1){this.hooks.operate?.(this.operation);this.operation=undefined;this.idle();this.status('Kapı konumu değiştirildi. Yeni hedef seçebilirsiniz.');this.commit();}return;
+    }
     if (this.phase === 'idle' || this.phase === 'paused' || this.phase === 'standing') return;
     if (this.phase === 'roofwalking') { this.tickRoof(dt); return; }
     const target = this.access && this.hooks.entities().find(o => o.id === this.access!.targetId);
@@ -225,7 +263,7 @@ export class NathanController {
       if (!next) {
         this.idle();
         if (this.access) this.status('Merdivene hizalanıyor…', 'aligning');
-        else { this.status('Hedefe ulaştı · Idle', 'idle'); this.commit(); }
+        else { this.status('Hedefe ulaştı · Idle', 'idle'); if(!this.operation)this.commit(); }
         return;
       }
       const d = distance(e.position, next), heading = Math.atan2(next[0] - e.position[0], -(next[2] - e.position[2])) * 180 / Math.PI;
@@ -249,10 +287,26 @@ export class NathanController {
       if (this.turn(this.access.heading, dt) < 1) { this.afterPrepare = 'climbing'; this.preparingTime = 0; this.status('Merdiven ve korkuluk hazırlanıyor…', 'preparing'); }
     } else if (this.phase === 'preparing' && this.access) {
       this.preparingTime += dt;
+      if(this.access.kind==='driver'&&this.access.contacts){
+        if(this.afterPrepare==='climbing'){
+          const stops=this.access.contacts.stops,lastGround=stops.findIndex(p=>p[1]>.05)-1,entry=.8*lastGround/stops.length;
+          if(!e.nathan?.support)e.nathan={...validateNathan(e.nathan),support:{targetId:this.access.targetId,kind:'driver',progress:0}};
+          const s=e.nathan.support!;
+          if(s.progress<entry){
+            s.progress=Math.min(entry,s.progress+.5*e.scale*dt/this.access.length);const pose=driverPose(this.access,s.progress);
+            if(!this.navigation().clear(e.position,pose.root,this.access.targetId)){this.fail('Sürücü kapısı yaklaşımı kapandı.');return;}
+            e.position=pose.root;this.turn(pose.heading,dt);this.transform();this.actor.motion('Nathan_Original_Walk',.5/1.15);this.actor.contact(pose.contact);this.rememberSupport();return;
+          }
+        }
+        this.actor.motion('Opening');
+        if(this.afterPrepare==='climbing'){const handle=this.hooks.doorHandle?.(this.access.targetId),root=this.hooks.object(e.id)!;
+          this.actor.contact({...standingContact(root),lean:.18,...(handle?{grips:[[handle,handle]] as [V3,V3][]}:{})});}
+      }
       if (this.hooks.prepare(this.access.targetId, this.access.kind)) {
         const fresh = target && makeNathanAccess(target, this.hooks.object(target.id), this.access.kind, this.navigation(), this.access.crossingSide);
         if (!fresh) { this.fail('Merdiven geometrisi değişti. Platformu alçaltıp tekrar deneyin.'); return; }
         this.access = fresh;
+        if(e.nathan?.support?.anchor){delete e.nathan.support.anchor;e.nathan.support.local=worldToLocal(target!,e.position);}
         if (!e.nathan?.support) e.nathan = { ...validateNathan(e.nathan), support: { targetId: fresh.targetId, kind: fresh.kind, progress: 0, ...(fresh.crossingSide ? {crossingSide: fresh.crossingSide} : {}) } };
         this.status(fresh.crossingSide ? 'Geçiş merdivenini kullanıyor…' : this.afterPrepare === 'descending' ? 'Merdivenden iniyor…' : 'Merdivenden çıkıyor…', this.afterPrepare);
       } else if (this.preparingTime > 12) this.fail('Merdiven erişimi açılamadı; hareket durduruldu.');
@@ -274,6 +328,14 @@ export class NathanController {
         this.rememberSupport();
         this.transform();return;
       }
+      if(this.access.contacts){
+        const speed=.32*e.scale;support.progress=T.MathUtils.clamp(support.progress+(down?-1:1)*speed*dt/this.access.length,0,1);
+        const pose=this.access.driver?driverPose(this.access,support.progress):stairPose(this.access.contacts,support.progress);e.position=pose.root;this.turn('heading' in pose&&typeof pose.heading==='number'?pose.heading:this.access.heading,dt);this.transform();
+        this.actor.motion(this.access.kind==='driver'&&support.progress>.8?'Driving':this.access.kind==='rear'?'Climbing_Ladder':'Climbing',.7,down);this.actor.contact(pose.contact);
+        if(!down&&support.progress===1){support.anchor=this.access.kind==='driver'?'DRIVER_SEAT':this.access.kind==='platform'?'Platform_Grey_Floor':'Tank_Top_Walkway';this.idle();if(this.access.kind==='driver'){this.hooks.door?.(support.targetId,false);this.hooks.driver?.(support.targetId,true);}this.status(this.access.kind==='driver'?'Sürücü koltuğunda. W/A/S/D: sür · C: kabin · V: gözünden.':'Platformda bekliyor. İn düğmesini veya merdiveni seçin.','standing');this.rememberSupport();this.commit();}
+        if(down&&support.progress===0){if(support.kind==='driver')this.hooks.door?.(support.targetId,false);delete e.nathan!.support;this.access=undefined;e.position[1]=0;this.idle();this.status('Zemine indi · Idle','idle');this.commit();}
+        this.rememberSupport();this.transform();return;
+      }
       const atCrest=support.progress>this.access.crest,crestLength=this.access.length*(1-this.access.crest);
       const crestDuration=this.actor.clips.find(c=>c.name==='Climbing_To_Top')!.duration;
       const speed = atCrest?Math.min(.34*e.scale,crestLength/crestDuration):(this.access.kind === 'steps' ? .48 : .34) * e.scale;
@@ -287,10 +349,9 @@ export class NathanController {
         this.idle(); this.status('Zemine indi · Idle', 'idle'); this.commit();
       }
     }
-    if (e.nathan?.support && target) {
-      e.nathan.support.local = worldToLocal(target, e.position);
-      e.nathan.support.heading = e.heading - target.heading;
-    }
+    // A moving-floor anchor has its own coordinate frame; never overwrite it
+    // with vehicle coordinates while waiting for a gate or lift animation.
+    if (e.nathan?.support && target && !e.nathan.support.anchor) this.rememberSupport();
     this.transform();
   }
 
@@ -359,7 +420,32 @@ export class NathanController {
   }
   private rememberSupport() {
     const e=this.entity,support=e?.nathan?.support,target=support&&this.hooks.entities().find(t=>t.id===support.targetId);
-    if(e&&support&&target){support.local=worldToLocal(target,e.position);support.heading=e.heading-target.heading;}
+    if(e&&support&&target){const node=support.anchor&&this.hooks.object(target.id)?.getObjectByName(support.anchor);support.local=node?node.worldToLocal(new T.Vector3(...e.position)).toArray() as V3:worldToLocal(target,e.position);support.heading=e.heading-target.heading;}
+  }
+  private restoreContact(){
+    const e=this.entity,s=e?.nathan?.support;if(!e||!s||!this.actor)return;
+    if(s.progress<1&&this.access?.contacts){const pose=this.access.driver?driverPose(this.access,s.progress):stairPose(this.access.contacts,s.progress);this.actor.motion(s.kind==='rear'?'Climbing_Ladder':'Climbing');this.actor.contact(pose.contact);this.actor.pause();}
+  }
+  operateGate(id:string){
+    const e=this.entity,gate=this.hooks.entities().find(o=>o.id===id&&o.preset==='PEDESTRIAN_GATE');if(!e||!gate||e.nathan?.support)return false;
+    const nav=this.navigation(),points=[-.55,.55].map(z=>localToWorld(gate,[.18,0,z]));
+    const point=points.sort((a,b)=>distance(a,e.position)-distance(b,e.position)).find(p=>nav.path(e.position,p));
+    if(!point||!this.walkTo(point))return this.fail('Acil çıkış kapısına güvenli erişim bulunamadı.');
+    this.operation=id;this.operationTime=0;return true;
+  }
+  private followSupports(){
+    for(const e of this.hooks.entities()){
+      const s=e.nathan?.support;if(!s)continue;const target=this.hooks.entities().find(t=>t.id===s.targetId),root=this.hooks.object(e.id),actor=this.actors.states.get(e.id)?.actor;
+      if(!target||!root)continue;
+      const node=s.anchor&&this.hooks.object(target.id)?.getObjectByName(s.anchor);
+      if(node&&s.local){e.position=node.localToWorld(new T.Vector3(...s.local)).toArray() as V3;e.heading=target.heading+(s.heading||0);applyTransform(root,e);}
+      if(s.kind==='driver'&&s.progress===1){const vehicle=this.hooks.object(target.id),d=vehicle&&driverLanding(vehicle,target.heading);if(d){actor?.motion('Driving');actor?.contact({feet:d.feet,seated:d.seat,hands:d.hands,lean:.12});}}
+      if(s.progress<1&&['rear','platform','driver'].includes(s.kind)&&!(this.id===e.id&&['climbing','descending'].includes(this.phase))){const a=makeNathanAccess(target,this.hooks.object(target.id),s.kind as NathanAccessKind,this.navigation());if(a?.contacts){const pose=a.driver?driverPose(a,s.progress):stairPose(a.contacts,s.progress);actor?.motion(s.kind==='rear'?'Climbing_Ladder':'Climbing');actor?.contact(pose.contact);actor?.pause();}}
+      if(s.progress===1&&['rear','platform'].includes(s.kind)){
+        if(!s.anchor){s.anchor=s.kind==='platform'?'Platform_Grey_Floor':'Tank_Top_Walkway';const floor=this.hooks.object(target.id)?.getObjectByName(s.anchor);if(floor)s.local=floor.worldToLocal(new T.Vector3(...e.position)).toArray() as V3;}
+        root.updateWorldMatrix(true,true);actor?.contact(standingContact(root));
+      }
+    }
   }
   private continueDestination() {
     const goal=this.destination;if(!goal)return false;this.destination=undefined;
