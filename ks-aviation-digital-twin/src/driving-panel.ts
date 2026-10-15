@@ -191,7 +191,18 @@ export class DrivingPanel{
       if(this.hooks.blocked(e.id))throw new Error(this.say('Platform, korkuluk ve kapı kapalı olmalı.','Platform, railing and gate must be closed.'));
       m.mode='route';this.begin();
     }
-    if(action==='reset'&&this.start){this.pause();this.begin();m.pose={x:this.start.position[0],z:this.start.position[2],heading:this.start.heading*Math.PI/180};m.trailerAngle=this.start.trailerAngle;m.articulationBlocked=false;m.distance=0;m.mode='manual';m.progress=0;m.path=[];m.route=undefined;this.remember();this.hooks.move(e.id,m,this.follow);this.hooks.changed();this.checkpointed=false;}
+    if(action==='reset'){
+      const route=this.route();
+      const saved=this.hooks.driveStates().find(s=>s.vehicleId===e.id&&s.routeId===route?.id);
+      const startPose=route?routeStart(route.points,this.routeHeading(route),route.reference==='front-axle'?m.frontAxleOffset:0):undefined;
+      const position=startPose?{x:startPose.x,z:startPose.z,heading:startPose.heading}:this.start?{x:this.start.position[0],z:this.start.position[2],heading:this.start.heading*Math.PI/180}:undefined;
+      if(!position)return;
+      this.pause();this.begin();m.pose=position;
+      m.trailerAngle=route?(saved?.trailer?.startAngle??this.start?.trailerAngle??0):(this.start?.trailerAngle??0);
+      m.articulationBlocked=false;m.distance=0;m.mode='manual';m.progress=0;m.path=[];m.route=undefined;
+      this.start={position:[position.x,e.position[1],position.z],heading:position.heading*180/Math.PI,trailerAngle:m.trailerAngle};
+      this.remember();this.hooks.move(e.id,m,this.follow);this.hooks.changed();this.checkpointed=false;
+    }
     this.updateStatus();
   }
   private updateStatus(){
