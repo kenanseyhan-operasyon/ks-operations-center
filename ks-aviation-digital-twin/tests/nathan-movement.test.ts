@@ -11,7 +11,12 @@ import { NathanController } from '../src/nathan-controller';
 import { NathanPanel } from '../src/nathan-panel';
 import { NathanNavigation } from '../src/nathan-navigation';
 import { makeNathanAccess, nathanAccessKind, sampleAccess, type NathanAccessKind } from '../src/nathan-access';
-import { bindNathanInput } from '../src/nathan-input';
+import { bindNathanInput, isNathanInputEvent } from '../src/nathan-input';
+import { planNathanRoute } from '../src/nathan-route';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { configureWorkspaceOrbit } from '../src/camera-navigation';
+import { bridgeRailingOpenings, localToWorld } from '../src/facility-data';
+import { bridgeTanks, makeRoofBridge, planRoofRoute, roofHeight, tankRoofPoint } from '../src/nathan-roof';
 import { applyTransform, makeObject } from '../src/objects';
 import { closedAnimationPack } from '../src/model-animations';
 import { VehicleRig } from '../src/vehicle-rig';
@@ -114,21 +119,142 @@ for(const kind of ['rear','platform'] as NathanAccessKind[]){
 }
 
 // Dynamic blocker closes a route after planning: stop/replan instead of tunnelling.
+const originalSeed = JSON.stringify(seed);
+const crossover = seed.entities.find(e => e.preset === 'CROSSOVER_STAIR')!;
+objects.set(crossover.id, makeObject(crossover)); entities = [...seed.entities, person];
+const crossing = makeNathanAccess(crossover, objects.get(crossover.id), 'steps', nav(), -1)!;
+assert.ok(crossing, 'The screenshot stair over the actual 2.2 m ADB bund is usable');
+assert.equal(makeNathanAccess(crossover,objects.get(crossover.id),'steps',new NathanNavigation(entities,.6,undefined,undefined,person.id),-1),undefined,'A scaled-up person must fit between the stair rails');
+const entry = crossing.points[0], exit = crossing.points.at(-1)!;
+const outward = new T.Vector3(...entry).sub(new T.Vector3(...exit)).normalize();
+const outside = new T.Vector3(...entry).addScaledVector(outward, 1.5).toArray() as V3;
+const inside: V3 = [-15, 0, -23];
+assert.equal(nav().path(outside, inside), undefined, 'The containment wall remains impassable on ground');
+assert.ok(planNathanRoute(outside, inside, nav(), entities, id => objects.get(id))?.some(leg => leg.access?.crossingSide));
+person.position = [...outside]; applyTransform(personRoot, person); control.open(person);
+let highest = 0;
+const checkCrossing = () => {
+  highest = Math.max(highest, person.position[1]);
+  assert.equal(nav().blocked(person.position, person.nathan?.support?.targetId), false, 'Full body clears the real wall throughout the crossing');
+};
+assert.ok(control.walkTo(inside), notices.at(-1)); tick(55, checkCrossing);
+assert.equal(control.phase, 'idle', notices.at(-1)); assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...inside)) < .03);
+assert.ok(highest > 2.4); assert.equal(person.nathan?.support, undefined); soles();
+assert.ok(control.walkTo(outside)); tick(55, checkCrossing); assert.equal(control.phase, 'idle');
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...outside)) < .03); soles();
+console.log('PASS actual ADB tank yard: exterior → crossover over intact wall → interior target → return outside');
+
+// Clicking the stair chooses the reachable end; pause/reload retains which end.
+assert.ok(control.climb(crossover.id, 'steps')); tick(6);
+assert.ok(person.nathan?.support?.crossingSide); control.pause();
+const crossingPosition = [...person.position], savedSide = person.nathan!.support!.crossingSide;
+const reloaded = validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});
+person = reloaded.entities.find(e => e.id === person.id)!; entities = [...seed.entities, person]; actors.sync(entities, objects); control.sync();
+control.close(); control.open(person); assert.equal(person.nathan?.support?.crossingSide, savedSide);
+assert.deepEqual(person.position, crossingPosition); control.resume(); tick(35, checkCrossing);
+assert.equal(control.phase, 'idle'); assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...exit)) < .03);
+assert.ok(control.climb(crossover.id, 'steps')); tick(5); assert.equal(person.nathan?.support?.crossingSide, 1);
+assert.ok(control.descend()); tick(35); assert.equal(control.phase, 'idle');
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...exit)) < .03, 'Return-to-entry descends to the same side');
+assert.ok(control.walkTo(outside)); tick(5); const midStair = [...person.position];
+assert.ok(control.walkTo(inside)); assert.deepEqual(person.position, midStair, 'Retarget on stairs never teleports to ground');
+tick(55, checkCrossing); assert.equal(control.phase, 'idle');
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...inside)) < .03);
+const noStair = entities.filter(e => e.id !== crossover.id), closedNav = new NathanNavigation(noStair, .34, undefined, undefined, person.id);
+assert.equal(planNathanRoute(outside, inside, closedNav, noStair, () => undefined), undefined, 'Removing the link never permits walking through the wall');
+const obstruction = newEntity('BUILDING', crossover.position[0], crossover.position[2]); obstruction.position[1] = crossover.height + .8; obstruction.height = .4; obstruction.width = obstruction.length = 2;
+assert.equal(makeNathanAccess(crossover, objects.get(crossover.id), 'steps', new NathanNavigation([...entities, obstruction], .34, undefined, undefined, person.id), -1), undefined, 'Insufficient headroom blocks the crossing');
+obstruction.position = [...exit]; obstruction.height = 2;
+assert.equal(makeNathanAccess(crossover, objects.get(crossover.id), 'steps', new NathanNavigation([...entities, obstruction], .34, undefined, undefined, person.id), -1), undefined, 'A blocked exit cannot be skipped by extending the access path');
+assert.equal(JSON.stringify(seed), originalSeed, 'The 178-object facility snapshot is unchanged');
+console.log('PASS crossover direction, pause/save/reload/resume, return-to-entry, queued retarget, missing stairs and blocked access');
+
+// Actual ADB tank spiral stairs, roof hatch, bridge and the second tank's stairs.
+const tankA=seed.entities.find(e=>e.name==='T1')!,tankB=seed.entities.find(e=>e.name==='T2')!;
+const tankBridge=seed.entities.find(e=>e.preset==='TANK_BRIDGE')!;
+for(const tank of [tankA,tankB])objects.set(tank.id,makeObject(tank,bridgeRailingOpenings(tank,seed.entities)));
+objects.set(tankBridge.id,makeObject(tankBridge));
+person.position=[...outside];delete person.nathan!.support;applyTransform(personRoot,person);control.open(person);
+const tankNav=nav();let usedBund=false,usedTankStairs=false;
+const checkTankBody=()=>{
+  const support=person.nathan?.support;
+  if(support?.crossingSide)usedBund=true;if(support?.kind==='tank'&&support.progress<1)usedTankStairs=true;
+  const except=support?.kind==='tank'&&support.progress===1?[support.targetId,tankBridge.id]:support?.targetId;
+  assert.equal(tankNav.blocked(person.position,except),false,'Tank route clears other objects and the central roof hatch');
+};
+const until=(condition:()=>boolean,seconds:number,check=()=>{})=>{
+  for(let i=0;i<seconds*20&&!condition();i++){control.tick(.05);if(i%4===0)actor.update(.05);check();}
+  assert.ok(condition(),`Timed out: ${control.phase}, ${control.message}, ${JSON.stringify(person.position)}`);
+};
+assert.ok(control.tankTo(tankA.id),notices.at(-1));
+until(()=>person.nathan?.support?.kind==='tank'&&(person.nathan.support.progress||0)>.25,110,checkTankBody);
+control.pause();const spiralPosition=[...person.position];
+let savedTank=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});
+person=savedTank.entities.find(e=>e.id===person.id)!;entities=[...seed.entities,person];actors.sync(entities,objects);control.sync();control.close();control.open(person);
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...spiralPosition))<1e-8);control.resume();
+until(()=>control.phase==='standing',90,checkTankBody);assert.equal(person.nathan?.support?.targetId,tankA.id);assert.equal(person.nathan?.support?.kind,'tank');
+assert.ok(Math.abs(person.position[1]-roofHeight(tankA))<.01);assert.ok(usedBund&&usedTankStairs);soles();
+const acrossRoof=localToWorld(tankA,[0,tankA.height+.282,tankA.radius-.7]);
+assert.ok(control.tankTo(tankA.id,acrossRoof));until(()=>control.phase==='standing',35,checkTankBody);
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...acrossRoof))<.03);
+assert.equal(control.tankTo(tankA.id,localToWorld(tankA,[tankA.radius-.1,tankA.height+.282,0])),false,'Never walk through the roof railing or off the roof');
+console.log('PASS exterior → bund crossover → actual T1 curved stairs → pause/save/reload/resume → roof; roof walking avoids hatch and railing');
+
+assert.ok(control.crossBridge(tankBridge.id));until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.3,50,checkTankBody);
+control.pause();const bridgePosition=[...person.position];
+savedTank=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});
+person=savedTank.entities.find(e=>e.id===person.id)!;entities=[...seed.entities,person];actors.sync(entities,objects);control.sync();control.close();control.open(person);
+assert.equal(person.nathan?.support?.fromTankId,tankA.id);assert.equal(person.nathan?.support?.toTankId,tankB.id);
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...bridgePosition))<1e-8);control.resume();
+until(()=>control.phase==='standing',50,checkTankBody);assert.equal(person.nathan?.support?.targetId,tankB.id);soles();
+assert.ok(control.tankTo(tankA.id));until(()=>control.phase==='standing',60,checkTankBody);assert.equal(person.nathan?.support?.targetId,tankA.id);
+assert.ok(control.walkTo(outside));until(()=>control.phase==='idle',180,checkTankBody);assert.equal(person.nathan?.support,undefined);
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...outside))<.03);soles();
+console.log('PASS T1 roof → real bridge → pause/save/reload/resume → T2 roof → bridge back → tank stairs → ground → outside bund');
+
+assert.ok(control.crossBridge(tankBridge.id));until(()=>control.phase==='standing',180,checkTankBody);
+assert.ok([tankA.id,tankB.id].includes(person.nathan!.support!.targetId),'Ground bridge command climbs a connected tank first');
+const currentTank=person.nathan!.support!.targetId;
+assert.ok(control.crossBridge(tankBridge.id));until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.2,50,checkTankBody);
+const blocker=newEntity('BUILDING',tankBridge.position[0],tankBridge.position[2]);blocker.position[1]=roofHeight(tankA);blocker.width=1;blocker.length=1;blocker.height=2;
+entities.push(blocker);tick(1);assert.equal(control.phase,'paused');assert.equal(person.nathan?.support?.kind,'bridge');
+entities=entities.filter(e=>e.id!==blocker.id);assert.ok(control.descend());until(()=>control.phase==='idle',130,checkTankBody);assert.equal(person.nathan?.support,undefined);
+const current=seed.entities.find(e=>e.id===currentTank)!;const currentAccess=makeNathanAccess(current,objects.get(current.id),'tank',nav())!;
+assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...currentAccess.points[0]))<.03,'Bridge return exits via the entry tank stairs');
+const noBridge=entities.filter(e=>e.id!==tankBridge.id),withoutBridge=new NathanNavigation(noBridge,.34,undefined,undefined,person.id);
+assert.equal(planRoofRoute(tankRoofPoint(tankA),tankA.id,tankRoofPoint(tankB),tankB.id,noBridge,withoutBridge,.34),undefined,'An unconnected tank cannot be reached across air');
+const narrow=structuredClone(tankBridge);narrow.width=.6;assert.equal(makeRoofBridge(narrow,tankA.id,entities,nav(),.34),undefined);
+assert.deepEqual(bridgeTanks(tankBridge,entities)?.map(t=>t.id),[tankB.id,tankA.id]);
+assert.equal(JSON.stringify(seed),originalSeed,'Tank and bridge geometry/settings are unchanged');
+console.log('PASS ground-to-bridge command, bridge obstruction/stop, return to tank stairs, missing bridge and insufficient width');
+
+// Dynamic blocker closes a route after planning: stop/replan instead of tunnelling.
 entities=[person];person.position=[0,0,0];control.open(person);assert.ok(control.walkTo([6,0,0]));tick(1);const fence=newEntity('WALL',3,0);fence.points=[[0,-100],[0,100]];entities.push(fence);tick(10,()=>assert.ok(person.position[0]<2.6));assert.equal(control.phase,'idle');
 const removed=person.id;entities=[];control.sync();assert.equal(control.active,false);assert.equal(input,false);entities=[person];objects.set(removed,personRoot);
 person.nathan!.support={targetId:truck.id,kind:'rear',progress:1};person.position[1]=2.8;control.sync();assert.equal(person.position[1],0);assert.equal(person.nathan?.support,undefined,'Deleted support returns Nathan to ground even when the management panel is closed');
 console.log('PASS dynamic obstacle, selected entity removal and deleted support recovery');
 
 // DOM-level mouse/touch propagation tests; no GPU/browser is simulated here.
-const canvas=document.querySelector('canvas')!;let managed=true,taps=0,cameraEvents=0;
-const detach=bindNathanInput(canvas,()=>managed,()=>taps++);canvas.addEventListener('pointerup',()=>cameraEvents++);
-const pointer=(type:string,id:number,x:number,y:number,touch=false)=>{const e=new dom.window.MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y,button:0});Object.defineProperties(e,{pointerId:{value:id},pointerType:{value:touch?'touch':'mouse'}});canvas.dispatchEvent(e);};
-pointer('pointerdown',1,10,10);pointer('pointerup',1,10,10);assert.equal(taps,1);assert.equal(cameraEvents,0);
+const canvas=document.querySelector('canvas')!;let managed=true,taps=0,sceneClicks=0,cameraEvents=0;
+Object.defineProperties(canvas,{clientWidth:{value:800},clientHeight:{value:600}});
+canvas.getBoundingClientRect=()=>({left:0,top:0,width:800,height:600,right:800,bottom:600,x:0,y:0,toJSON(){}});
+canvas.setPointerCapture=()=>{};canvas.releasePointerCapture=()=>{};
+const detach=bindNathanInput(canvas,()=>managed,()=>taps++);
+const camera=new T.PerspectiveCamera(45,800/600,.1,1000);camera.position.set(10,20,30);
+const orbit=new OrbitControls(camera,canvas);configureWorkspaceOrbit(orbit);orbit.enableDamping=false;orbit.touches.ONE=T.TOUCH.PAN;orbit.update();
+canvas.addEventListener('pointerup',e=>{cameraEvents++;if(!isNathanInputEvent(e)&&!managed)sceneClicks++;});
+const pointer=(type:string,id:number,x:number,y:number,touch=false,button=0)=>{const e=new dom.window.MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y,button});Object.defineProperties(e,{pointerId:{value:id},pointerType:{value:touch?'touch':'mouse'}});canvas.dispatchEvent(e);};
+pointer('pointerdown',1,10,10);pointer('pointerup',1,10,10);assert.equal(taps,1);assert.equal(cameraEvents,1);assert.equal(sceneClicks,0);
 pointer('pointerdown',2,20,20,true);pointer('pointerup',2,20,20,true);assert.equal(taps,2);
-pointer('pointerdown',3,10,10,true);pointer('pointermove',3,30,10,true);pointer('pointerup',3,30,10,true);assert.equal(taps,2,'Dragging does not issue a walking target');
-pointer('pointerdown',4,10,10,true);pointer('pointerdown',5,40,40,true);pointer('pointerup',4,10,10,true);pointer('pointerup',5,40,40,true);assert.equal(taps,2,'Two fingers never issue a target');
+const beforeDrag=camera.position.clone(),beforeTarget=orbit.target.clone(),beforeLook=camera.quaternion.clone();
+pointer('pointerdown',3,100,100);pointer('pointermove',3,200,100);pointer('pointerup',3,200,100);
+assert.equal(taps,2,'Left dragging does not issue a walking target');assert.ok(camera.position.distanceTo(beforeDrag)>1,'Real OrbitControls pans while Nathan is managed');assert.ok(orbit.target.distanceTo(beforeTarget)>1);assert.ok(camera.quaternion.angleTo(beforeLook)<.0001,'Left drag pans without rotating');
+const beforeRotate=camera.quaternion.clone();pointer('pointerdown',8,100,100,false,2);pointer('pointermove',8,200,100,false,2);pointer('pointerup',8,200,100,false,2);assert.ok(camera.quaternion.angleTo(beforeRotate)>.1,'Right drag still rotates');
+const beforeTouch=camera.position.clone();pointer('pointerdown',9,100,100,true);pointer('pointermove',9,200,100,true);pointer('pointerup',9,200,100,true);assert.ok(camera.position.distanceTo(beforeTouch)>1,'One-finger drag pans');assert.equal(taps,2);
+const beforePinch=camera.position.clone();pointer('pointerdown',4,100,100,true);pointer('pointerdown',5,200,200,true);pointer('pointermove',5,300,300,true);pointer('pointerup',4,100,100,true);pointer('pointerup',5,300,300,true);assert.equal(taps,2,'Two fingers never issue a target');assert.ok(camera.position.distanceTo(beforePinch)>1,'Pinch/pan reaches OrbitControls');
 pointer('pointerdown',6,10,10,true);pointer('pointercancel',6,10,10,true);assert.equal(taps,2);
-managed=false;pointer('pointerdown',7,10,10,true);pointer('pointerup',7,10,10,true);assert.equal(cameraEvents,1,'Camera mode preserves original listeners');detach();
+pointer('pointerdown',10,10,10);pointer('pointerup',10,10,10);assert.equal(taps,3,'A cancelled gesture cannot leave pointer ownership stuck');
+managed=false;pointer('pointerdown',7,10,10,true);pointer('pointerup',7,10,10,true);assert.equal(sceneClicks,1,'Camera mode preserves original scene listeners');detach();orbit.dispose();
 const panel=new NathanPanel(document.querySelector('#host')!,actors,{entity:()=>person,configure:()=>{},edit:()=>{},ready:()=>true},control);
 control.open(person);panel.open(person);assert.equal(panel.element.querySelectorAll('option').length,21);assert.ok(panel.element.textContent!.includes('Personeli Yönet'));
 panel.element.querySelector<HTMLButtonElement>('[data-nathan="camera"]')!.click();assert.equal(control.mode,'camera');panel.element.querySelector<HTMLButtonElement>('[data-nathan="person"]')!.click();assert.equal(control.mode,'person');

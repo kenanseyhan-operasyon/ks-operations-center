@@ -8,6 +8,7 @@ import {boundedView} from '../src/static-ground';
 import {portraitInput,portraitPoint,syncPortraitLock} from '../src/portrait-lock';
 import {Workspace} from '../src/workspace';
 import {DrivingPanel} from '../src/driving-panel';
+import {bindNathanInput,isNathanInputEvent} from '../src/nathan-input';
 const dom=new JSDOM('<!doctype html><body></body>',{pretendToBeVisual:true});
 for(const key of ['window','document','HTMLElement','screen'])Object.defineProperty(globalThis,key,{value:(dom.window as any)[key],configurable:true});
 Object.assign(globalThis,{innerWidth:1200,innerHeight:800});
@@ -22,13 +23,23 @@ function wheel(el:HTMLElement,x:number,y:number,deltaY:number){el.dispatchEvent(
 function pointer(el:HTMLElement,type:string,x:number,y:number,id:number){const e=new dom.window.MouseEvent(type,{clientX:x,clientY:y,button:0,bubbles:true,cancelable:true});Object.defineProperties(e,{pointerId:{value:id},pointerType:{value:'touch'}});el.dispatchEvent(e);}
 for(const portrait of [false,true]){
   const w=portrait?390:800,h=portrait?844:600;Object.assign(globalThis,{innerWidth:portrait?844:w,innerHeight:portrait?390:h});syncPortraitLock(portrait);
-  const el=canvas(w,h,portrait?844:w,portrait?390:h),c=camera(w,h),input=portraitInput(el),orbit=new OrbitControls(c,input);configureWorkspaceOrbit(orbit);orbit.enableDamping=false;orbit.update();
+  const el=canvas(w,h,portrait?844:w,portrait?390:h),c=camera(w,h),input=portraitInput(el);
+  let managed=false,taps=0,handoff=false,unintendedSceneClicks=0;
+  const detach=bindNathanInput(input,()=>managed,()=>{taps++;if(handoff)managed=false;});
+  const orbit=new OrbitControls(c,input);configureWorkspaceOrbit(orbit);orbit.enableDamping=false;orbit.update();
+  input.addEventListener('pointerup',e=>{if(handoff&&!isNathanInputEvent(e))unintendedSceneClicks++;});
   const x=portrait?610:640,y=portrait?190:350,[lx,ly]=portraitPoint(x,y,el.getBoundingClientRect(),w,h,portrait?90:0),point=groundAt(c,lx,ly,w,h),before=point.clone().project(c),distance=c.position.distanceTo(point);
   wheel(el,x,y,-120);constrainCameraHeight(c);c.updateMatrixWorld();const after=point.clone().project(c);
   assert.ok(c.position.distanceTo(point)<distance,'Wheel moves toward the chosen point');assert.ok(Math.hypot(after.x-before.x,after.y-before.y)<1e-6,'Pointer-ground anchor survives zoom, including portrait coordinates');assert.ok(orbit.target.length()>1,'Orbit centre follows navigation');
   const zoomed=c.position.clone();wheel(el,x,y,120);assert.ok(c.position.distanceTo(point)>zoomed.distanceTo(point));
   const original=c.position.clone();pointer(el,'pointerdown',portrait?420:300,portrait?130:250,1);pointer(el,'pointerdown',portrait?420:500,portrait?270:350,2);pointer(el,'pointermove',portrait?400:530,portrait?320:410,2);pointer(el,'pointermove',portrait?440:270,portrait?100:200,1);pointer(el,'pointerup',portrait?400:530,portrait?320:410,2);pointer(el,'pointerup',portrait?440:270,portrait?100:200,1);
-  assert.ok(c.position.distanceTo(original)>1,'Phone pinch/pan remains functional');assert.ok(c.position.toArray().every(Number.isFinite));orbit.dispose();
+  assert.ok(c.position.distanceTo(original)>1,'Phone pinch/pan remains functional');assert.ok(c.position.toArray().every(Number.isFinite));
+  managed=true;orbit.touches.ONE=THREE.TOUCH.PAN;const managedStart=c.position.clone();
+  pointer(el,'pointerdown',300,200,11);pointer(el,'pointermove',400,240,11);pointer(el,'pointerup',400,240,11);
+  assert.ok(c.position.distanceTo(managedStart)>1,'Nathan mode pans through actual portrait coordinate proxies');assert.equal(taps,0);
+  handoff=true;pointer(el,'pointerdown',350,200,12);pointer(el,'pointerup',350,200,12);
+  assert.equal(taps,1);assert.equal(unintendedSceneClicks,0,'A managed tap cannot become a second scene click after mode handoff');
+  detach();orbit.dispose();
 }
 syncPortraitLock(false);Object.assign(globalThis,{innerWidth:800,innerHeight:600});
 const el=canvas(),c=camera(),free=new FreeCamera(c,el,()=>{});free.enabled=true;free.sync();const picked=groundAt(c,650,350,800,600),orientation=c.quaternion.clone(),oldDistance=c.position.distanceTo(picked);

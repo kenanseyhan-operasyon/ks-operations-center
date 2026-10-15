@@ -6,6 +6,7 @@ export const CAMERA_CEILING=20000;
 export function constrainCameraHeight(camera:THREE.Camera){camera.position.y=THREE.MathUtils.clamp(camera.position.y,CAMERA_FLOOR,CAMERA_CEILING);}
 export function configureWorkspaceOrbit(orbit:OrbitControls){
   orbit.enableDamping=true;orbit.zoomToCursor=true;orbit.touches.ONE=THREE.TOUCH.ROTATE;orbit.touches.TWO=THREE.TOUCH.DOLLY_PAN;
+  orbit.mouseButtons.LEFT=THREE.MOUSE.PAN;orbit.mouseButtons.RIGHT=THREE.MOUSE.ROTATE;
   orbit.maxPolarAngle=Math.PI-.03;orbit.minDistance=.5;orbit.maxDistance=25000;orbit.screenSpacePanning=false;
 }
 /** Translate along the pointer ray in free-look mode, without changing its orientation. */

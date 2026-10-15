@@ -40,9 +40,10 @@ export class NathanPanel {
     const state = this.actors.states.get(this.id), actor = state?.actor;
     const control = this.control, support = entity.nathan?.support;
     const access = control?.nearby() || [];
+    const roofs = control?.roofOptions() || [];
     const expanded = this.element.querySelector<HTMLDetailsElement>('details')?.open || false;
     const signature = JSON.stringify([this.id, entity.name, this.lang, state?.status, Math.floor((state?.progress || 0) * 100),
-      actor?.index, actor?.playing, actor?.settings.clip, actor?.settings.speed, actor?.settings.loop, this.hooks.ready(), control?.mode, control?.phase, control?.message, support?.kind, !!support, access]);
+      actor?.index, actor?.playing, actor?.settings.clip, actor?.settings.speed, actor?.settings.loop, this.hooks.ready(), control?.mode, control?.phase, control?.message, support?.kind, support?.targetId, !!support, access, roofs]);
     if (signature === this.signature) return;
     this.signature = signature;
     const status = !this.hooks.ready() ? this.t('Animasyon için 3D görünümünü açın.', 'Switch to 3D to preview animations.') :
@@ -51,10 +52,12 @@ export class NathanPanel {
       this.t(`${actor.clips.length} hareket · ${actor.playing ? 'Oynatılıyor' : 'Durduruldu'}`, `${actor.clips.length} clips · ${actor.playing ? 'Playing' : 'Stopped'}`);
     this.element.innerHTML = `<header><div><small>${this.t(control ? 'PERSONELİ YÖNET' : 'PERSONEL · ANİMASYON', control ? 'MANAGE OPERATOR' : 'PERSONNEL · ANIMATION')}</small><strong>${esc(entity.name)}</strong></div><button data-nathan="close" aria-label="${this.t('Paneli kapat', 'Close panel')}">×</button></header>
       ${control ? `<div class="nathan-modes" role="group" aria-label="Kontrol modu"><button data-nathan="person" aria-pressed="${control.capturing}">🚶 ${this.t('Personeli Yönet', 'Manage operator')}</button><button data-nathan="camera" aria-pressed="${control.mode === 'camera'}">${this.t('Kamera', 'Camera')}</button></div>
-      <p class="nathan-help">${control.capturing ? this.t('Zemine dokunun: yürü. Merdivene dokunun: çık / in. Bakışı değiştirmek için Kamera seçin.', 'Tap ground to walk. Tap a ladder to climb / descend. Choose Camera to change the view.') : this.t('Kamera kontrolleri açık. Hedef vermek için Personeli Yönet seçin.', 'Camera controls are active. Choose Manage operator to set a target.')}</p>
+      <p class="nathan-help">${control.capturing ? this.t('Tıkla / dokun: yürü. Sol sürükle / tek parmak: haritayı kaydır. Sağ sürükle: döndür. Tekerlek / iki parmak: yakınlaş. Geçiş merdiveni: karşı tarafa geç.', 'Click / tap to walk. Left drag / one finger to pan. Right drag to orbit. Wheel / two fingers to zoom. Crossover stairs lead to the other side.') : this.t('Kamera kontrolleri açık. Hedef vermek için Personeli Yönet seçin.', 'Camera controls are active. Choose Manage operator to set a target.')}</p>
       <p class="nathan-motion" role="status">${esc(control.message)}</p>
-      <div class="nathan-playback"><button data-nathan="halt">${this.t('Hareketi durdur', 'Stop movement')}</button>${support ? `<button data-nathan="descend">${this.t('Merdivenden in', 'Descend')}</button>` : ''}${control.phase === 'paused' ? `<button data-nathan="resume">${this.t('Çıkışa devam', 'Resume climb')}</button>` : ''}</div>
-      ${!support && access.length ? `<label class="nathan-access-label">${this.t('Yakındaki merdivenler', 'Nearby access')}<select data-nathan-access aria-label="Merdiven seç"><option value="">${this.t('Merdiven seç…', 'Choose access…')}</option>${access.map((a, i) => `<option value="${i}">${esc(a.name)} · ${a.kind === 'rear' ? this.t('Arka merdiven', 'Rear ladder') : a.kind === 'platform' ? this.t('İkmal platformu', 'Refuelling platform') : this.t('Basamaklı merdiven', 'Stairs')}</option>`).join('')}</select></label>` : ''}
+      <div class="nathan-playback"><button data-nathan="halt">${this.t('Hareketi durdur', 'Stop movement')}</button>${support ? `<button data-nathan="descend">${this.t('Merdivenden in', 'Descend')}</button>` : ''}${control.phase === 'paused' ? `<button data-nathan="resume">${this.t('Harekete devam', 'Resume movement')}</button>` : ''}</div>
+      ${!support && access.length ? `<label class="nathan-access-label">${this.t('Yakındaki merdivenler', 'Nearby access')}<select data-nathan-access aria-label="Merdiven seç"><option value="">${this.t('Merdiven seç…', 'Choose access…')}</option>${access.map((a, i) => `<option value="${i}">${esc(a.name)} · ${a.kind === 'rear' ? this.t('Arka merdiven', 'Rear ladder') : a.kind === 'platform' ? this.t('İkmal platformu', 'Refuelling platform') : a.kind === 'tank' ? this.t('Tank merdiveni', 'Tank stairs') : this.t('Basamaklı merdiven', 'Stairs')}</option>`).join('')}</select></label>` : ''}
+      ${support?.kind==='tank' ? `<p class="nathan-help">${this.t('Çatıdaki boş noktaya tıkla: yürü. Bağlı köprüye veya diğer tanka tıkla: köprüden geç. Zemine tıkla: merdivenden in ve yürü.', 'Click clear roof to walk, a connected bridge / tank to cross, or ground to descend and walk.')}</p>` : ''}
+      ${roofs.length ? `<label class="nathan-access-label">${this.t('Köprüden diğer tanka geç', 'Cross to another tank')}<select data-nathan-roof aria-label="Tank üstü hedefi"><option value="">${this.t('Tank seç…','Choose tank…')}</option>${roofs.map((r,i)=>`<option value="${i}">${esc(r.name)} · ${esc(r.bridge)}</option>`).join('')}</select></label>` : ''}
       <details ${expanded ? 'open' : ''}><summary>${this.t('16 hareket · animasyon önizlemesi', '16 clips · animation preview')}</summary>` : ''}
       <p class="nathan-status" role="status">${status}</p>
       ${state?.status === 'error' ? `<button data-nathan="retry">${this.t('Yeniden yükle', 'Retry loading')}</button>` : ''}
@@ -78,6 +81,8 @@ export class NathanPanel {
     };
     const chooseAccess = this.element.querySelector<HTMLSelectElement>('[data-nathan-access]');
     if (chooseAccess) chooseAccess.onchange = () => { const item = access[Number(chooseAccess.value)]; if (chooseAccess.value && item) control?.climb(item.id, item.kind); };
+    const chooseRoof=this.element.querySelector<HTMLSelectElement>('[data-nathan-roof]');
+    if(chooseRoof)chooseRoof.onchange=()=>{const item=roofs[Number(chooseRoof.value)];if(chooseRoof.value&&item)control?.tankTo(item.id);};
     this.element.querySelectorAll<HTMLButtonElement>('[data-nathan]').forEach(button => button.onclick = () => {
       switch (button.dataset.nathan) {
         case 'close': control?.close(); this.close(); this.hooks.close?.(); break;

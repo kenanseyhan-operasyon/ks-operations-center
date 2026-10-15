@@ -51,6 +51,27 @@ actor.play();actor.update(.1);assert.notDeepEqual(pose(actor),paused);
 actor.select(5);assert.ok(actor.actions[8].isScheduled()&&actor.actions[5].isScheduled(),'Crossfade has both clips active');for(let i=0;i<4;i++)actor.update(.1);assert.equal(actor.actions[8].isScheduled(),false);
 actor.stop();assert.equal(actor.playing,false);assert.equal(actor.actions[actor.index].time,0);
 actor.configure({clip:'Climbing',loop:false,speed:2});actor.play();for(let i=0;i<12;i++)actor.update(.1);assert.equal(actor.playing,false,'One-shot stops at completion');
+// Regression: the source walk's first two frames spread both arms every 1.833 s.
+// The runtime loop must remain a walking pose over many seams and fast retargets.
+assert.ok(Math.abs(gltf.animations[8].duration-1.833333373)<1e-6,'Source clip is unchanged');
+assert.ok(Math.abs(actor.clips[8].duration-.9)<1e-6);
+const bone=(suffix:string)=>actor.model.getObjectByName(`rp_nathan_animated_003_walking_${suffix}`)!;
+const armAngle=(side:string)=>bone(`hand_${side}`).getWorldPosition(new T.Vector3()).sub(bone(`shoulder_${side}`).getWorldPosition(new T.Vector3())).angleTo(new T.Vector3(0,-1,0))*180/Math.PI;
+actor.select(5,false);actor.motion('Idle');
+let maximumArmAngle=0,maximumSeamStep=0;
+let previousArms=['upperarm_l','upperarm_r'].map(s=>bone(s).quaternion.clone());
+for(let frame=0;frame<720;frame++){
+  actor.motion(frame<60&&Math.floor(frame/3)%2===0?'Idle':'Nathan_Original_Walk',frame<60?.2:1);
+  actor.update(1/60);
+  const weight=actor.actions.reduce((sum,a)=>sum+(a.isScheduled()?a.getEffectiveWeight():0),0);
+  assert.ok(Math.abs(weight-1)<1e-5,'Interrupted crossfades never expose the bind pose');
+  maximumArmAngle=Math.max(maximumArmAngle,armAngle('l'),armAngle('r'));
+  const arms=['upperarm_l','upperarm_r'].map(s=>bone(s).quaternion.clone());
+  maximumSeamStep=Math.max(maximumSeamStep,...arms.map((q,i)=>q.angleTo(previousArms[i])));previousArms=arms;
+}
+assert.ok(maximumArmAngle<45,`Arms stay in a natural walk: ${maximumArmAngle.toFixed(1)}°`);
+assert.ok(maximumSeamStep<.15,`No abrupt shoulder jump at loop boundaries: ${maximumSeamStep}`);
+console.log(`PASS 720 actual skinned frames: repeated walk seams and interrupted fades; maximum arm angle ${maximumArmAngle.toFixed(1)}°`);
 const scene:SceneData={schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',source:'Nathan test',groups:[],entities:[entity,newEntity('REFUEL_OPERATOR',0,0),newEntity('R14',0,0)]};
 entity.nathan={clip:'Driving',loop:false,speed:.5};entity.position[1]=-5;
 const restored=validateScene(JSON.parse(JSON.stringify(scene)));assert.equal(restored.entities[0].preset,NATHAN_PRESET);assert.equal(restored.entities[0].position[1],0);assert.deepEqual(restored.entities[0].nathan,entity.nathan);assert.equal(restored.entities[0].personnel,undefined);assert.equal(restored.entities[1].preset,'REFUEL_OPERATOR');

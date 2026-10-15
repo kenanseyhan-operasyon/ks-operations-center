@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Entity } from './scene-data';
 import { NATHAN_MODEL_URL, NATHAN_PRESET, validateNathan, type NathanSettings } from './nathan-data';
+import { nathanWalkLoop } from './nathan-walk-loop';
 
 export function makeNathanPlaceholder(e: Entity) {
   const root = new T.Group();
@@ -32,7 +33,7 @@ export class NathanActor {
   private meshes: T.Mesh[] = [];
   private anchor: T.Object3D;
   private disposed = false;
-  private fading: { action: T.AnimationAction; left: number }[] = [];
+  private blend?: { elapsed: number; weights: number[] };
   private inverse = new T.Matrix4();
   private matrix = new T.Matrix4();
   private point = new T.Vector3();
@@ -44,7 +45,7 @@ export class NathanActor {
     if (!gltf.animations.length) throw new Error('Nathan GLB has no animations');
     this.settings = validateNathan(settings);
     this.model = clone(gltf.scene);
-    this.clips = gltf.animations;
+    this.clips = gltf.animations.map(nathanWalkLoop);
     this.model.traverse(node => {
       if (node instanceof T.Mesh) {
         node.userData.sharedAsset = true;
@@ -120,15 +121,19 @@ export class NathanActor {
     if (this.disposed || !Number.isInteger(index) || index < 0 || index >= this.clips.length) return;
     const previous = this.actions[this.index], next = this.actions[index];
     const blend = fade && this.playing && previous !== next;
-    this.fading.forEach(f => f.action.stop()); this.fading = [];
+    // Interrupted transitions keep the complete current pose. Weights always sum
+    // to one, so a quick retarget cannot leak the arms-out bind pose into a fade.
+    const weights = this.actions.map(a => a.isScheduled() ? a.getEffectiveWeight() : 0);
+    const total = weights.reduce((sum, w) => sum + w, 0) || 1;
+    this.blend = blend ? { elapsed: 0, weights: weights.map(w => w / total) } : undefined;
     if (!blend) this.actions.forEach(a => a.stop());
-    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1);
+    if (!blend || !next.isScheduled()) next.reset();
+    next.setEffectiveTimeScale(1).setEffectiveWeight(blend ? this.blend!.weights[index] : 1);
     next.setLoop(this.settings.loop ? T.LoopRepeat : T.LoopOnce, this.settings.loop ? Infinity : 1);
     next.clampWhenFinished = true;
     next.play();
     if (blend) {
-      next.crossFadeFrom(previous, .25, false);
-      this.fading.push({ action: previous, left: .25 });
+      this.actions.forEach((a, i) => a.stopFading().setEffectiveWeight(this.blend!.weights[i]));
     }
     this.index = index;
     this.settings.clip = this.clips[index].name;
@@ -174,8 +179,16 @@ export class NathanActor {
   update(dt: number) {
     if (!this.playing || this.disposed || !Number.isFinite(dt)) return;
     const step = Math.max(0, Math.min(dt, .1)) * (this.controlled ? this.motionRate : this.settings.speed);
+    if (this.blend) {
+      this.blend.elapsed += Math.max(0, Math.min(dt, .1));
+      const t = Math.min(1, this.blend.elapsed / .25), alpha = t * t * (3 - 2 * t);
+      this.actions.forEach((a, i) => {
+        a.setEffectiveWeight(T.MathUtils.lerp(this.blend!.weights[i], i === this.index ? 1 : 0, alpha));
+        if (t === 1 && i !== this.index) a.stop();
+      });
+      if (t === 1) this.blend = undefined;
+    }
     this.mixer.update(step);
-    this.fading = this.fading.filter(f => { f.left -= step; if (f.left <= 0) f.action.stop(); return f.left > 0; });
     this.ground();
   }
   dispose() {

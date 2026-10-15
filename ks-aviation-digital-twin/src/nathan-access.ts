@@ -2,11 +2,13 @@ import * as T from 'three';
 import type { Entity } from './scene-data';
 import { accessPath, type V3 } from './personnel-navigation';
 import { NathanNavigation } from './nathan-navigation';
-export type NathanAccessKind = 'rear' | 'platform' | 'steps';
-export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V3[]; heading: number; length: number; crest: number };
+import { localToWorld } from './facility-data';
+export type NathanAccessKind = 'rear' | 'platform' | 'steps' | 'tank';
+export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V3[]; heading: number; length: number; crest: number; crossingSide?: -1 | 1 };
 
 /** Match actual picked ladder, stringer, stair tread or landing mesh. */
 export function nathanAccessKind(node: T.Object3D, e: Entity): NathanAccessKind | undefined {
+  if (e.kind === 'tank' && e.facility?.stairs !== false) return 'tank';
   if (['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(e.preset)) return 'steps';
   for (let n: T.Object3D | null = node; n; n = n.parent) {
     if (/Rear_Ladder|Tank_Top_Walkway|Rear_Fold.*Hand/i.test(n.name)) return 'rear';
@@ -23,9 +25,27 @@ export function sampleAccess(access: NathanAccess, progress: number): V3 {
   return access.points[0];
 }
 export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: NathanAccessKind,
-  nav: NathanNavigation): NathanAccess | undefined {
+  nav: NathanNavigation, crossingSide?: -1 | 1): NathanAccess | undefined {
   let points: V3[] | undefined;
-  if (kind === 'steps') points = accessPath(e, root);
+  if (kind === 'tank') {
+    if (e.kind !== 'tank' || e.facility?.stairs === false || (e.facility?.stairWidth??.9)*e.scale < 2*nav.clearance+.1 || Math.abs(e.position[1])>.05) return;
+    const flight=accessPath(e,root); if (!flight) return;
+    const entry=new T.Vector3(...flight[0]),out=entry.clone().sub(new T.Vector3(...flight[1]));out.y=0;out.normalize();
+    const ground=entry.clone().addScaledVector(out,.5*e.scale);ground.y=0;
+    flight[0][1]=e.position[1]+.143*e.scale;
+    for(const p of flight.slice(1))p[1]+=.012*e.scale;
+    points=[ground.toArray() as V3,...flight];
+  } else if (kind === 'steps' && e.preset === 'CROSSOVER_STAIR' && crossingSide) {
+    // Same dimensions as the real facility mesh: both flights and the 1.1 m deck.
+    const top = 1.1, run = (e.length - top) / 2, count = Math.max(4, Math.ceil(e.height / .2));
+    if (run <= 0 || e.width * e.scale < 2*nav.clearance+.1 || Math.abs(e.position[1]) > .05) return;
+    const flight: V3[] = Array.from({length: count}, (_, i) => [0, e.height * (i + 1) / count + .025,
+      crossingSide * (e.length / 2 - run * (i + .5) / count)]);
+    points = [[0, 0, crossingSide * (e.length / 2 + .5)], ...flight,
+      [0, e.height + .025, crossingSide * top / 2], [0, e.height + .025, -crossingSide * top / 2],
+      ...[...flight].reverse().map(([x,y,z]):V3 => [x,y,-z]), [0,0,-crossingSide * (e.length / 2 + .5)]]
+      .map(p => localToWorld(e, p as V3));
+  } else if (kind === 'steps') points = accessPath(e, root);
   else if (root) {
     root.updateWorldMatrix(true, true);
     const inverse = root.matrixWorld.clone().invert();
@@ -67,10 +87,15 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     points[0][0] += outward.x * .1; points[0][2] += outward.z * .1;
   }
   if (nav.blocked(points[0])) return;
+  if (crossingSide) {
+    const exit = points.at(-1)!;
+    for (let i = 0; i < 30 && nav.blocked(exit); i++) { exit[0] -= outward.x * .1; exit[2] -= outward.z * .1; }
+    if (nav.blocked(exit)) return;
+  }
   // Only this target has an explicit access corridor. Never exempt another obstacle.
   for (let i = 1; i < points.length; i++) if (!nav.clear(points[i - 1], points[i], e.id)) return;
   const lengths = points.slice(1).map((p, i) => new T.Vector3(...p).distanceTo(new T.Vector3(...points![i])));
   const length = lengths.reduce((a, b) => a + b, 0);
   return { targetId: e.id, kind, points, length, crest: 1 - lengths.at(-1)! / length,
-    heading: Math.atan2(-outward.x, outward.z) * 180 / Math.PI };
+    heading: Math.atan2(-outward.x, outward.z) * 180 / Math.PI, ...(crossingSide ? {crossingSide} : {}) };
 }
