@@ -13,6 +13,7 @@ export class VehicleRig {
   readonly trailer=new THREE.Group();
   readonly gauges:FuelGauge[]=[];
   readonly cab:VehicleCab;
+  private platformButton?:THREE.MeshStandardMaterial;
   private geometries=new Set<THREE.BufferGeometry>();
   private materials=new Set<THREE.Material>();
   get wheelbase(){return ((this.articulated?R14.tractorAxle:(R14.tractorAxle+R14.trailerAxle)/2)-R14.frontAxle)*this.model.scale.x;}
@@ -127,8 +128,11 @@ export class VehicleRig {
     }
     completeVehicleSteps(model,g=>this.own(g),silver);clarifyFrontIndicators(model,g=>this.own(g));
     this.cab=new VehicleCab(model);model.updateMatrixWorld(true);
+    const button=model.getObjectByName('Platform_Lift_Toggle_Button') as THREE.Mesh|undefined;
+    if(button){this.platformButton=this.material('#28df62',.15,.4);button.material=this.platformButton;this.setPlatformRaised(false);}
   }
   private own<T extends THREE.BufferGeometry>(g:T):T{this.geometries.add(g);return g;}
+  setPlatformRaised(raised:boolean){if(this.platformButton){this.platformButton.color.set(raised?'#ff2020':'#28df62');this.platformButton.emissive.copy(this.platformButton.color);this.platformButton.emissiveIntensity=raised?1.2:.35;}}
   private material(color:string,metalness:number,roughness:number){const m=new THREE.MeshStandardMaterial({color,metalness,roughness});this.materials.add(m);return m;}
   setArticulation(angle=0){this.trailer.rotation.y=this.articulated?-THREE.MathUtils.clamp(angle,-R14.maxArticulation,R14.maxArticulation):0;}
   setFuelLevel(litres=0){this.gauges.forEach(g=>g.setLitres(litres));}

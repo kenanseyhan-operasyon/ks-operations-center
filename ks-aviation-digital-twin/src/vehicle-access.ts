@@ -4,7 +4,31 @@ import {R14} from './r14-spec';
  * The source GLB is never changed. All added parts follow their original parent. */
 export function completeVehicleSteps(model:T.Object3D,own:(g:T.BufferGeometry)=>T.BufferGeometry,material:T.Material){
   model.updateWorldMatrix(true,true);
-  for(const kind of ['rear','platform']){
+  model.traverse(n=>{if(!(n instanceof T.Mesh)||!/^Rear_Ladder_Folding_Handhold/.test(n.name))return;
+    const g=own(n.geometry.clone());g.computeBoundingBox();const b=g.boundingBox!,p=g.attributes.position,s=b.getSize(new T.Vector3()),axis=s.y>=s.x&&s.y>=s.z?1:s.x>=s.z?0:2,min=b.min.getComponent(axis);
+    for(let i=0;i<p.count;i++)p.setComponent(i,axis,min+(p.getComponent(i,axis)-min)*1.65);
+    g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();n.geometry=g;
+  });
+  const add=(name:string,size:number[],position:number[],parent:T.Object3D=model)=>{
+    const mesh=new T.Mesh(own(new T.BoxGeometry(...size as [number,number,number])),material);mesh.name=name;mesh.userData.sharedAsset=true;mesh.position.fromArray(position);model.add(mesh);model.updateMatrixWorld(true);if(parent!==model)parent.attach(mesh);return mesh;
+  };
+  const rear=model.getObjectByName('Rear_Bumper') as T.Mesh|undefined;
+  if(rear){
+    const parent=rear.parent!;rear.removeFromParent();
+    // Retain the bumper ends and lamps; the narrow central section is a tread.
+    for(const z of [.015,.295])add('Rear_Bumper_End',[.035,.045,.15],[1.525,-.345,z],parent);
+    add('Rear_Ladder_Close_Step_BUMPER',[.048,.009,.13],[1.534,-.3335,.155],parent);
+    for(const [i,y] of [-.414,-.372].entries())add(`Rear_Ladder_Close_Step_LOWER_${i}`,[.048,.008,.12],[1.542,y-.004,.155],parent);
+    model.getObjectByName('Rear_Ladder_Close_Step')?.removeFromParent();
+    // The lowest stringers now terminate on the bumper instead of below it.
+    model.traverse(n=>{if(!(n instanceof T.Mesh)||!/^Rear_Ladder_Close_Stringer/.test(n.name))return;
+      const g=own(n.geometry.clone()),p=g.attributes.position,inverse=n.matrixWorld.clone().invert();
+      for(let i=0;i<p.count;i++){const v=new T.Vector3().fromBufferAttribute(p,i).applyMatrix4(n.matrixWorld);if(v.y<-.29){const t=T.MathUtils.clamp((-.29-v.y)/.039,0,1);v.x=T.MathUtils.lerp(v.x,1.534,t);v.y=Math.max(-.329,v.y);}v.applyMatrix4(inverse);p.setXYZ(i,v.x,v.y,v.z);}
+      g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();n.geometry=g;
+    });
+    for(const z of [.105,.205])add('Rear_Ladder_Bumper_Mount',[.048,.012,.012],[1.534,-.334,z],parent);
+  }
+  for(const kind of ['platform']){
     const steps:T.Mesh[]=[];model.traverse(n=>{if(n instanceof T.Mesh&&(kind==='rear'?/^Rear_Ladder_Close_Step(?:_|$)/:/^Fixed_Step(?:_|$)/).test(n.name))steps.push(n);});
     steps.sort((a,b)=>new T.Box3().setFromObject(a).max.y-new T.Box3().setFromObject(b).max.y);if(!steps.length)continue;
     const first=new T.Box3().setFromObject(steps[0]),last=new T.Box3().setFromObject(steps.at(-1)!);
@@ -22,12 +46,11 @@ export function completeVehicleSteps(model:T.Object3D,own:(g:T.BufferGeometry)=>
       }
     }
   }
-  // Cab entry treads sit below the cut door aperture, separate from the original
-  // decorative steps beside the front bumper.
+  // All cab treads are ahead of the tyre's front edge (-.7974), with clearance.
   for(const side of [-1,1])for(let i=1;i<=3;i++){
-    const g=own(new T.BoxGeometry(.105,.008,.06)),m=new T.Mesh(g,material);
+    const g=own(new T.BoxGeometry(.084,.008,.064)),m=new T.Mesh(g,material);
     m.name=`CAB_ACCESS_STEP_${side>0?'LEFT':'RIGHT'}_${i}`;m.userData.sharedAsset=true;
-    m.position.set(-.711,R14.axleY-R14.tyreRadius+i*.05-.004,.155+side*(.214-(i-1)*.009));model.add(m);
+    m.position.set(-.852,R14.axleY-R14.tyreRadius+i*.052-.004,.155+side*(.218-(i-1)*.009));model.add(m);
   }
 }
 

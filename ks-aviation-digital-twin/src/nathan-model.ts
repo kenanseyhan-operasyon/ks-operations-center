@@ -44,6 +44,7 @@ export class NathanActor {
   private contactPose?: NathanContact;
   private headless=new Map<T.Mesh,{full:T.BufferGeometry;cut:T.BufferGeometry}>();
   private eyes=false;
+  terrain?:(point:[number,number,number])=>number;
 
   constructor(readonly root: T.Group, gltf: Pick<GLTF, 'scene' | 'animations'>, height: number,
     settings?: NathanSettings, private changed = () => {}) {
@@ -91,7 +92,7 @@ export class NathanActor {
     });
     this.select(Math.max(0, this.clips.findIndex(c => c.name === this.settings.clip)), false);
     const selected=this.index;this.select(this.clips.findIndex(c=>c.name==='Idle'),false);
-    this.contactRig=new NathanContactRig(root,this.model,this.offset);this.select(selected,false);
+    this.contactRig=new NathanContactRig(root,this.model,this.offset,gltf.scene.getObjectByName('rp_nathan_animated_003_walking_root')!.quaternion.clone());this.select(selected,false);
   }
 
   /** Exact skinned bounds in entity space; also repair local bounds used by raycasts. */
@@ -193,7 +194,7 @@ export class NathanActor {
     return true;
   }
   release() { this.controlled = false; this.playing = false;this.contact(); }
-  contact(pose?:NathanContact){this.contactPose=pose;if(!pose)this.contactRig?.restore();}
+  contact(pose?:NathanContact){this.contactPose=pose;if(!pose){this.contactRig?.restore();this.contactRig?.resetGrips();}}
   eyePoint(){const head=this.model.getObjectByName('rp_nathan_animated_003_walking_head')!,scale=this.root.getWorldScale(new T.Vector3()).y;return head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.055*scale,-.11*scale).applyQuaternion(this.root.getWorldQuaternion(new T.Quaternion())));}
   firstPerson(on:boolean){
     if(on===this.eyes)return;this.eyes=on;
@@ -202,9 +203,11 @@ export class NathanActor {
       let pair=this.headless.get(mesh);
       if(on&&!pair){
         const full=mesh.geometry,indices=full.index?.array||Array.from({length:full.attributes.position.count},(_,i)=>i),skin=full.attributes.skinIndex,weights=full.attributes.skinWeight;
-        const head=new Set(mesh.skeleton.bones.map((b,i)=>/_(head|head_end|neck)$/.test(b.name)?i:-1)),kept:number[]=[];
+        // Face vertices are weighted to jaw, eyelids, eyes and mouth bones too.
+        // Hide the complete neck subtree, not just the three named head bones.
+        const head=new Set(mesh.skeleton.bones.flatMap((b,i)=>{for(let n:T.Object3D|null=b;n;n=n.parent)if(/_(head|neck)$/.test(n.name))return [i];return [];})),kept:number[]=[];
         const weight=(i:number)=>{let w=0;for(let k=0;k<4;k++)if(head.has(skin.array[i*4+k]))w+=weights.array[i*4+k];return w;};
-        for(let i=0;i<indices.length;i+=3)if(Math.max(weight(indices[i]),weight(indices[i+1]),weight(indices[i+2]))<.45)kept.push(indices[i],indices[i+1],indices[i+2]);
+        for(let i=0;i<indices.length;i+=3)if(Math.max(weight(indices[i]),weight(indices[i+1]),weight(indices[i+2]))<.05)kept.push(indices[i],indices[i+1],indices[i+2]);
         const cut=full.clone();cut.setIndex(kept);pair={full,cut};this.headless.set(mesh,pair);
       }
       if(pair)mesh.geometry=on?pair.cut:pair.full;
@@ -224,8 +227,14 @@ export class NathanActor {
       if (t === 1) this.blend = undefined;
     }
     this.mixer.update(this.playing?step:0);
+    if(this.contactPose)this.contactRig?.stabilize();
     this.ground();
     if(this.contactPose){this.contactRig?.apply(this.contactPose);this.measure();}
+    else if(this.terrain&&this.contactRig){
+      const ground=this.root.getWorldPosition(new T.Vector3()).y;
+      const feet=[0,1].map(i=>{const p=this.contactRig!.sole(i);p.y=this.terrain!(p.toArray() as [number,number,number])+Math.max(.005,p.y-ground);return p.toArray() as [number,number,number];}) as [[number,number,number],[number,number,number]];
+      if(ground>.001||feet.some(p=>this.terrain!(p)>.001)){this.contactRig.apply({feet});this.measure();}
+    }
   }
   dispose() {
     if (this.disposed) return;
@@ -272,6 +281,9 @@ export class NathanActors {
   constructor(private changed = () => {}, load?: AssetLoader, textureLimit = () => 4096) {
     this.load = load || (async progress => {
       const gltf = await new GLTFLoader().loadAsync(NATHAN_MODEL_URL, e => progress(e.total ? e.loaded / e.total : 0));
+      const response=await fetch('/models/personnel/nathan-access-animations.json');
+      if(!response.ok)throw new Error('Nathan access animations could not load');
+      gltf.animations.push(...parseNathanAccessClips(await response.json()));
       limitNathanTextures(gltf, textureLimit());
       return gltf;
     });
@@ -319,4 +331,9 @@ export class NathanActors {
   }
   update(dt: number) { this.states.forEach(s => s.actor?.update(dt)); }
   pause() { this.states.forEach(s => s.actor?.pause()); }
+}
+
+export function parseNathanAccessClips(data:{schema:number;clips:Parameters<typeof T.AnimationClip.parse>[0][]}){
+  if(data.schema!==1||!Array.isArray(data.clips)||data.clips.length!==3)throw new Error('Invalid Nathan access animations');
+  return data.clips.map(clip=>T.AnimationClip.parse(clip));
 }

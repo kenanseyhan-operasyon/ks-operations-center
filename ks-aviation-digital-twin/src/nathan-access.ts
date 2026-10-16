@@ -5,6 +5,7 @@ import { NathanNavigation } from './nathan-navigation';
 import { localToWorld } from './facility-data';
 import {stairPose,type StairContacts} from './nathan-stair-gait';
 import {makeDriverAccess,driverPose,type DriverLanding} from './nathan-driver';
+import {meshGripLines} from './nathan-grips';
 export type NathanAccessKind = 'driver' | 'rear' | 'platform' | 'steps' | 'tank';
 export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V3[]; heading: number; length: number; crest: number; crossingSide?: -1 | 1; contacts?:StairContacts; driver?:DriverLanding };
 
@@ -89,7 +90,7 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     stops.push(...steps.map(p=>p.clone().addScaledVector(outward,.035)),landing.clone());
     const grips:[V3,V3][]=[];
     root.traverse(n=>{if(!(n instanceof T.Mesh)||!(kind==='rear'?/Rear_Ladder_Close_Stringer|Rear_Fold.*Hand|Rear_Ladder.*Handhold/:/Platform_Outside_Grab_Handle/).test(n.name))return;
-      n.geometry.computeBoundingBox();const b=n.geometry.boundingBox!,s=b.getSize(new T.Vector3()),a=b.getCenter(new T.Vector3()),z=a.clone(),axis=s.y>=s.x&&s.y>=s.z?'y':s.x>=s.z?'x':'z';a[axis]=b.min[axis];z[axis]=b.max[axis];grips.push([n.localToWorld(a).toArray() as V3,n.localToWorld(z).toArray() as V3]);
+      grips.push(...meshGripLines(n));
     });
     const worldOut=outward.clone().transformDirection(root.matrixWorld);
     contacts={stops:stops.map(p=>root.localToWorld(p.clone()).toArray() as V3),outward:worldOut.toArray() as V3,heading:Math.atan2(-worldOut.x,worldOut.z)*180/Math.PI,scale:e.scale,ladder:true,grips};

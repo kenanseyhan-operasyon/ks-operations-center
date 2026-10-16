@@ -87,8 +87,8 @@ export class VehicleCab{
     const material=(color:string,roughness=.85)=>{const m=new T.MeshStandardMaterial({color,roughness});this.materials.add(m);return m;};
     const dark=material('#202b31'),soft=material('#34434a'),trim=material('#6b777c'),black=material('#111a20'),seat=material('#40505a');
     if(shell)for(const side of [-1,1]){
-      const z=side>0?.335:-.025,hinge=new T.Group();hinge.name=side>0?'DRIVER_DOOR_HINGE':'PASSENGER_DOOR_HINGE';hinge.position.set(-.836,-.12,z);model.add(hinge);model.updateWorldMatrix(true,true);
-      const cut:Cut={axis:2,min:z-.028,max:z+.028,polygon:[[-.833,-.26],[-.604,-.26],[-.604,.023],[-.833,.023]].map(([x,y])=>new T.Vector2(x,y))};
+      const z=side>0?.335:-.025,hinge=new T.Group();hinge.name=side>0?'DRIVER_DOOR_HINGE':'PASSENGER_DOOR_HINGE';hinge.position.set(-.900,-.12,z);model.add(hinge);model.updateWorldMatrix(true,true);
+      const cut:Cut={axis:2,min:z-.028,max:z+.028,polygon:[[-.899,-.26],[-.604,-.26],[-.604,.023],[-.899,.023]].map(([x,y])=>new T.Vector2(x,y))};
       const geometry=openWindows(shell,[cut],part=>{
         this.geometries.add(part);const paint=(Array.isArray(shell.material)?shell.material[0]:shell.material).clone();paint.side=T.DoubleSide;this.materials.add(paint);
         const leaf=new T.Mesh(part,paint);leaf.name=side>0?'DRIVER_DOOR_PANEL':'PASSENGER_DOOR_PANEL';leaf.position.copy(shell.position);leaf.quaternion.copy(shell.quaternion);leaf.scale.copy(shell.scale);leaf.userData.sharedAsset=true;shell.parent!.add(leaf);model.updateWorldMatrix(true,true);hinge.attach(leaf);
@@ -122,6 +122,19 @@ export class VehicleCab{
     const light=new T.MeshBasicMaterial({color:'#d7ece3'}),red=new T.MeshBasicMaterial({color:'#e95f47'});this.materials.add(light);this.materials.add(red);
     const mesh=(name:string,geometry:T.BufferGeometry,mat:T.Material,parent:T.Object3D=this.interior)=>{this.geometries.add(geometry);const m=new T.Mesh(geometry,mat);m.name=name;m.userData.sharedAsset=true;parent.add(m);return m;};
     const box=(name:string,size:number[],p:number[],mat:T.Material=dark,parent:T.Object3D=this.interior)=>{const m=mesh(name,new T.BoxGeometry(size[0],size[1],size[2]),mat,parent);m.position.fromArray(p);return m;};
+    const rod=(name:string,a:number[],b:number[],parent:T.Object3D=this.interior)=>{const start=new T.Vector3(...a),end=new T.Vector3(...b),d=end.clone().sub(start),m=mesh(name,new T.CylinderGeometry(.004,.004,d.length(),12),trim,parent);m.position.copy(start.add(end).multiplyScalar(.5));m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return m;};
+    for(const side of [-1,1]){
+      const z=.155+side*.168;
+      rod('CAB_GRAB_HANDLE_FRONT',[-.864,-.26,z],[-.864,-.025,z]);
+      rod('CAB_GRAB_HANDLE_REAR',[-.636,-.19,z],[-.636,-.035,z]);
+      rod('CAB_GRAB_HANDLE_INNER',[-.864,-.055,.155+side*.14],[-.725,-.055,.155+side*.14]);
+      const handle=rod('CAB_GRAB_HANDLE_DOOR',[-.804,-.235,z],[-.804,-.060,z]);
+      model.updateWorldMatrix(true,true);this.doors.get(side>0?'left':'right')!.hinge.attach(handle);
+    }
+    // Recess the bumper's side returns so the steps in front of the tyres have
+    // a real footwell instead of intersecting the original solid wraparound.
+    const bumper=cab.getObjectByName('Bumper') as T.Mesh;
+    if(bumper){const cuts:Cut[]=[[-.08,.005],[.305,.39]].map(([min,max])=>({axis:2,min,max,polygon:[[-.91,-.43],[-.800,-.43],[-.800,-.26],[-.91,-.26]].map(([x,y])=>new T.Vector2(x,y))}));bumper.geometry=openWindows(bumper,cuts);this.geometries.add(bumper.geometry);}
     box('CAB_FLOOR',[.275,.009,.337],[-.731,-.253,.155],black);
     box('CAB_REAR_LINER',[.012,.276,.330],[-.599,-.11,.155],soft);
     box('DASHBOARD_LOWER',[.082,.048,.327],[-.830,-.159,.155]);
@@ -175,7 +188,7 @@ export class VehicleCab{
   get doorsClosed(){return [...this.doors.values()].every(d=>!d.open&&d.amount<.001);}
   updateDoors(dt:number){for(const d of this.doors.values()){
     d.amount=T.MathUtils.clamp(d.amount+(d.open?1:-1)*Math.max(0,Math.min(.1,dt))/.85,0,1);
-    const t=d.amount*d.amount*(3-2*d.amount);d.hinge.rotation.y=-d.side*t*Math.PI*.46;
+    const t=d.amount*d.amount*(3-2*d.amount);d.hinge.rotation.y=-d.side*t*Math.PI*.56;
   }this.model.updateWorldMatrix(true,true);}
   update(state:CabInstruments){
     this.wheel.rotation.z=-state.steer*14;

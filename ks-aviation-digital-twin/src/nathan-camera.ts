@@ -4,13 +4,13 @@ import type {NathanActor} from './nathan-model';
 export type NathanView='free'|'eyes'|'rear'|'front'|'top';
 /** V owns the operator view. C remains owned by the existing vehicle cabin. */
 export class NathanCamera{
-  mode:NathanView='free';private pointers=new Set<number>();private yaw=0;private pitch=-.04;private pointer?:{id:number;x:number;y:number};
+  mode:NathanView='free';private pointers=new Set<number>();private yaw=0;private pitch=-.04;private pointer?:{id:number;x:number;y:number;travel:number;target:boolean};
   private saved?:{near:number;fov:number;up:T.Vector3};private actor?:NathanActor;
-  constructor(private camera:T.PerspectiveCamera,canvas:HTMLElement,private read:()=>{entity?:Entity;actor?:NathanActor},private lock:(on:boolean)=>void){
+  constructor(private camera:T.PerspectiveCamera,canvas:HTMLElement,private read:()=>{entity?:Entity;actor?:NathanActor},private lock:(on:boolean)=>void,private tap?:(event:PointerEvent)=>void){
     const stop=(e:Event)=>{e.preventDefault();e.stopImmediatePropagation();};
-    canvas.addEventListener('pointerdown',e=>{if(this.mode!=='eyes')return;stop(e);this.pointers.add(e.pointerId);if(this.pointers.size>1){this.pointer=undefined;return;}this.pointer={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture?.(e.pointerId);},true);
-    canvas.addEventListener('pointermove',e=>{if(this.mode!=='eyes')return;stop(e);const p=this.pointer;if(!p||p.id!==e.pointerId)return;this.yaw-=(e.clientX-p.x)*.004;this.pitch=T.MathUtils.clamp(this.pitch-(e.clientY-p.y)*.003,-1.25,1.25);p.x=e.clientX;p.y=e.clientY;},true);
-    const release=(e:PointerEvent)=>{if(this.mode!=='eyes')return;stop(e);this.pointers.delete(e.pointerId);this.pointer=undefined;if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);};
+    canvas.addEventListener('pointerdown',e=>{if(this.mode!=='eyes')return;stop(e);this.pointers.add(e.pointerId);if(this.pointers.size>1){this.pointer=undefined;return;}this.pointer={id:e.pointerId,x:e.clientX,y:e.clientY,travel:0,target:(e.pointerType==='touch'||e.button===0)&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey};canvas.setPointerCapture?.(e.pointerId);},true);
+    canvas.addEventListener('pointermove',e=>{if(this.mode!=='eyes')return;stop(e);const p=this.pointer;if(!p||p.id!==e.pointerId)return;p.travel+=Math.hypot(e.clientX-p.x,e.clientY-p.y);this.yaw-=(e.clientX-p.x)*.004;this.pitch=T.MathUtils.clamp(this.pitch-(e.clientY-p.y)*.003,-1.25,1.25);p.x=e.clientX;p.y=e.clientY;},true);
+    const release=(e:PointerEvent)=>{if(this.mode!=='eyes')return;stop(e);const tap=e.type==='pointerup'&&this.pointer?.id===e.pointerId&&this.pointer.target&&this.pointer.travel+Math.hypot(e.clientX-this.pointer.x,e.clientY-this.pointer.y)<6&&this.pointers.size===1;this.pointers.delete(e.pointerId);this.pointer=undefined;if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(tap)this.tap?.(e);};
     canvas.addEventListener('pointerup',release,true);canvas.addEventListener('pointercancel',release,true);canvas.addEventListener('lostpointercapture',()=>{this.pointer=undefined;});
     window.addEventListener('blur',()=>{this.pointer=undefined;this.pointers.clear();});
     canvas.addEventListener('wheel',e=>{if(this.mode!=='eyes')return;stop(e);this.camera.fov=T.MathUtils.clamp(this.camera.fov+e.deltaY*.025,38,85);this.camera.updateProjectionMatrix();},{capture:true,passive:false});

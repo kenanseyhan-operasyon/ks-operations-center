@@ -61,7 +61,7 @@ export class NathanPanel {
       ${support?.kind==='platform'&&support.progress===1?`<button data-nathan="lift">${this.t('Platformu yükselt / indir','Raise / lower platform')}</button>`:''}
       ${support?.kind==='tank' ? `<p class="nathan-help">${this.t('Çatıdaki boş noktaya tıkla: yürü. Bağlı köprüye veya diğer tanka tıkla: köprüden geç. Zemine tıkla: merdivenden in ve yürü.', 'Click clear roof to walk, a connected bridge / tank to cross, or ground to descend and walk.')}</p>` : ''}
       ${roofs.length ? `<label class="nathan-access-label">${this.t('Köprüden diğer tanka geç', 'Cross to another tank')}<select data-nathan-roof aria-label="Tank üstü hedefi"><option value="">${this.t('Tank seç…','Choose tank…')}</option>${roofs.map((r,i)=>`<option value="${i}">${esc(r.name)} · ${esc(r.bridge)}</option>`).join('')}</select></label>` : ''}
-      <details ${expanded ? 'open' : ''}><summary>${this.t('16 hareket · animasyon önizlemesi', '16 clips · animation preview')}</summary>` : ''}
+      <details ${expanded ? 'open' : ''}><summary>${this.t(`${actor?.clips.length??19} hareket · animasyon önizlemesi`, `${actor?.clips.length??19} clips · animation preview`)}</summary>` : ''}
       <p class="nathan-status" role="status">${status}</p>
       ${state?.status === 'error' ? `<button data-nathan="retry">${this.t('Yeniden yükle', 'Retry loading')}</button>` : ''}
       <fieldset ${!actor || !this.hooks.ready() ? 'disabled' : ''}>

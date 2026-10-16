@@ -10,8 +10,10 @@ export function stairPose(data:StairContacts,progress:number):{root:V3;contact:N
   const moving=step%2,old=Math.max(0,step-1),fixed=step,next=Math.min(last,step+1);
   const points=[new T.Vector3(...stops[fixed]),new T.Vector3(...stops[fixed])];
   const a=new T.Vector3(...stops[old]),b=new T.Vector3(...stops[next]);
-  const swing=a.clone().lerp(b,smooth((t-.2)/.6)),height=Math.max(a.y,b.y)+.11*scale;
-  swing.y=t<.25?T.MathUtils.lerp(a.y,height,smooth(t/.25)):t>.75?T.MathUtils.lerp(height,b.y,smooth((t-.75)/.25)):height;
+  // Both feet stay planted during each hand transfer. Only then lift one foot.
+  const footTime=T.MathUtils.clamp((t-.2)/.6,0,1);
+  const swing=a.clone().lerp(b,smooth(footTime)),height=Math.max(a.y,b.y)+.11*scale;
+  swing.y=footTime<.25?T.MathUtils.lerp(a.y,height,smooth(footTime/.25)):footTime>.75?T.MathUtils.lerp(height,b.y,smooth((footTime-.75)/.25)):height;
   if(progress===1)swing.copy(b);
   points[moving]=swing;
   const h=data.heading*Math.PI/180,side=new T.Vector3(Math.cos(h),0,Math.sin(h));
@@ -19,5 +21,6 @@ export function stairPose(data:StairContacts,progress:number):{root:V3;contact:N
   const weight=Math.min(smooth(phase),smooth((last+1-phase)));
   central.addScaledVector(new T.Vector3(...data.outward),data.ladder?.27*scale*weight:0);
   const feet=points.map((p,i)=>p.addScaledVector(side,(i?1:-1)*.12*scale).add(new T.Vector3(0,.005*scale,0)).toArray() as V3) as [V3,V3];
-  return {root:central.toArray() as V3,contact:{feet,grips:weight>.02?data.grips:undefined,hipHeight:data.ladder?.85:.89}};
+  const advance=new T.Vector3(...stops[Math.min(last,step+1)]).sub(new T.Vector3(...stops[Math.max(0,step-1)])).multiplyScalar(.45);
+  return {root:central.toArray() as V3,contact:{feet,grips:weight>.02?data.grips:undefined,gripGait:{phase,advance:advance.toArray() as V3},hipHeight:data.ladder?.85:.89}};
 }
