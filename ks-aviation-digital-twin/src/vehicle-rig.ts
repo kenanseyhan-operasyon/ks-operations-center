@@ -4,6 +4,7 @@ import { R14 } from './r14-spec';
 import { FuelGauge, refitTankMarkings, tankLift, clearCouplingSweep } from './refueller-details';
 import {VehicleCab} from './vehicle-cab';
 import {completeVehicleSteps,clarifyFrontIndicators} from './vehicle-access';
+import {refitCabExterior} from './cab-geometry';
 type Wheel={pivot:THREE.Group;spin:THREE.Group;front:boolean;trailer:boolean};
 
 /** Prepare one cloned R14 in native coordinates, before scaling/grounding.
@@ -18,6 +19,7 @@ export class VehicleRig {
   private materials=new Set<THREE.Material>();
   get wheelbase(){return ((this.articulated?R14.tractorAxle:(R14.tractorAxle+R14.trailerAxle)/2)-R14.frontAxle)*this.model.scale.x;}
   constructor(private model:THREE.Object3D,private articulated=true){
+    refitCabExterior(model,g=>this.own(g));
     model.updateWorldMatrix(true,true);
     const meshes:THREE.Mesh[]=[];model.traverse(n=>{if(n instanceof THREE.Mesh)meshes.push(n);});
     const centre=(n:THREE.Object3D)=>new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3());

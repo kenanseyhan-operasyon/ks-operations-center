@@ -1,7 +1,7 @@
 import * as T from 'three';
 import type { V3 } from './personnel-navigation';
 
-export type NathanContact = { feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handWeight?:number; grips?:[V3,V3][]; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number };
+export type NathanContact = { feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handWeight?:number; grips?:[V3,V3][]; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number; elbowPole?:V3; gripHands?:boolean };
 const up=new T.Vector3(0,1,0),pos=(n:T.Object3D)=>n.getWorldPosition(new T.Vector3());
 function worldRotation(bone:T.Object3D,q:T.Quaternion){bone.quaternion.copy(bone.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(q));bone.updateWorldMatrix(false,true);}
 /** Analytic two-link IK: preserve segment lengths and the requested bend plane. */
@@ -65,14 +65,17 @@ export class NathanContactRig{
       const arm=this.arms[i];let target=pose.hands?.[i];
       // A gripping wrist keeps a stable orientation instead of twisting with
       // each source-clip loop while its palm is constrained to the same rail.
-      const handRotation=pose.grips?rotation.clone().multiply(arm.rotation):arm.end.getWorldQuaternion(new T.Quaternion()),palmOffset=arm.sole.clone().multiply(arm.end.getWorldScale(new T.Vector3())).applyQuaternion(handRotation);
+      const handRotation=pose.grips||pose.gripHands?rotation.clone().multiply(arm.rotation):arm.end.getWorldQuaternion(new T.Quaternion()),palmOffset=arm.sole.clone().multiply(arm.end.getWorldScale(new T.Vector3())).applyQuaternion(handRotation);
       if(!target&&pose.grips?.length){
         const shoulder=pos(arm.upper),reach=shoulder.distanceTo(pos(arm.lower))+pos(arm.lower).distanceTo(pos(arm.end));
         const desired=shoulder.clone().addScaledVector(forward,.27*scale).addScaledVector(up,-.02*scale);
         if(pose.gripGait)desired.addScaledVector(new T.Vector3(...pose.gripGait.advance),direction);
         let best=Infinity;
-        for(const [a,b] of pose.grips){const p=new T.Line3(new T.Vector3(...a),new T.Vector3(...b)).closestPointToPoint(desired,true,new T.Vector3());
-          const d=p.distanceTo(desired);if(p.distanceTo(shoulder)<reach*.98+palmOffset.length()&&d<best){best=d;target=p.toArray() as V3;}}
+        for(const [a,b] of pose.grips){const line=new T.Line3(new T.Vector3(...a),new T.Vector3(...b)),p=line.closestPointToPoint(desired,true,new T.Vector3()),limit=reach*.98+palmOffset.length();
+          // A predicted next handhold can be too far down/up a rail while the
+          // rail itself is reachable. Retain contact at the nearest point.
+          if(p.distanceTo(shoulder)>=limit)line.closestPointToPoint(shoulder,true,p);
+          const d=p.distanceTo(desired);if(p.distanceTo(shoulder)<limit&&d<best){best=d;target=p.toArray() as V3;}}
         if(!target&&this.holds[i]&&this.holds[i]!.distanceTo(shoulder)<reach*.985+palmOffset.length())target=this.holds[i]!.toArray() as V3;
         if(phase!==undefined&&target){
           const t=phase-Math.floor(phase),held=this.holds[i],reachable=held&&held.distanceTo(shoulder)<reach*.985+palmOffset.length();
@@ -83,7 +86,7 @@ export class NathanContactRig{
         }
       }
       if(target){
-        if(pose.grips){
+        if(pose.grips||pose.gripHands){
           const shoulder=pos(arm.upper),delta=new T.Vector3(...target).sub(shoulder),distance=delta.length(),toward=delta.normalize(),length=palmOffset.length();
           const minimum=Math.abs(shoulder.distanceTo(pos(arm.lower))-pos(arm.lower).distanceTo(pos(arm.end)))+.01*scale;
           // Near the shoulder, bend the wrist around the rail rather than
@@ -91,7 +94,7 @@ export class NathanContactRig{
           if(distance-length<minimum&&distance>1e-6){const cosine=T.MathUtils.clamp((distance*distance+length*length-minimum*minimum)/(2*distance*length),-1,1),side=right.clone().addScaledVector(toward,-right.dot(toward));if(side.lengthSq()<1e-8)side.copy(up).addScaledVector(toward,-up.dot(toward));side.normalize();toward.multiplyScalar(cosine).addScaledVector(side,Math.sqrt(1-cosine*cosine));}
           handRotation.premultiply(new T.Quaternion().setFromUnitVectors(palmOffset.clone().normalize(),toward));palmOffset.copy(toward).multiplyScalar(length);
         }
-        const wrist=new T.Vector3(...target).sub(palmOffset),aim=pos(arm.end).lerp(wrist,pose.handWeight??1);this.errors.push(solveLimb(arm.upper,arm.lower,arm.end,aim,right.clone().multiplyScalar(i?1:-1).addScaledVector(up,-.5)));worldRotation(arm.end,handRotation);
+        const wrist=new T.Vector3(...target).sub(palmOffset),aim=pos(arm.end).lerp(wrist,pose.handWeight??1),pole=pose.elbowPole?new T.Vector3(...pose.elbowPole):right.clone().multiplyScalar(i?1:-1).addScaledVector(up,-.5);this.errors.push(solveLimb(arm.upper,arm.lower,arm.end,aim,pole));worldRotation(arm.end,handRotation);
       }
     }
     this.gripPhase=phase;

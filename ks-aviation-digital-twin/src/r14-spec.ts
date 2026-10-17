@@ -1,7 +1,8 @@
+import {CAB_REFERENCE,cabPoint} from './cab-reference';
 /** Native GLB: front is -X, up is Y, centre line is Z=.155. */
 export const R14 = {
   length:2.47, centreX:.315, centreZ:.155,
-  frontAxle:-.6974, tractorAxle:.077, trailerAxle:1.289,
+  frontAxle:cabPoint(CAB_REFERENCE.axleFromFront,0,0)[0], tractorAxle:.077, trailerAxle:1.289,
   axleY:-.354, tyreRadius:.1, hitchX:.077, hitchY:-.225,
   maxArticulation:55*Math.PI/180,
 } as const;

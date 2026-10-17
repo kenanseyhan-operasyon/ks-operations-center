@@ -365,6 +365,9 @@ export class NathanController {
     const actor=this.actor!;
     if(kind==='driver'&&this.entity!.position[1]<.01){actor.motion('Nathan_Original_Walk',.4);return;}
     if(kind==='driver'&&progress>.8){actor.motion('Driving',.7);return;}
+    // Back out facing the cab. The wall-descent clip twists its torso toward
+    // the open leaf; reverse the cab's climbing clip over the same contacts.
+    if(kind==='driver'&&actor.motion('Climbing_Up_Ladder',.7,down))return;
     const clip=down?'Climbing_Down_Wall':'Climbing_Up_Ladder';
     if(!actor.motion(clip,.7))actor.motion(kind==='rear'?'Climbing_Ladder':'Climbing',.7,down);
   }
@@ -452,7 +455,7 @@ export class NathanController {
       if(!target||!root)continue;
       const node=s.anchor&&this.hooks.object(target.id)?.getObjectByName(s.anchor);
       if(node&&s.local){e.position=node.localToWorld(new T.Vector3(...s.local)).toArray() as V3;e.heading=target.heading+(s.heading||0);applyTransform(root,e);}
-      if(s.kind==='driver'&&s.progress===1){const vehicle=this.hooks.object(target.id),d=vehicle&&driverLanding(vehicle,target.heading);if(d){actor?.motion('Driving');actor?.contact({feet:d.feet,seated:d.seat,hands:d.hands,lean:.12});}}
+      if(s.kind==='driver'&&s.progress===1){const vehicle=this.hooks.object(target.id),d=vehicle&&driverLanding(vehicle,target.heading);if(d){actor?.motion('Driving');actor?.contact({feet:d.feet,seated:d.seat,hands:d.hands,lean:.12,gripHands:true,elbowPole:[0,-1,0]});}}
       if(s.progress<1&&['rear','platform','driver'].includes(s.kind)&&!(this.id===e.id&&['climbing','descending'].includes(this.phase))){const a=makeNathanAccess(target,this.hooks.object(target.id),s.kind as NathanAccessKind,this.navigation());if(a?.contacts){const pose=a.driver?driverPose(a,s.progress):stairPose(a.contacts,s.progress);actor?.motion(s.kind==='rear'?'Climbing_Ladder':'Climbing');actor?.contact(pose.contact);actor?.pause();}}
       if(s.progress===1&&['rear','platform'].includes(s.kind)){
         if(!s.anchor){s.anchor=s.kind==='platform'?'Platform_Grey_Floor':'Tank_Top_Walkway';const floor=this.hooks.object(target.id)?.getObjectByName(s.anchor);if(floor)s.local=floor.worldToLocal(new T.Vector3(...e.position)).toArray() as V3;}

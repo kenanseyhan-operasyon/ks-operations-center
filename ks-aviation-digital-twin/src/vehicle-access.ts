@@ -46,12 +46,7 @@ export function completeVehicleSteps(model:T.Object3D,own:(g:T.BufferGeometry)=>
       }
     }
   }
-  // All cab treads are ahead of the tyre's front edge (-.7974), with clearance.
-  for(const side of [-1,1])for(let i=1;i<=3;i++){
-    const g=own(new T.BoxGeometry(.084,.008,.064)),m=new T.Mesh(g,material);
-    m.name=`CAB_ACCESS_STEP_${side>0?'LEFT':'RIGHT'}_${i}`;m.userData.sharedAsset=true;
-    m.position.set(-.852,R14.axleY-R14.tyreRadius+i*.052-.004,.155+side*(.218-(i-1)*.009));model.add(m);
-  }
+  // The cab's dimensioned stairwell is built with its doorway in VehicleCab.
 }
 
 export function clarifyFrontIndicators(model:T.Object3D,own:(g:T.BufferGeometry)=>T.BufferGeometry){
