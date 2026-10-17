@@ -14,6 +14,8 @@ import {NathanActors,parseNathanAccessClips} from '../src/nathan-model';
 import {NATHAN_PRESET} from '../src/nathan-data';
 import {NathanNavigation} from '../src/nathan-navigation';
 import {makeDriverAccess,driverPose} from '../src/nathan-driver';
+import {makeNathanAccess} from '../src/nathan-access';
+import {stairPose} from '../src/nathan-stair-gait';
 const out=process.env.CAB_QA_DIR;if(!out)throw new Error('Set CAB_QA_DIR to the diagnostic output folder');fs.mkdirSync(out,{recursive:true});
 async function read(path:string){const b=fs.readFileSync(path),l=new GLTFLoader();l.register(()=>({name:'QA_TEXTURE',loadTexture:async()=>new T.Texture()}));return l.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const vehicle=await read('public/models/refueller-38k-r14.glb'),model=vehicle.scene,pack=closedAnimationPack(model,vehicle.animations),rig=new VehicleRig(model);
@@ -31,9 +33,11 @@ function exportView(name:string,eye:number[],look:number[],span=4.1,person?:T.Ob
   const g=n.geometry,mat=(Array.isArray(n.material)?n.material[0]:n.material) as T.MeshStandardMaterial;
   if(mat.transparent&&mat.opacity<.2)return;
   const vs=[],ns=[];for(let i=0;i<g.attributes.position.count;i++){const v=n.getVertexPosition(i,new T.Vector3()).applyMatrix4(n.matrixWorld);ns.push(v.toArray());vs.push(v.project(camera).toArray());}
-  meshes.push({vs,world:ns,ids:Array.from(g.index?.array||Array.from({length:vs.length},(_,i)=>i)),color:group===person?'#5684a5':'#'+(mat.color?.getHexString()||'777777'),name:n.name});
+  meshes.push({vs,world:ns,side:mat.side,ids:Array.from(g.index?.array||Array.from({length:vs.length},(_,i)=>i)),color:group===person?'#5684a5':'#'+(mat.color?.getHexString()||'777777'),name:n.name});
  });fs.writeFileSync(out+'/'+name+'.json',JSON.stringify(meshes));console.log('Projected',name);
 }
+exportView('layout-side',[2,1.6,8],[2,1.5,0],4.2);
+exportView('layout-top',[2,9,.4],[2,0,.4],4.6,undefined,true);
 exportView('cab-closed-side',[.9,1.45,7],[.9,1.45,0],3.4);
 exportView('cab-closed-front',[-6,1.5,0],[.7,1.5,0],3.4);
 rig.cab.setDoor('left',true);for(let i=0;i<20;i++)rig.cab.updateDoors(.05);
@@ -49,5 +53,12 @@ for(const p of [.5,.6,.7,.8,.9,1]){
  exportView('driver-'+p,[.9,1.5,7],[.9,1.5,.4],3.4,personRoot);
  exportView('driver-oblique-'+p,[-3,3,5],[.9,1.4,.4],3.7,personRoot);
  console.log('Driver',p,'head',actor.eyePoint().toArray(),'errors',actor.contactRig!.errors);
+}
+const gate=pack.actions.get('Platform_Gate_Open')!;gate.time=gate.getClip().duration;pack.mixer.update(0);
+const platform=makeNathanAccess(truck,root,'platform',new NathanNavigation(entities,.34,undefined,id=>objects.get(id),person.id))!;
+for(const p of [.65,1]){
+ const pose=stairPose(platform.contacts!,p);person.position=pose.root;person.heading=platform.heading;applyTransform(personRoot,person);
+ actor.contact();actor.motion(p===1?'Idle':'Climbing_Up_Ladder');actor.contact(pose.contact);for(let i=0;i<6;i++)actor.update(.05);
+ exportView('platform-'+p,[2.5,1.6,8],[2.5,1.6,0],3.9,personRoot);
 }
 rig.dispose();actors.sync([],new Map());

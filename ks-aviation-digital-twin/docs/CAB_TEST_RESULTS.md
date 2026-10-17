@@ -1,42 +1,40 @@
-# Kabin ve Nathan — 17.10.2026 test raporu
+# Kabin / platform yerleşimi — 17.10.2026 görsel düzeltme raporu
 
-Hedef: Kenan Seyhan 3D Test / `ks-3d-test` dalı. Ana dal ve ana site bu çalışma kapsamında değiştirilmedi.
+Hedef: **Kenan Seyhan 3D Test**, `ks-3d-test` dalı. Bu çalışma ana dalı ve ana siteyi değiştirmez. Kullanıcının 07:06, 07:07 ve 07:14 tarihli üç işaretli görseli esas alındı.
 
-## Değişenler
+## Düzeltmeler
 
-- Mevcut özel kabin, Mercedes-Benz Axor gündüz kabininin üretici broşüründeki temel ölçülerine uyarlandı. Kaynak, sayfa ve ölçülerin kesinlik düzeyi [CAB_REFERENCE.md](CAB_REFERENCE.md) dosyasında ayrıldı.
-- Eski üst üste binmiş basamak/çamurluk düzeltmeleri kaldırıldı. Tekerin önünde gövdeye bağlı üç basamak ve montajlı tutamaklar oluşturuldu.
-- Kapı; cam, iç kaplama, yazı ve üst basamak kapağıyla birlikte 90° açılıyor. İç görüşte cam kenarları saydamlaşıyor; dış görünüşe dönünce malzemeler geri geliyor.
-- Ön aksın konumu güncellendi. Platformun sabit ve hareketli parçaları, merdiven–teker açıklığı için birlikte yaklaşık 355 mm geriye alındı. Bu bir proje yerleşim düzeltmesidir, üretici ölçüsü değildir.
-- Nathan yeni basamak/eşik/koltuk/pedal/direksiyon noktalarını kullanıyor. Alt basamaklarda dik duruyor, üst eşik için eğiliyor, kollarını kapıdan uzak tutuyor ve ellerini sırayla direksiyona aktarıyor. İnişte kabine dönük tırmanma hareketi ters oynatılıyor.
+- Kabinin ön yüzü sabit tutularak arka tarafı 180 mm kısaltıldı. Kaynak broşürdeki 1.650 mm uzunluk, bu özel yerleşimde 1.470 mm oldu; yeni uzunluk üretici ölçüsü olarak sunulmuyor.
+- Platformun 355 mm geriye taşınması geri alındı. Platform özgün yerinde; yükselme boyunca filtreye girmiyor.
+- Platformun kapalı konumu yaklaşık 219 mm aşağı alındı. İki makas kademesinin açıları ve bağlantı konumları birlikte güncellendi; en yüksek çalışma konumu korundu.
+- Ek platform basamakları kaldırıldı. Özgün üç basamak 355 / 670 / 990 mm yüksekliklere ayarlandı.
+- Ek dış tutamaklar kaldırıldı; Nathan özgün giriş korkuluğunu kullanıyor ve platforma yerleşince bırakıyor. Yaylı kapı ve personelle yükselme işlevleri korundu.
+- Hortum tamburu yaklaşık 120 mm arkaya, bonding makarası ve desteği 120 mm öne alındı. Kılavuz ve hortumun üst bağlantısı tamburu izliyor.
+- SOCAR çevresindeki ve kabin arkasındaki siyah yüzey çakışmalarının nedeni kaldırıldı: iç kaplama dış boyadan içeri ayrıldı, eş düzlemdeki siyah kabuk kopyası kaldırıldı.
+- Kabin içindeki uzun ek korkuluklar kaldırıldı. Kapı kasası ve kapı iç kaplamasına bağlı kısa tutamaklar kullanılıyor. Ön aks özgün konumunda; daraltılan kabin basamakları tekerin önünde kalıyor.
+- Nathan açık kapının arkasından yaklaşıyor, ayaklarını gerçek basamaklara yerleştiriyor ve kabine geçerken ellerini sırayla aktarıyor.
 
-## Doğrulananlar
+## Doğrulama
 
 | Kontrol | Sonuç |
 |---|---|
-| Üretici çizimindeki 2490 / 1650 / 2000 / 1510 / 1591 / 450 mm ölçüleri | Geometri üzerinden geçti |
-| Basamaklar arası 277 / 286 / 263 mm yükseltiler | Geçti |
-| Kabin basamakları–ön teker açıklığı | Geçti |
-| Tam sağ/sol direksiyonda ön teker–platform basamağı açıklığı | Geçti |
-| Kapı parçalarının 90° açılışı birlikte izlemesi | Geçti |
-| 101 çıkış + 101 iniş pozunda tüm tekil cilt yüzeyi noktaları | Test edilen kapı düzlemi, taban ve tavan bölgelerinde çakışma yok |
-| Aynı pozlarda el/ayak hedeflerinin erişilebilirliği | Geçti; alt basamaklarda iki el teması kontrol edildi |
-| Örneklenen kabin içi en yüksek gövde noktası | 2,6628 m; 2,710 m tavan altında yaklaşık 47 mm açıklık |
-| Mevcut `npm test` zinciri | Geçti |
-| Kapı açılmasını bekleme → binme → oturma/çalıştırma/kapatma → hedef için basamaklardan inme | Geçti |
-| Platform kapısı, düğme, yükselirken personeli taşıma, alçalıp inme | Geçti |
-| ADB acil çıkış kapıları, 15 cm bordür ve yol bulma | Geçti |
-| V personel bakışı / C kabin, masaüstü/dokunmatik olayları ve kamera geri dönüşü | Otomatik kontroller geçti |
-| Test derlemesi ve `verify:test-build` | Geçti; 178 ADB nesnesi, orijinal 16 + ek 3 Nathan klibi, araç ve zemin varlıkları bulundu |
+| Özgün platform konumu ve yalnızca üç basamak | Geçti |
+| 81 yükselme konumunda platform–filtre açıklığı | Geçti |
+| Kapalı/açık platform yüksekliği ve özgün üst çalışma konumu | Geçti |
+| İç kaplama–dış kaporta ayrımı | Geometri kontrolü geçti |
+| Ön teker–basamak açıklığı ve 90° kapı bütünlüğü | Geçti |
+| 101 binme + 101 inme pozu | Test edilen taban, tavan ve açık kapı bölgelerinde çakışma yok; el/ayak erişimi geçti |
+| Nathan platform/kabin uçtan uca etkileşimleri | Yaylı kapı, düğme, personelle yükselme, alçalma ve hedefe inerek yürüme geçti |
+| Mevcut test zinciri | Tüm gruplar tamamlandı; oturum kesintisinden sonra kalan gruplar ayrıca çalıştırıldı |
+| TypeScript / Vite test derlemesi | Geçti |
+| `verify:test-build` | 178 ADB nesnesi, özgün 16 + ek 3 Nathan klibi, araç/zemin varlıkları ve test yapılandırması geçti |
 
-İlk denemelerde taban/kol çakışmaları bulundu ve düzeltildi. Ön aks değişince eski sabit aks konumunu bekleyen kontrol güncellendi; artık fiziksel ön ve çekici arka aksları arasındaki mesafeyi kontrol ediyor. Başarısız ilk denemeler başarılı gibi değerlendirilmedi.
+Başlangıçta kısa tutamaklara erişim ve kapıya yaklaşma testleri başarısız oldu; güzergâh, gövde konumu ve el geçişi düzeltildikten sonra yukarıdaki poz taraması geçti. Önceki sonuçlar yeni geometri için otomatik olarak geçerli sayılmadı. Eski platform testindeki sabit “1,5 metreden yüksek” beklentisi, indirilen platformun gerçek taban yüksekliğini kontrol edecek şekilde güncellendi; yeni kontrol ve hareket testleri geçti.
 
 ## Sınırlar
 
-Bu model orijinal fabrika CAD'i değildir. Üretici ölçüleriyle doğrulanan alanlar yukarıda sınırlıdır. Kaporta eğrileri, tam şasi kimliği, iç trim ve parmakların anatomik kavrayışı için birebir uygunluk iddiası yoktur.
+Bu model orijinal fabrika CAD'i değildir. Ölçülerin kaynağı ve yerleşim varsayımları [CAB_REFERENCE.md](CAB_REFERENCE.md) dosyasındadır. Fabrika kabini veya anatomik olarak kusursuz parmak kavrayışı iddiası yoktur.
 
-202 poz taraması, belirli aralıklarda örnekleme ve tanımlı çakışma bölgeleri kullanır; her olası kullanıcı ölçeği, hareket zamanı ve bütün kabin parçaları için sürekli çarpışma ispatı değildir. Testler varsayılan araç ve Nathan ölçeğiyle yapıldı.
+Görseller gerçek geometriyle, dokusuz çevrimdışı derinlik tamponu kullanılarak incelendi. Gerçek bilgisayar/telefon tarayıcısındaki WebGL görüntüsü ve akıcılığı bu ortamda doğrulanamadı. Poz taraması belirli aralıklarda ve tanımlı bölgelerde yapılır; her kullanıcı ölçeği ve her yüzey için sürekli çarpışma ispatı değildir.
 
-Geometri; dokusuz, derinlik tamponlu çevrimdışı görüntülerde incelendi. Gerçek masaüstü/telefon tarayıcısında WebGL görüntüsü ve hareket akıcılığı bu çalışma ortamında doğrulanamadı. Bu nedenle “kusursuz” veya “gerçek cihazda onaylandı” sonucu verilmemiştir.
-
-Mevcut Vite derlemesinde büyük paket uyarısı sürüyor; derlemeyi engellemedi. Yeni ücretli servis veya kaynak oluşturulmadı.
+Mevcut büyük JavaScript paket uyarısı devam ediyor; derlemeyi engellemiyor. Yeni ücretli servis veya kaynak oluşturulmadı.

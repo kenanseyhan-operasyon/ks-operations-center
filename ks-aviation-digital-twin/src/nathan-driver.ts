@@ -26,8 +26,8 @@ export function makeDriverAccess(e:Entity,root:T.Object3D,nav:NathanNavigation):
   const bottom=treads[0].clone();bottom.x-=1.10;bottom.z+=1.65;bottom.y=0;
   let entry=world(root,bottom);for(let i=0;i<25&&nav.blocked(entry);i++){bottom.x-=.1;entry=world(root,bottom);}
   if(nav.blocked(entry))return;
-  const corner=bottom.clone();corner.z=treads[0].z;
-  const near=treads[0].clone();near.x-=.28;near.y=0;
+  const corner=bottom.clone();corner.z=treads[0].z+.22;
+  const near=treads[0].clone();near.x-=.28;near.z+=.22;near.y=0;
   const landing=root.worldToLocal(threshold.getWorldPosition(new T.Vector3()));
   const stops=[bottom];for(const [a,b] of [[bottom,corner],[corner,near]]){const count=Math.max(1,Math.ceil(a.distanceTo(b)/.3));for(let i=1;i<=count;i++)stops.push(a.clone().lerp(b,i/count));}
   stops.push(...treads,landing);
@@ -36,7 +36,7 @@ export function makeDriverAccess(e:Entity,root:T.Object3D,nav:NathanNavigation):
   const points=stops.map(p=>world(root,p));
   for(let i=1;i<points.length;i++)if(!nav.clear(points[i-1],points[i],e.id))return;
   const length=points.slice(1).reduce((n,p,i)=>n+new T.Vector3(...p).distanceTo(new T.Vector3(...points[i])),0)+.7*e.scale;
-  const grips:[V3,V3][]=[];root.traverse(n=>{if(!(n instanceof T.Mesh)||!n.name.startsWith('CAB_GRAB_HANDLE'))return;const b=new T.Box3().setFromObject(n),c=b.getCenter(new T.Vector3());if(root.worldToLocal(c.clone()).x>0)return;const h=n.geometry.parameters as {height?:number};if(h.height)grips.push([world(n,new T.Vector3(0,-h.height/2,0)),world(n,new T.Vector3(0,h.height/2,0))]);});
+  const grips:[V3,V3][]=[];root.traverse(n=>{if(!(n instanceof T.Mesh)||!/^CAB_ENTRY_(JAMB|DOOR)_GRIP$/.test(n.name))return;const b=new T.Box3().setFromObject(n),c=b.getCenter(new T.Vector3());if(root.worldToLocal(c.clone()).x>0)return;const h=n.geometry.parameters as {height?:number};if(h.height)grips.push([world(n,new T.Vector3(0,-h.height/2,0)),world(n,new T.Vector3(0,h.height/2,0))]);});
   return {targetId:e.id,kind:'driver',points,heading,length,crest:.8,driver,contacts:{stops:points,heading,scale:e.scale,outward:outward.toArray() as V3,ladder:false,grips}};
 }
 /** Step into the actual doorway, crouch under the roof, then turn onto the seat.
@@ -58,6 +58,9 @@ export function driverPose(access:NathanAccess,progress:number,descending=false)
   // lintel. Early crouching pushes the thighs through the floor's front edge.
   walk.contact.hipHeight=Math.min(.89,(floor-walk.root[1])/data.scale+.58);
   const right=new T.Vector3(Math.cos(access.heading*Math.PI/180),0,Math.sin(access.heading*Math.PI/180));
+  // Keep the torso behind the front-hinged open leaf while both feet remain
+  // on the compact treads; this offset does not move the contact targets.
+  walk.root=new T.Vector3(...walk.root).addScaledVector(right,.10*data.scale*T.MathUtils.smoothstep(walk.root[1],.05*data.scale,.25*data.scale)).toArray() as V3;
   walk.contact.elbowPole=outward.clone().addScaledVector(right,.8).add(new T.Vector3(0,-.6,0)).toArray() as V3;
   if(walk.root[1]>.05*data.scale)walk.contact.grips=data.grips;
   if(p<=.8)return {...walk,heading};
@@ -71,7 +74,7 @@ export function driverPose(access:NathanAccess,progress:number,descending=false)
     const candidates=(data.grips||[]).map(([a,b])=>new T.Line3(new T.Vector3(...a),new T.Vector3(...b)).closestPointToPoint(desired,true,new T.Vector3()));
     candidates.sort((a,b)=>a.distanceToSquared(desired)-b.distanceToSquared(desired));
     // Transfer one hand at a time: the other stays on the fixed handle or rim.
-    const handTime=T.MathUtils.smoothstep(t,i?.3:0,i?1:.3);
+    const handTime=T.MathUtils.smoothstep(t,i?.2:0,i?.55:.2);
     return (candidates[0]||desired).lerp(new T.Vector3(...hand),handTime).toArray() as V3;
   }) as [V3,V3];
   const contact:NathanContact={feet,seated,lean:.12*t,hands,gripHands:true,elbowPole:outward.clone().multiplyScalar(1-t).add(new T.Vector3(0,-1,0)).toArray() as V3};

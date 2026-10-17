@@ -6,13 +6,6 @@ import {R14} from './r14-spec';
 export function refitCabExterior(model:T.Object3D,own:(g:T.BufferGeometry)=>T.BufferGeometry){
   model.updateWorldMatrix(true,true);
   model.getObjectByName('Cab_Lower_Reference_Correction')?.removeFromParent();
-  // The corrected front axle would intersect the old lower platform flight.
-  // Move its complete fixed/lifting assemblies together; animation-local
-  // transforms and all occupant support coordinates remain unchanged.
-  for(const name of ['Fixed_Lower_Access_Steps','Platform_Double_Scissor']){
-    const part=model.getObjectByName(name);if(!part?.parent)continue;
-    const mount=new T.Group();mount.name='CAB_CLEARANCE_'+name;part.parent.add(mount);mount.attach(part);mount.position.x=.065;
-  }
   const cab=model.getObjectByName('KS_LOW_CAB_C3');if(!cab)return;
   // This old straight trim ran through the door lettering after the refit.
   for(const name of ['Door_Lower_Character_Line','Door_Lower_Character_Line_1'])cab.getObjectByName(name)?.removeFromParent();
@@ -44,21 +37,21 @@ export function buildCabAccess(model:T.Object3D,own:(g:T.BufferGeometry)=>T.Buff
   };
   for(const side of [-1,1]){
     const suffix=side>0?'LEFT':'RIGHT';
-    box('CAB_STEPWELL_BACK_'+suffix,[.68,.85,.025],[.44,.76,side*.865],dark);
-    for(const x of [.105,.775])box('CAB_STEPWELL_CHEEK_'+suffix,[.035,.87,.35],[x,.755,side*1.055],paint);
+    box('CAB_STEPWELL_BACK_'+suffix,[.44,.85,.025],[C.treadX,.76,side*.865],dark);
+    for(const x of [.045,.485])box('CAB_STEPWELL_CHEEK_'+suffix,[.035,.87,.35],[x,.755,side*1.055],paint);
     for(let i=0;i<3;i++){
       const lateral=C.exteriorWidth/2-C.treadDepth/2-i*.035;
       box(`CAB_ACCESS_STEP_${suffix}_${i+1}`,[C.treadWidth,.026,C.treadDepth],[C.treadX,cabTreadHeights[i]-.013,side*lateral],metal);
       // Raised serrated strips are a visual walking surface, backed by a solid tread.
-      for(let j=0;j<8;j++)box(`CAB_TREAD_GRIP_${suffix}_${i}_${j}`,[.012,.004,.21],[C.treadX-.224+j*.064,cabTreadHeights[i]+.002,side*lateral],dark);
+      for(let j=0;j<6;j++)box(`CAB_TREAD_GRIP_${suffix}_${i}_${j}`,[.012,.004,.21],[C.treadX-.16+j*.064,cabTreadHeights[i]+.002,side*lateral],dark);
     }
-    const shape=new T.Shape(),outer=.660,inner=.600;
+    const shape=new T.Shape(),outer=.625,inner=.585;
     shape.moveTo(outer,0);shape.absarc(0,0,outer,0,Math.PI,false);shape.lineTo(-inner,0);shape.absarc(0,0,inner,Math.PI,0,true);shape.closePath();
     const g=new T.ExtrudeGeometry(shape,{depth:.11,bevelEnabled:false,curveSegments:40});g.scale(u(1),u(1),u(1));
     const f=mesh('CAB_FRONT_FENDER_'+suffix,g,paint);
     f.position.fromArray(p(C.axleFromFront,(R14.axleY-C.nativeGround)*C.metresPerNative,side>0?C.exteriorWidth/2-.11:-C.exteriorWidth/2));
     box('CAB_FENDER_REAR_FLAP_'+suffix,[.03,.30,.11],[C.axleFromFront+.63,.395,side*(C.exteriorWidth/2-.055)],dark);
-    box('CAB_SILL_'+suffix,[1.47,.025,.035],[.82,C.floorHeight-.0125,side*.995],metal);
+    box('CAB_SILL_'+suffix,[C.length-.10,.025,.035],[C.length/2,C.floorHeight-.0125,side*.995],metal);
   }
   const threshold=new T.Object3D();threshold.name='CAB_DRIVER_THRESHOLD';threshold.position.fromArray(p(C.treadX,C.floorHeight+.006,.93));group.add(threshold);
   return group;

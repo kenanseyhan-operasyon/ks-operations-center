@@ -1,6 +1,6 @@
 # Axor day-cab reference and verification
 
-Scope: the cab and its access on the test branch's existing 2000/3000 refuellers. This is a dimensioned adaptation of the project's custom GLB. It is **not an OEM CAD asset**, a certified reconstruction of a particular VIN, or a dimensional certification of the complete tanker/chassis.
+Scope: the cab and its access on the test branch's existing 2000/3000 refuellers. Updated after the annotated screenshots of 17 October 2026. This is a dimensioned adaptation of the project's custom GLB. It is **not an OEM CAD asset**, a certified reconstruction of a particular VIN, or a dimensional certification of the complete tanker/chassis.
 
 ## Primary reference
 
@@ -20,7 +20,8 @@ All values below are at the application's nominal **13.5 m vehicle length and sc
 
 | Feature | Model value | Evidence / limit |
 |---|---:|---|
-| Day-cab exterior length | 1,650 mm | Printed dimension, p.42 |
+| Day-cab reference length | 1,650 mm | Printed dimension, p.42 |
+| Current installation length | 1,470 mm | User-requested rear shortening by 180 mm; front 550 mm remains fixed. Not an OEM length |
 | Exterior width / fender envelope | 2,490 mm | Printed dimension, p.42; does not include mirrors |
 | Interior width | 2,000 mm | Printed dimension, p.42 |
 | Interior floor-to-headliner height | 1,510 mm | Printed dimension, p.42 |
@@ -29,21 +30,26 @@ All values below are at the application's nominal **13.5 m vehicle length and sc
 | Lower → middle → upper → floor rises | 277 / 286 / 263 mm | Dimensions in side drawing, p.42 |
 | Door opening angle | 90° | Second manufacturer brochure, PDF p.17 |
 | Main shell width | 2,295 mm | Drawing-derived shared cab-body proportion; not a printed Axor shell-width dimension |
-| Front-to-front-axle centre | 1,510 mm | Estimated from the side drawing; not an explicit dimension |
+| Front-to-front-axle centre | 1,084.4 mm | Original project axle restored to keep the platform in its original position; not an OEM dimension |
 | Ground-to-floor height | 1,200 mm | Integration assumption for existing tyres/chassis; varies with configuration/load |
 | Tread heights above ground | 374 / 651 / 937 mm | Derived from assumed floor height and printed rises |
-| Tread size / longitudinal centre | 520 × 240 mm / 440 mm from front | Drawing/photo-derived integration dimensions |
+| Tread size / longitudinal centre | 380 × 240 mm / 265 mm from front | Current installation dimensions, fitted ahead of the original wheel |
 | Grab-handle mounts, pedal/seat/eye positions | Parametric model coordinates | Fit to source layout and supplied photos; not manufacturer-coordinate measurements |
-| Platform assembly offset | 355.25 mm aft | Project integration clearance, not an Axor specification |
+| Platform assembly longitudinal offset | 0 mm | Original GLB position restored; the previous 355 mm rearward shift is removed |
+| Closed platform floor above ground | 1,437 mm | Re-folded two-stage scissors; approximately 219 mm lower, original upper working height retained |
+| Original platform tread heights | 355 / 670 / 990 mm | Three original treads only; no inserted rungs |
+| Hose drum / bonding reel adjustment | 120 mm aft / 120 mm forward | User-requested service layout; guides, upper hose and support brackets follow their reels |
 
 The truck photographs supplied in this conversation guide the recessed stepwell, fixed handholds and complete door leaf. Exact panel curvature, trim, upholstery, chassis wheelbase, steering sweep tolerances and hand/finger grip anatomy are not established by this brochure. Factory STEP/CAD or a bodybuilder chassis drawing for the exact truck would be needed for that level of matching.
 
 ## Implementation
 
 - `src/cab-reference.ts` holds the nominal units and provenance.
-- `src/cab-geometry.ts` refits cloned cab vertices, removes the previous overlapping step/fender correction, builds attached recessed treads, and moves the fixed/lifting platform assemblies together to clear the corrected front axle.
-- `src/vehicle-cab.ts` builds a matching floor/headliner/interior, cut-out door opening, mounted handles, and a 90° complete leaf carrying its glass, trim, lettering and upper-step cover. In-cab view fades window borders and corners; exterior materials return on exit.
+- `src/cab-geometry.ts` refits cloned cab vertices, removes the previous overlapping step/fender correction, builds attached recessed treads, and retains the original axle/platform layout.
+- `src/vehicle-cab.ts` builds a matching floor/headliner/interior, cut-out door opening, two compact jamb/door-card handholds instead of long interior rails, and a 90° complete leaf carrying its glass, trim, lettering and upper-step cover. In-cab view fades window borders and corners; exterior materials return on exit.
 - `src/nathan-driver.ts` uses actual tread/threshold/seat/pedal/wheel anchors. The body stays outside the sill while stepping, crouches for the lintel, then transfers onto the seat. Descent reverses the cab-facing climbing clip over the same contacts.
+- Door and rear trim are inset from the painted shell; the previous coplanar dark lining is removed.
+- `src/model-animations.ts` clones and refits the folded scissor pose without changing the source clips or upper work height. Nathan grips the original entry guard posts, releases on the floor and follows the moving basket.
 - Cached source GLB data, Nathan assets, existing animation target names and scene persistence are retained. Nothing is published to the main branch or production service.
 
 ## Verification

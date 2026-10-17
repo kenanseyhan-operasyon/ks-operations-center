@@ -14,7 +14,7 @@ export function nathanAccessKind(node: T.Object3D, e: Entity): NathanAccessKind 
   if (e.kind === 'tank' && e.facility?.stairs !== false) return 'tank';
   if (['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(e.preset)) return 'steps';
   for (let n: T.Object3D | null = node; n; n = n.parent) {
-    if (/DRIVER_DOOR|PASSENGER_DOOR|CAB_ACCESS_STEP|KS_LOW_CAB_C3/.test(n.name)) return 'driver';
+    if (/DRIVER_DOOR|PASSENGER_DOOR|CAB_ACCESS_STEP|CAB_ENTRY_|KS_LOW_CAB_C3/.test(n.name)) return 'driver';
     if (/Rear_Ladder|Tank_Top_Walkway|Rear_Fold.*Hand/i.test(n.name)) return 'rear';
     if (/Fixed_Step|Platform_Grey_Floor|Platform_Gate/i.test(n.name)) return 'platform';
   }
@@ -89,7 +89,11 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     const count=Math.max(1,Math.ceil(bottom.distanceTo(near)/.32));for(let i=1;i<=count;i++)stops.push(bottom.clone().lerp(near,i/count));
     stops.push(...steps.map(p=>p.clone().addScaledVector(outward,.035)),landing.clone());
     const grips:[V3,V3][]=[];
-    root.traverse(n=>{if(!(n instanceof T.Mesh)||!(kind==='rear'?/Rear_Ladder_Close_Stringer|Rear_Fold.*Hand|Rear_Ladder.*Handhold/:/Platform_Outside_Grab_Handle/).test(n.name))return;
+    root.traverse(n=>{if(!(n instanceof T.Mesh)||!(kind==='rear'?/Rear_Ladder_Close_Stringer|Rear_Fold.*Hand|Rear_Ladder.*Handhold/:/^Basket_Vertical(?:_|$)/).test(n.name))return;
+      if(kind==='platform'){
+        const c=boxFor(n).getCenter(new T.Vector3());
+        if(c.clone().sub(centre).dot(outward)<.1)return;
+      }
       grips.push(...meshGripLines(n));
     });
     const worldOut=outward.clone().transformDirection(root.matrixWorld);

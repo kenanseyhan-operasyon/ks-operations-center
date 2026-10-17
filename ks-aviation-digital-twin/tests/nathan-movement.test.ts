@@ -71,7 +71,10 @@ console.log('PASS A* rotated obstacles, walls, equipment, closed/open gates, bou
 for(const kind of ['rear','platform'] as NathanAccessKind[]){
   const access=makeNathanAccess(truck,vehicleRoot,kind,nav());assert.ok(access,kind);
   assert.equal(nav().blocked(access!.points[0]),false,'Entrance is outside the vehicle clearance');
-  const top=access!.points.at(-1)!;assert.ok(top[1]>1.5);if(kind==='rear')assert.ok(top[2]>truck.position[2]+5,'Roof landing is beside the rear ladder, not roof centre');
+  const top=access!.points.at(-1)!;
+  const floor=vehicleRoot.getObjectByName(kind==='rear'?'Tank_Top_Walkway':'Platform_Grey_Floor')!;
+  assert.ok(Math.abs(top[1]-new T.Box3().setFromObject(floor,true).max.y-.012*truck.scale)<.001,'Landing follows the actual floor, including the lowered platform');
+  if(kind==='rear')assert.ok(top[2]>truck.position[2]+5,'Roof landing is beside the rear ladder, not roof centre');
   person.position=[access!.points[0][0]-2,0,access!.points[0][2]+2];applyTransform(personRoot,person);control.open(person);
   assert.ok(control.climb(truck.id,kind),notices.at(-1));assert.equal(control.blocksVehicle(truck.id),true);
   tick(7);assert.ok(['climbing','aligning','preparing','walking'].includes(control.phase),control.phase);

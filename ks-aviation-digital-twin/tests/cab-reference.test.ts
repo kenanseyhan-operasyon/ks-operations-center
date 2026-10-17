@@ -21,7 +21,7 @@ const close=(got:number,want:number,label:string,tolerance=.001)=>assert.ok(Math
 const floor=bounds('CAB_FLOOR'),roof=bounds('CAB_HEADLINER'),shell=bounds('Low_Short_Cab_Shell');
 close(floor.getSize(new T.Vector3()).z*metres,2,'2,000 mm clear interior width');
 close((roof.min.y-floor.max.y)*metres,1.51,'1,510 mm interior headroom');
-close(shell.getSize(new T.Vector3()).x*metres,1.65,'1,650 mm day cab length');
+close(shell.getSize(new T.Vector3()).x*metres,1.47,'User-requested compact cab length (source reference is 1,650 mm)');
 close((bounds('Low_Roof_Cap').max.y-floor.max.y)*metres,1.591,'1,591 mm exterior floor to roof');
 close((bounds('CAB_FRONT_FENDER_LEFT').max.z-bounds('CAB_FRONT_FENDER_RIGHT').min.z)*metres,2.49,'2,490 mm fender envelope');
 const rim=model.getObjectByName('STEERING_RIM') as T.Mesh;rim.geometry.computeBoundingBox();close(rim.geometry.boundingBox!.getSize(new T.Vector3()).x*metres,.45,'450 mm steering wheel');
@@ -30,15 +30,44 @@ for(const side of ['LEFT','RIGHT']){
  for(const [i,rise] of [.277,.286,.263].entries())close(((steps[i+1]?.max.y??floor.max.y)-steps[i].max.y)*metres,rise,'Manufacturer tread rise');
  for(const b of steps)assert.ok(b.max.x<R14.frontAxle-R14.tyreRadius-.025/metres,'Every cab tread precedes the full tyre by at least 25 mm');
 }
-close((rig.wheels.find(w=>w.front)!.pivot.position.x+.8958)*metres,1.510,'Drawing-derived axle location');
+close((rig.wheels.find(w=>w.front)!.pivot.position.x+.8958)*metres,(.8958-.6974)*metres,'Original front axle location restored');
 assert.equal(model.getObjectByName('Cab_Lower_Reference_Correction'),undefined,'Remove obsolete step/fender corrections');
 // The front tyre must remain clear of the fixed platform flight at full lock.
 const stairs:T.Object3D[]=[];model.traverse(n=>{if(n.name.startsWith('Fixed_Step'))stairs.push(n);});
-for(const steer of [-.55,0,.55]){rig.update(0,steer,0);model.updateWorldMatrix(true,true);for(const wheel of rig.wheels.filter(w=>w.front))for(const step of stairs)assert.ok(!new T.Box3().setFromObject(wheel.spin,true).intersectsBox(new T.Box3().setFromObject(step,true)),'Steered front tyre clears platform treads');}
+for(const steer of [-.55,0,.55]){rig.update(0,steer,0);model.updateWorldMatrix(true,true);for(const wheel of rig.wheels.filter(w=>w.front))for(const step of [...stairs,...['LEFT','RIGHT'].flatMap(side=>[1,2,3].map(i=>model.getObjectByName(`CAB_ACCESS_STEP_${side}_${i}`)!))])assert.ok(!new T.Box3().setFromObject(wheel.spin,true).intersectsBox(new T.Box3().setFromObject(step,true)),'Steered front tyre clears platform treads');}
+// Visual-review regressions: compact rear, original platform position and
+// three treads, inset trim, and clearance throughout the full lift stroke.
+const steps=stairs.filter(n=>n instanceof T.Mesh) as T.Mesh[];
+assert.equal(steps.length,3,'Exactly the three original platform treads');
+for(const [i,step] of steps.sort((a,b)=>new T.Box3().setFromObject(a).max.y-new T.Box3().setFromObject(b).max.y).entries()){
+ close((new T.Box3().setFromObject(step).max.y+.454)*metres,[.355,.670,.990][i],'Re-spaced original platform tread');
+}
+const lowerFloor=bounds('Platform_Grey_Floor');
+close(lowerFloor.min.x,-.580,'Platform restored to original longitudinal position',.0001);
+close((lowerFloor.max.y+.454)*metres,1.43745,'Platform fully folded floor height');
+const basket=model.getObjectByName('Platform_Moving_Basket')!,filter=bounds('Transverse_Filter_Behind_Panel'),lift=pack.actions.get('Platform_Raise_4s')!;
+for(let i=0;i<=80;i++){
+ lift.time=lift.getClip().duration*i/80;pack.mixer.update(0);model.updateWorldMatrix(true,true);
+ assert.ok(new T.Box3().setFromObject(basket,true).max.x<filter.min.x-.005,'Basket stays ahead of the filter throughout lift stroke');
+}
+close((bounds('Platform_Grey_Floor').max.y+.454)*metres,3.05526,'Original fully raised floor is retained');
+lift.time=0;pack.mixer.update(0);model.updateWorldMatrix(true,true);
+model.traverse(n=>{
+ if(n.name.startsWith('Platform_Outside_Grab_Handle'))assert.equal(n.visible,false,'No supplementary external platform grab loops');
+ assert.ok(!n.name.startsWith('CAB_GRAB_HANDLE'),'No long interior grab rails');
+ if(n.name==='DOOR_LINER'){
+  const b=new T.Box3().setFromObject(n),outer=Math.max(Math.abs(b.min.z-.155),Math.abs(b.max.z-.155));
+  assert.ok((shell.max.z-.155-outer)*metres>.019,'Door card has at least 19 mm separation from outer paint');
+ }
+});
+assert.ok((shell.max.x-bounds('CAB_REAR_LINER').max.x)*metres>.025,'Rear trim stays inside the painted rear wall');
+assert.equal(model.getObjectByName('CAB_INNER_Low_Short_Cab_Shell'),undefined,'No coincident duplicate black shell');
+assert.ok(bounds('Large_Reference_Hose_Drum').min.x>filter.max.x+.02,'Hose drum clears filter with extra service space');
+console.log('PASS three original platform treads, 81 lift/filter poses, inset trim and removed extra rails');
 rig.update(0,0,0);rig.cab.setDoor('left',true);for(let i=0;i<20;i++)rig.cab.updateDoors(.05);
 close(Math.abs(rig.cab.doors.get('left')!.hinge.rotation.y),Math.PI/2,'90 degree complete door');
 for(const name of ['DRIVER_DOOR_PANEL','Door_Left','DOOR_STEP_COVER']){const candidates:T.Object3D[]=[];model.traverse(n=>{if(n.name===name)candidates.push(n);});assert.ok(candidates.some(n=>{for(let p=n.parent;p;p=p.parent)if(p.name==='DRIVER_DOOR_HINGE')return true;return false;}),`${name} follows door`);}
-console.log('PASS manufacturer dimensions: 2490 / 1650 / 2000 / 1510 / 1591 / 450 mm; 277 / 286 / 263 mm tread rises; tyre clearance at steering lock; complete 90° door');
+console.log('PASS reference dimensions: 2490 / 2000 / 1510 / 1591 / 450 mm; user-fit 1470 mm cab; 277 / 286 / 263 mm tread rises; tyre clearance at steering lock; complete 90° door');
 
 const truck=newEntity('R14',0,0),root=new T.Group(),orient=new T.Group();root.add(orient);orient.rotation.y=-Math.PI/2;orient.add(model);model.scale.setScalar(metres);model.position.set(-R14.centreX*metres,.454*metres,-R14.centreZ*metres);applyTransform(root,truck);root.updateWorldMatrix(true,true);
 const asset=await read('public/models/personnel/KS_Nathan_15_Hareket.glb');asset.animations.push(...parseNathanAccessClips(JSON.parse(fs.readFileSync('public/models/personnel/nathan-access-animations.json','utf8'))));

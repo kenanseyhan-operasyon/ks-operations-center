@@ -28,24 +28,18 @@ export function completeVehicleSteps(model:T.Object3D,own:(g:T.BufferGeometry)=>
     });
     for(const z of [.105,.205])add('Rear_Ladder_Bumper_Mount',[.048,.012,.012],[1.534,-.334,z],parent);
   }
-  for(const kind of ['platform']){
-    const steps:T.Mesh[]=[];model.traverse(n=>{if(n instanceof T.Mesh&&(kind==='rear'?/^Rear_Ladder_Close_Step(?:_|$)/:/^Fixed_Step(?:_|$)/).test(n.name))steps.push(n);});
-    steps.sort((a,b)=>new T.Box3().setFromObject(a).max.y-new T.Box3().setFromObject(b).max.y);if(!steps.length)continue;
-    const first=new T.Box3().setFromObject(steps[0]),last=new T.Box3().setFromObject(steps.at(-1)!);
-    const floor=model.getObjectByName(kind==='rear'?'Tank_Top_Walkway':'Platform_Grey_Floor');if(!floor)continue;
-    const tops=[R14.axleY-R14.tyreRadius,...steps.map(s=>new T.Box3().setFromObject(s).max.y),new T.Box3().setFromObject(floor).max.y];
-    let serial=0;
-    for(let i=1;i<tops.length;i++){
-      const rise=tops[i]-tops[i-1],count=Math.ceil(rise/.058);
-      for(let j=1;j<count;j++){
-        const source=i===tops.length-1?last:first,size=source.getSize(new T.Vector3()),centre=source.getCenter(new T.Vector3());
-        if(kind==='rear')size.x=Math.max(.018,size.x);else size.z=Math.max(.07,size.z);
-        size.y=.006;centre.y=T.MathUtils.lerp(tops[i-1],tops[i],j/count)-size.y/2;
-        const mesh=new T.Mesh(own(new T.BoxGeometry(size.x,size.y,size.z)),material);mesh.name=(kind==='rear'?'Rear_Ladder_Close_Step':'Fixed_Step')+'_KS_'+serial++;mesh.userData.sharedAsset=true;mesh.position.copy(centre);model.add(mesh);
-        model.updateMatrixWorld(true);steps[0].parent!.attach(mesh);
-      }
-    }
+  // Re-space the three original treads; do not insert supplementary steps.
+  const tops=[.355,.670,.990].map(m=>R14.axleY-R14.tyreRadius+m/(13.5/2.47));
+  const steps:T.Mesh[]=[];model.traverse(n=>{if(n instanceof T.Mesh&&/^Fixed_Step(?:_\d+)?$/.test(n.name))steps.push(n);});
+  steps.sort((a,b)=>new T.Box3().setFromObject(a).max.y-new T.Box3().setFromObject(b).max.y);
+  for(const [i,step] of steps.entries()){
+    const delta=tops[i]-new T.Box3().setFromObject(step).max.y;
+    step.position.y+=delta;
   }
+  const handles:T.Object3D[]=[];model.traverse(n=>{if(/^Platform_Outside_Grab_Handle/.test(n.name))handles.push(n);});
+  // Retain the original structural guardrail and spring gates. Nathan uses its
+  // entry posts; the supplementary external grab loops are not needed.
+  for(const handle of handles)handle.visible=false;
   // The cab's dimensioned stairwell is built with its doorway in VehicleCab.
 }
 

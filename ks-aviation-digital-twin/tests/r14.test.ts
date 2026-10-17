@@ -102,7 +102,13 @@ assert.equal(rigid.model.getObjectByName('R14_KINGPIN'),undefined);
 const rigidPose=new THREE.Box3().setFromObject(rigidTank,true);rigid.rig.update(3,.2,.5);rigid.model.updateMatrixWorld(true);
 assert.deepEqual(new THREE.Box3().setFromObject(rigidTank,true),rigidPose,'2000 tank stays fixed to its chassis while driving');
 assert.equal(refuellerDimensions('R14_2000').trailerWheelbase,0);
-assert.deepEqual(Array.from((rigid.model.getObjectByName('Delivery_Hose_Taut_Parked') as THREE.Mesh).geometry.attributes.position.array),sourceHosePositions,'2000 keeps its original equipment layout');
+const rigidHose=(rigid.model.getObjectByName('Delivery_Hose_Taut_Parked') as THREE.Mesh).geometry.attributes.position;
+assert.equal(rigidHose.count,sourceHose.geometry.attributes.position.count,'Service adjustment retains original hose topology');
+for(let i=0;i<rigidHose.count;i++){
+ assert.equal(rigidHose.getY(i),sourceHosePositions[i*3+1],'Service adjustment preserves hose height');
+ assert.equal(rigidHose.getZ(i),sourceHosePositions[i*3+2],'Service adjustment preserves hose lateral placement');
+ assert.ok(rigidHose.getX(i)>=sourceHosePositions[i*3]-.000001&&rigidHose.getX(i)<=sourceHosePositions[i*3]+.022001,'Hose follows only the requested 120 mm rearward drum adjustment');
+}
 assert.ok(Math.abs(rigid.rig.wheelbase*13.5/R14.length-refuellerDimensions('R14_2000').wheelbase)<1e-9);
 
 function motion(){const m=new VehicleMotion({x:0,z:0,heading:0});Object.assign(m,r14Dimensions());m.throttle=1;return m;}

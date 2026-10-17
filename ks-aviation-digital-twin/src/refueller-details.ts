@@ -35,6 +35,24 @@ export function clearCouplingSweep(model:THREE.Object3D,own:(g:THREE.BufferGeome
   model.updateMatrixWorld(true);
 }
 
+/** Small service-side layout adjustment requested after visual review. Move the
+ * drum with its guide/upper hose and the bonding reel with its support bracket. */
+export function spaceServiceReels(model:THREE.Object3D,own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
+  for(const name of ['Bonding_Assembly','Bonding_Deck_Base','Bonding_Deck_Web']){
+    const n=model.getObjectByName(name);if(n)n.position.x-=.022;
+  }
+  model.traverse(n=>{
+    if(n.name==='Large_Reference_Hose_Drum'||/^Drum_Exit_/.test(n.name))n.position.x+=.022;
+    if(n.name!=='Delivery_Hose_Taut_Parked'||!(n instanceof THREE.Mesh))return;
+    const g=own(n.geometry.clone()),p=g.attributes.position,inverse=n.matrixWorld.clone().invert();
+    for(let i=0;i<p.count;i++){
+      const v=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(n.matrixWorld);v.x+=.022*THREE.MathUtils.smoothstep(v.y,-.15,-.03);
+      v.applyMatrix4(inverse);p.setXYZ(i,v.x,v.y,v.z);
+    }
+    g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();n.geometry=g;
+  });model.updateWorldMatrix(true,true);
+}
+
 /** Reuse the model's lettering without stretching its glyphs along the neck. */
 export function refitTankMarkings(meshes:THREE.Mesh[],own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
   const wrap=(mesh:THREE.Mesh,side:number,place:(v:THREE.Vector3)=>void)=>{
