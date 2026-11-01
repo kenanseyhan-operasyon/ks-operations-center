@@ -2,7 +2,7 @@ import * as T from 'three';
 import type { V3 } from './personnel-navigation';
 import {NathanGrasp} from './nathan-grasp';
 
-export type NathanContact = { handsOnly?:boolean; feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handTangents?:[V3,V3]; handWeight?:number; handApproach?:V3; grips?:[V3,V3][]; handGrips?:[[V3,V3][],[V3,V3][]]; gripAim?:[V3,V3]; settleGrips?:boolean; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number; elbowPole?:V3; gripHands?:boolean; steeringBlend?:number; disableClimbFallback?:boolean; freeHands?:boolean; procedural?:boolean; gripRadius?:number; elbowLimits?:[number,number] };
+export type NathanContact = { handsOnly?:boolean; feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handTangents?:[V3,V3]; handWeight?:number; handApproach?:V3; grips?:[V3,V3][]; handGrips?:[[V3,V3][],[V3,V3][]]; gripAim?:[V3,V3]; settleGrips?:boolean; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number; elbowPole?:V3; gripHands?:boolean; steeringBlend?:number; disableClimbFallback?:boolean; freeHands?:boolean; keepFreeHandMotion?:boolean; procedural?:boolean; gripRadius?:number; elbowLimits?:[number,number] };
 const up=new T.Vector3(0,1,0),pos=(n:T.Object3D)=>n.getWorldPosition(new T.Vector3());
 function worldRotation(bone:T.Object3D,q:T.Quaternion){bone.quaternion.copy(bone.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(q));bone.updateWorldMatrix(false,true);}
 /** Analytic two-link IK: preserve segment lengths and the requested bend plane. */
@@ -162,7 +162,9 @@ export class NathanContactRig{
       const arm=this.arms[i],grasp=this.grasps[i],cylinder=grasp&&(pose.gripHands||pose.freeHands||!!grips?.length);let target=pose.hands?.[i],tangent=pose.handTangents?new T.Vector3(...pose.handTangents[i]):undefined;
       let transferWeight=1,transferring=false;
       grasp?.setRadius(pose.gripRadius??.012);
-      if(pose.freeHands){
+      // Keep the unoccupied hand's natural walking swing when one hand holds
+      // the tank rail; older two-hand vehicle climbing still resets both arms.
+      if(pose.freeHands&&(!pose.keepFreeHandMotion||!!target||!!grips?.length)){
         for(const bone of [arm.upper,arm.lower,arm.end,...(grasp?.fingers.keys()||[])]){
           if(!this.saved.has(bone))this.saved.set(bone,bone.quaternion.clone());bone.quaternion.copy(this.neutral.get(bone)!);
         }
