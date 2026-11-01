@@ -19,6 +19,18 @@ const panel=new MonitorPanel(host,network,()=>scene,()=>person);
 assert.ok(panel.open(monitor),'Nathan can open fire monitor after reaching rear yoke');
 assert.equal(panel.aimingMonitorId,monitor.id,'mouse aiming must start immediately upon reaching controls');
 assert.equal(stage.style.cursor,'crosshair');
+assert.equal(panel.grippingMonitorId,monitor.id,'TUT command engages real monitor hand-hold state');
+const holdButton=host.querySelector<HTMLButtonElement>('[data-grip]')!;
+assert.ok(holdButton,'Explicit TUT/BIRAK operator command is visible');
+holdButton.click();
+assert.equal(panel.grippingMonitorId,undefined,'BIRAK releases the physical hand-hold');
+assert.equal(panel.aimingMonitorId,undefined,'BIRAK also stops accidental mouse steering');
+assert.equal(stage.style.cursor,'');
+holdButton.click();
+assert.equal(panel.grippingMonitorId,monitor.id,'TUT restores physical monitor hold');
+host.querySelector<HTMLButtonElement>('[data-aim]')!.click();
+assert.equal(panel.aimingMonitorId,monitor.id,'Mouse control activates only after TUT');
+
 const pointer=(type:string,x:number,y:number)=>{const ev=new dom.window.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});Object.defineProperty(ev,'pointerId',{value:5});stage.dispatchEvent(ev);};
 pointer('pointerdown',100,100);pointer('pointermove',170,60);pointer('pointerup',170,60);
 assert.ok(network.monitor(monitor.id).yaw>15,'drag rotates yaw');
