@@ -321,7 +321,7 @@ export class NathanController {
         this.operation=undefined;this.operationApplied=false;this.idle();
         if(this.gatePass){this.route=this.gatePass.crossing;this.goal=this.route.at(-1);this.gatePass=undefined;this.nav=this.navigation();this.navAge=0;this.status('Acil çıkış kapısından geçiyor…','walking');}
         else{this.status(gate.preset==='PEDESTRIAN_GATE'?'Kapı konumu değiştirildi. Yeni hedef seçebilirsiniz.':'Yangın ekipmanı kumandası hazır.');this.commit();}
-      }return;eturn;
+      }return;
     }
     if (this.phase === 'idle' || this.phase === 'paused' || this.phase === 'standing') return;
     if (this.phase === 'roofwalking') { this.tickRoof(dt); return; }
