@@ -626,17 +626,37 @@ export class NathanController {
     // Stair motion owns its height. Sampling generic ground for animated feet
     // can return Y=0 and collapse the avatar during an elevated descent.
     this.actor!.terrain=undefined;
-    const e=this.entity!,access=this.access!,support=e.nathan!.support!,speed=.55*e.scale;
-    const progress=T.MathUtils.clamp(support.progress+(down?-1:1)*speed*dt/access.length,0,1),point=sampleAccess(access,progress);
-    const heading=Math.atan2(point[0]-e.position[0],-(point[2]-e.position[2]))*180/Math.PI;
-    if(distance(e.position,point)>.0001&&this.turn(heading,dt)>20){this.actor!.motion('Idle');return;}
-    const slope=point[1]-e.position[1];support.progress=progress;e.position=point;
-    if(Math.abs(slope)<.0001)this.actor!.motion('Nathan_Original_Walk',speed/(1.15*e.scale));else this.stairsMotion(slope<0);
-    const tank=this.hooks.entities().find(o=>o.id===access.targetId);
+    const e=this.entity!,access=this.access!,support=e.nathan!.support!,tank=this.hooks.entities().find(o=>o.id===access.targetId);
+    // Approach and exit each flight at a normal walking pace. No run-up-stairs
+    // clip: the physical stair path and feet/one-hand IK own this locomotion.
+    const remaining=Math.min(support.progress,1-support.progress)*access.length;
+    const easing=T.MathUtils.smoothstep(remaining,0,.42*e.scale);
+    const speed=.52*e.scale*(.42+.58*easing);
+    const progress=T.MathUtils.clamp(support.progress+(down?-1:1)*speed*dt/access.length,0,1);
+    const point=sampleAccess(access,progress);
+    // Look slightly ahead along the curve. Point-to-point angles at the near
+    // vertical risers had generated abrupt left/right flips each step.
+    const lookAhead=T.MathUtils.clamp(progress+(down?-1:1)*Math.min(.17/access.length,.012),0,1);
+    const ahead=sampleAccess(access,lookAhead);
+    const direction=new T.Vector3(ahead[0]-point[0],0,ahead[2]-point[2]);
+    if(direction.lengthSq()<1e-7)direction.set(point[0]-e.position[0],0,point[2]-e.position[2]);
+    const heading=direction.lengthSq()>1e-7?Math.atan2(direction.x,-direction.z)*180/Math.PI:e.heading;
+    const error=this.turn(heading,dt);
+    if(error>26){
+      // Pivot on the current tread with planted soles and continuous rail grip.
+      this.actor!.motion('Idle');
+      this.actor!.contact(tank?tankStairContact(tank,access,support.progress,e.heading):undefined);
+      return;
+    }
+    const travelled=new T.Vector3(...point).distanceTo(new T.Vector3(...e.position));
+    support.progress=progress;e.position=point;
+    // A natural walk cycle played at the actual slow stair speed. Limb IK then
+    // places each sole on the real step and keeps one palm on the outside rail.
+    this.actor!.motion('Nathan_Original_Walk',Math.max(.15,Math.min(.95,travelled/Math.max(dt,.001)/(1.15*e.scale))));
     this.actor!.contact(tank?tankStairContact(tank,access,progress,e.heading):undefined);
     this.rememberSupport();
     if(!down&&progress===1){this.access=undefined;this.idle();this.status('Tank çatısında bekliyor. Çatıya, bağlı köprüye veya diğer tanka tıklayın.','standing');if(!this.continueDestination())this.commit();}
-    if(down&&progress===0){delete e.nathan!.support;this.access=undefined;e.position[1]=0;this.idle();this.status('Tank merdiveninden zemine indi · Idle','idle');if(!this.continueDestination())this.commit();}
+    if(down&&progress===0){this.finishDescent(e);}
   }
 
   private visitInspection(id:string){
