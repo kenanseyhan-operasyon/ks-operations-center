@@ -39,10 +39,18 @@ export function prepareMonitor(g:T.Group,o:Entity){
  const barrel=new T.Mesh(new T.CylinderGeometry(.095,.095,.65,12),new T.MeshStandardMaterial({color:'#aebbbe',metalness:.45,roughness:.5}));barrel.rotation.x=Math.PI/2;barrel.position.z=.325;pitch.add(barrel);
  // Operator-side yoke and two physical handgrips. They follow the monitor yaw.
  const steel=new T.MeshStandardMaterial({color:'#445259',metalness:.45,roughness:.55});
- const crossbar=new T.Mesh(new T.CylinderGeometry(.017,.017,.58,8),steel);crossbar.rotation.z=Math.PI/2;crossbar.position.set(0,-.14,-.23);pivot.add(crossbar);
+ // Place the yoke behind the pivot, within Nathan's REAL arm reach.
+ // The old crossbar was over 30 cm beyond his animated palms even though
+ // the logical contact flag read "gripping". Two steel cheeks extend the
+ // moving yaw assembly to the operator-side crossbar.
+ const yokeZ=-.52;
+ const crossbar=new T.Mesh(new T.CylinderGeometry(.017,.017,.58,8),steel);
+ crossbar.rotation.z=Math.PI/2;crossbar.position.set(0,-.14,yokeZ);pivot.add(crossbar);
  for(const [name,x] of [['MONITOR_GRIP_LEFT',.28],['MONITOR_GRIP_RIGHT',-.28]] as const){
+  const cheek=new T.Mesh(new T.CylinderGeometry(.015,.015,Math.abs(yokeZ+.23),8),steel);
+  cheek.rotation.x=Math.PI/2;cheek.position.set(x,-.14,(yokeZ-.23)/2);pivot.add(cheek);
   const grip=new T.Mesh(new T.CylinderGeometry(.021,.021,.17,10),steel);
-  grip.name=name;grip.position.set(x,-.06,-.23);pivot.add(grip);
+  grip.name=name;grip.position.set(x,-.06,yokeZ);pivot.add(grip);
  }
  g.add(pivot);
  const jet=g.getObjectByName('FACILITY_JET');if(jet){g.remove(jet);jet.traverse(n=>{if(n instanceof T.Mesh){n.geometry.dispose();}});}
