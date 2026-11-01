@@ -60,7 +60,7 @@ export function tankStairContact(tank:Entity,access:NathanAccess,progress:number
   const nearGround=smooth((progress-.025)/.07),nearRoof=smooth((.975-progress)/.07);
   const handWeight=Math.min(nearGround,nearRoof);
   return {feet,grips:[rail],handGrips:handSide===0?[[rail],[]]:[[],[rail]],
-    gripAim:[mid,mid],handWeight,freeHands:true,gripHands:true,procedural:true,
+    gripAim:[mid,mid],handWeight,freeHands:true,keepFreeHandMotion:true,gripHands:true,procedural:true,
     disableClimbFallback:true,hipHeight:.89,gripRadius:radiusTube,
     elbowPole:[0,-1,0]};
 }
