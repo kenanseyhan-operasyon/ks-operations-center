@@ -124,7 +124,8 @@ export class NathanContactRig{
     // Access has its own contact phase. An unrelated looping climbing clip must
     // not twist the chest/head or reverse the elbow between two planted grips.
     if(pose.procedural){
-      const bones=new Set([...this.torso,...[...this.feet,...this.arms].flatMap(l=>[l.upper,l.lower,l.end]),...this.arms.map(l=>l.upper.parent!)]);
+      const fixedHands=this.arms.flatMap((l,i)=>pose.keepFreeHandMotion&&!pose.handGrips?.[i]?.length?[]:[l.upper,l.lower,l.end]);
+      const bones=new Set([...this.torso,...this.feet.flatMap(l=>[l.upper,l.lower,l.end]),...fixedHands,...this.arms.map(l=>l.upper.parent!)]);
       for(const bone of bones){if(!this.saved.has(bone))this.saved.set(bone,bone.quaternion.clone());const q=this.neutral.get(bone);if(q)bone.quaternion.copy(q);}
     }
     // Remove the source clip's sustained forward hunch only while sitting.
