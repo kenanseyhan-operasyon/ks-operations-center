@@ -19,6 +19,7 @@ import {R14} from '../src/r14-spec';
 import {closedAnimationPack} from '../src/model-animations';
 import {applyTransform,makeObject} from '../src/objects';
 import {Workspace} from '../src/workspace';
+import {equipmentGripPose} from '../src/nathan-equipment-contact';
 
 const dom=new JSDOM('<body><canvas></canvas></body>',{pretendToBeVisual:true});
 Object.assign(globalThis,{window:dom.window,document:dom.window.document});dom.window.HTMLCanvasElement.prototype.getContext=()=>null;
@@ -151,9 +152,26 @@ const gate=newEntity('PEDESTRIAN_GATE',0,0);const closed=new NathanNavigation([g
 assert.equal(closed.clear([0,0,-1],[0,0,1]),false);assert.equal(opened.clear([0,0,-1],[0,0,1]),true);assert.equal(opened.blocked([-.55,0,-.5]),true,'Open leaf still obstructs its sweep side');
 console.log('PASS emergency gate changes the traversable opening, retaining posts and swung leaf');
 gate.position=[20,0,15];entities.push(gate);objects.set(gate.id,makeObject(gate));person.position=[20,0,12];applyTransform(personRoot,person);control.open(person);
-assert.ok(control.operateGate(gate.id));tick(15);assert.equal(gate.facility?.open,true,'Operator approaches and operates the panic gate');
+let doorGripFrames=0;
+assert.ok(control.operateGate(gate.id));
+tick(15,()=>{if(actor.contactRig?.handContacts.filter(c=>c?.gripping).length===1)doorGripFrames++;});
+assert.equal(gate.facility?.open,true,'Operator approaches and operates the panic gate');
+assert.ok(doorGripFrames>=2,'Gate operator must actually grip one physical door rail before releasing it');
 assert.ok(control.walkTo([20,0,17]));tick(20);assert.equal(control.phase,'idle');assert.ok(Math.abs(person.position[2]-17)<.03);
-console.log('PASS Nathan approaches emergency gate, opens it and walks through');
+console.log('PASS Nathan approaches emergency gate, grips moving door rail, opens it and walks through');
+const valve=newEntity('PIPE_VALVE',28,17);
+valve.facility={...valve.facility,valveStyle:'lever',open:false};
+entities.push(valve);objects.set(valve.id,makeObject(valve));
+let valveGripFrames=0;
+assert.ok(control.operateFire(valve.id),'Nathan should safely approach the physical valve');
+tick(23,()=>{if(actor.contactRig?.handContacts.filter(c=>c?.gripping).length===1)valveGripFrames++;});
+assert.equal(valve.facility?.open,true,'Lever valve must change state only after the reach/grip interaction');
+assert.ok(valveGripFrames>=2,'Nathan must actually grab the valve handle, not wave an Opening animation');
+const lever=objects.get(valve.id)!.getObjectByName('FACILITY_VALVE_HANDLE');
+assert.ok(lever,'Lever valve has a named moving physical handle');
+const pose=equipmentGripPose(person,personRoot,valve,objects.get(valve.id),1);
+assert.ok(pose?.hands?.filter(Boolean).length===1,'Use one hand on the moving lever, other arm free');
+console.log('PASS approach → physical lever grip → valve state change → release');
 
 const canvas=document.querySelector('canvas')!,camera=new T.PerspectiveCamera(42,1,.1,10000);canvas.setPointerCapture=()=>{};canvas.releasePointerCapture=()=>{};canvas.hasPointerCapture=()=>false;
 let locked=false;const view=new NathanCamera(camera,canvas,()=>({entity:person,actor}),on=>locked=on);view.set('eyes');assert.equal(locked,true);assert.ok(camera.position.distanceTo(actor.eyePoint())<1e-8);
