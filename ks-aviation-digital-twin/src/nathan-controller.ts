@@ -408,6 +408,7 @@ export class NathanController {
       // ladder/top-out clip while keeping the character facing uphill.
       if(this.access.kind==='steps'&&target?.preset==='FOAM_INSPECTION_ACCESS'){this.tickInspection(dt,down);return;}
       if(this.access.kind==='steps'){
+        this.actor!.terrain=undefined;
         const heading=this.access.heading+(down?180:0);
         if(this.turn(heading,dt)>5){this.actor.motion('Idle');this.transform();return;}
         const speed=.48*e.scale;
@@ -445,6 +446,7 @@ export class NathanController {
   }
 
   private crossing(dt: number, returning: boolean) {
+    this.actor!.terrain=undefined;
     const e = this.entity!, access = this.access!, support = e.nathan!.support!;
     const error = this.turn(access.heading + (returning ? 180 : 0), dt);
     if (error > 20) { this.actor!.motion('Idle'); return; }
@@ -602,11 +604,13 @@ export class NathanController {
     this.rememberSupport();this.transform();
   }
   private tankStairs(dt: number,down: boolean) {
+    // Stair motion owns its height. Sampling generic ground for animated feet
+    // can return Y=0 and collapse the avatar during an elevated descent.
+    this.actor!.terrain=undefined;
     const e=this.entity!,access=this.access!,support=e.nathan!.support!,speed=.55*e.scale;
     const progress=T.MathUtils.clamp(support.progress+(down?-1:1)*speed*dt/access.length,0,1),point=sampleAccess(access,progress);
     const heading=Math.atan2(point[0]-e.position[0],-(point[2]-e.position[2]))*180/Math.PI;
     if(distance(e.position,point)>.0001&&this.turn(heading,dt)>20){this.actor!.motion('Idle');return;}
-    this.actor!.terrain=p=>(this.nav??this.navigation()).surface(p,.02);
     const slope=point[1]-e.position[1];support.progress=progress;e.position=point;
     if(Math.abs(slope)<.0001)this.actor!.motion('Nathan_Original_Walk',speed/(1.15*e.scale));else this.stairsMotion(slope<0);
     this.rememberSupport();
@@ -623,10 +627,11 @@ export class NathanController {
     this.begin();this.access=access;e.nathan!.support={targetId:id,kind:'steps',progress:0};this.status('Köpük kontrol sahanlığına iniyor…','climbing');return true;
   }
   private tickInspection(dt:number,returning:boolean){
+    this.actor!.terrain=undefined;
     const e=this.entity!,a=this.access!,s=e.nathan!.support!,target=this.hooks.entities().find(t=>t.id===a.targetId)!;
     const progress=T.MathUtils.clamp(s.progress+(returning?-1:1)*.4*dt/a.length,0,1),p=sampleAccess(a,progress),heading=Math.atan2(p[0]-e.position[0],-(p[2]-e.position[2]))*180/Math.PI;
     if(distance(p,e.position)>.0001&&this.turn(heading,dt)>20){this.actor!.motion('Idle');return;}
-    s.progress=progress;e.position=p;this.actor!.terrain=q=>(this.nav??this.navigation()).surface(q,.02);this.stairsMotion(!returning);this.rememberSupport();this.transform();
+    s.progress=progress;e.position=p;this.stairsMotion(!returning);this.rememberSupport();this.transform();
     if(!returning&&progress===1){this.idle();this.status('Köpük kontrol sahanlığında. Merdivene tekrar tıklayarak çatıya dönün.','standing');this.commit();}
     if(returning&&progress===0){e.nathan!.support={targetId:target.facility!.tankA!,kind:'tank',progress:1};this.access=undefined;this.idle();this.status('Tank çatısına döndü.','standing');this.commit();}
   }
