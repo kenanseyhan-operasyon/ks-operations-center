@@ -61,7 +61,24 @@ const soles=()=>{
   }
 };
 control.open(person);assert.equal(input,true);
-const start=[...person.position];assert.ok(control.walkTo([12,0,22]));tick(1);assert.notDeepEqual(person.position,start);assert.equal(actor.clips[actor.index].name,'Nathan_Original_Walk');
+const start=[...person.position];assert.ok(control.walkTo([12,0,22]));
+const beforeCamera=[...person.position];
+control.setMode('camera');tick(.4);
+assert.notDeepEqual(person.position,beforeCamera,'Changing from operator mode to camera view must NOT stop the assigned walk');
+assert.equal(control.phase,'walking','Camera mode must not clear the active route');
+control.setMode('person');tick(.6);
+assert.notDeepEqual(person.position,start);assert.equal(actor.clips[actor.index].name,'Nathan_Original_Walk');
+// A harmless scene-history refresh may replace the Entity reference. Nathan
+// must continue this same task instead of resetting when the new object shares
+// the same identity and position.
+const beforeRefresh=[...person.position],phaseBeforeRefresh=control.phase;
+const refreshedPerson=structuredClone(person);
+entities=entities.map(o=>o.id===person.id?refreshedPerson:o);
+person=refreshedPerson;actors.sync(entities,objects);control.sync();
+assert.equal(control.phase,phaseBeforeRefresh,'Refreshing unrelated scene objects must preserve mission');
+tick(.5);
+assert.notDeepEqual(person.position,beforeRefresh,'Nathan keeps walking after a scene object refresh');
+console.log('PASS task continues across camera change and unrelated scene object replacement');
 const previousHeading=person.heading;assert.ok(control.walkTo([8,0,32]));control.tick(.05);assert.ok(Math.abs(((person.heading-previousHeading+540)%360)-180)<8,'Heading turns at a bounded rate on retarget');
 tick(25,()=>{
   assert.equal(nav().blocked(person.position),false);
