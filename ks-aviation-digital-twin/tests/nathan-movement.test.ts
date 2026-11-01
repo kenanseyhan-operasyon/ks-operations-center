@@ -204,19 +204,22 @@ assert.equal(control.tankTo(tankA.id,localToWorld(tankA,[tankA.radius-.1,tankA.h
 console.log('PASS exterior → bund crossover → actual T1 curved stairs → pause/save/reload/resume → roof; roof walking avoids hatch and railing');
 
 const probeNav=nav();const bridgeLeg=makeRoofBridge(tankBridge,tankA.id,entities,probeNav,.34);
-console.error('BRIDGE_STATE',JSON.stringify({pos:person.position,personSupport:person.nathan?.support,bridgeLeg,route:!!planRoofRoute(person.position,tankA.id,tankRoofPoint(tankB),tankB.id,entities,probeNav,.34)}));
-
-const debugSpan=bridgeSpan(tankBridge,entities);
-if(debugSpan){
- const obstructed:any[]=[];
- const all=(probeNav as unknown as {obstacles:{id:string;bottom:number;top:number;hit:(p:V3)=>boolean}[]}).obstacles;
- for(let i=0;i<=40;i++){
-   const t=i/40,p:V3=[debugSpan.start[0]*(1-t)+debugSpan.end[0]*t,debugSpan.start[1]*(1-t)+debugSpan.end[1]*t+.02,debugSpan.start[2]*(1-t)+debugSpan.end[2]*t];
-   const found=all.filter(o=>o.id!==tankBridge.id&&p[1]<o.top+.025&&p[1]+1.78>o.bottom&&o.hit(p)).map(o=>({id:o.id,name:entities.find(e=>e.id===o.id)?.name||'',preset:entities.find(e=>e.id===o.id)?.preset||''}));
-   if(found.length)obstructed.push({i,p,found});
- }
- console.error('BRIDGE_COLLISION_SAMPLES',JSON.stringify(obstructed.slice(0,16)));
-}
+assert.ok(bridgeLeg,'Connected stair/bridge roof portal must remain traversable without disabling the hatch or side rails');
+// A red fire main geometrically below the bridge must never be mistaken for
+// an obstacle on its upper deck. An actual pipe at deck height still blocks.
+const realSpan=bridgeSpan(tankBridge,entities)!;
+const pipeMid:[number,number,number]=[(realSpan.start[0]+realSpan.end[0])/2,.3,(realSpan.start[2]+realSpan.end[2])/2];
+const redBelow=newEntity('PIPE_RED',pipeMid[0],pipeMid[2]);
+redBelow.position[1]=pipeMid[1];
+redBelow.facility={...redBelow.facility,pipeDiameter:.1016,pipePath:[[-2,0,0],[2,0,0]]};
+const belowEntities=[...entities,redBelow];
+const belowNav=new NathanNavigation(belowEntities,.34,undefined,id=>objects.get(id),person.id);
+assert.ok(makeRoofBridge(tankBridge,tankA.id,belowEntities,belowNav,.34),'Low red fire pipe must not block the elevated bridge');
+const redOnDeck=structuredClone(redBelow);redOnDeck.position[1]=realSpan.start[1]+.02;
+const onDeckEntities=[...entities,redOnDeck];
+const deckNav=new NathanNavigation(onDeckEntities,.34,undefined,id=>objects.get(id),person.id);
+assert.equal(makeRoofBridge(tankBridge,tankA.id,onDeckEntities,deckNav,.34),undefined,'An actual pipe crossing the deck must still stop Nathan');
+console.log('PASS bridge stair portal and height-sensitive red pipe collision (below deck clear / on deck blocked)');
 
 assert.ok(control.crossBridge(tankBridge.id),control.message);until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.3,50,checkTankBody);
 control.pause();const bridgePosition=[...person.position];
