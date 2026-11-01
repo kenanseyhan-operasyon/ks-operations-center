@@ -18,7 +18,7 @@ ws.nathanActors={pause:()=>{paused++;}};
 ws.facilityPanel={selection:()=>{}};
 ws.services={selection:()=>{}};
 ws.plan={enabled:false,canvas:{hidden:false},draw:()=>{},refresh:()=>{}};
-ws.personnel={close:()=>{}};
+ws.personnel={close:()=>{},selection:()=>{}};
 ws.driving={setCabin:()=>{}};
 ws.root={querySelectorAll:()=>[]};
 ws.$=()=>({hidden:false});
