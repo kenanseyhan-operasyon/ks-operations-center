@@ -1,7 +1,7 @@
 name: KS Hotmail Monitor Runtime and Gemini Scene Probe
 on:
   push:
-    branches: [fix/nathan-monitor-stage]
+    branches: [fix/nathan-monitor-stage, fix/nathan-motion-grips-20261102]
   workflow_dispatch:
 permissions:
   contents: read
@@ -73,6 +73,8 @@ jobs:
         run: npm run pretest
       - name: Nathan stair and bridge movement regression (blocking)
         run: npm run test:nathan-movement
+      - name: Nathan grips, hand contact, door and valve interaction regressions (blocking)
+        run: npm run test:nathan-interactions && npm run test:nathan-grasp && npm run test:nathan-access
       - name: Build, test and validate test-site isolation
         run: npm run build && npm run verify:test-build
       - name: Latest ADB fire, access and facility tests
