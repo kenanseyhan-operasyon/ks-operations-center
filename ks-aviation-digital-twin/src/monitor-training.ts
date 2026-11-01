@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type {Entity} from './scene-data';
 import {localToWorld,worldToLocal} from './facility-data';
 export type MonitorSetting={yaw:number;elevation:number;opening:number;lossBar:number};
@@ -44,11 +45,20 @@ export function prepareMonitor(g:T.Group,o:Entity){
  // the logical contact flag read "gripping". Two steel cheeks extend the
  // moving yaw assembly to the operator-side crossbar.
  const yokeZ=-.52;
- const crossbar=new T.Mesh(new T.CylinderGeometry(.017,.017,.58,8),steel);
- crossbar.rotation.z=Math.PI/2;crossbar.position.set(0,-.14,yokeZ);pivot.add(crossbar);
+ // Batch the crossbar and both cheek supports into ONE mesh. Keeping the
+ // fire-network draw-call budget prevents a regression in large ADB scenes.
+ const yokeParts:T.BufferGeometry[]=[];
+ const crossbar=new T.CylinderGeometry(.017,.017,.58,8);
+ crossbar.rotateZ(Math.PI/2);crossbar.translate(0,-.14,yokeZ);yokeParts.push(crossbar);
+ for(const x of [-.28,.28]){
+  const cheek=new T.CylinderGeometry(.015,.015,Math.abs(yokeZ+.23),8);
+  cheek.rotateX(Math.PI/2);cheek.translate(x,-.14,(yokeZ-.23)/2);yokeParts.push(cheek);
+ }
+ const merged=mergeGeometries(yokeParts);
+ if(!merged)throw new Error('Cannot merge monitor rear-yoke fittings');
+ yokeParts.forEach(g=>g.dispose());
+ const crossbarAssembly=new T.Mesh(merged,steel);pivot.add(crossbarAssembly);
  for(const [name,x] of [['MONITOR_GRIP_LEFT',.28],['MONITOR_GRIP_RIGHT',-.28]] as const){
-  const cheek=new T.Mesh(new T.CylinderGeometry(.015,.015,Math.abs(yokeZ+.23),8),steel);
-  cheek.rotation.x=Math.PI/2;cheek.position.set(x,-.14,(yokeZ-.23)/2);pivot.add(cheek);
   const grip=new T.Mesh(new T.CylinderGeometry(.021,.021,.17,10),steel);
   grip.name=name;grip.position.set(x,-.06,yokeZ);pivot.add(grip);
  }
