@@ -5,6 +5,11 @@ const cache=new WeakMap<T.Mesh,{matrix:string;lines:[V3,V3][]}>();
  * ladder rail cannot be represented by the diagonal of its bounding box. */
 export function meshGripLines(mesh:T.Mesh):[V3,V3][]{
   mesh.updateWorldMatrix(true,false);const key=mesh.matrixWorld.elements.join(','),saved=cache.get(mesh);if(saved?.matrix===key)return saved.lines;
+  const path=mesh.userData.gripPath as V3[]|undefined;
+  if(path?.length){
+    const points=path.map(p=>mesh.localToWorld(new T.Vector3(...p)).toArray() as V3);
+    const lines=points.slice(1).map((p,i)=>[points[i],p] as [V3,V3]);cache.set(mesh,{matrix:key,lines});return lines;
+  }
   const g=mesh.geometry,p=g.attributes.position,vertices=Array.from({length:p.count},(_,i)=>new T.Vector3().fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld)),indices=g.index?.array||vertices.map((_,i)=>i);
   const box=new T.Box3().setFromPoints(vertices),height=box.max.y-box.min.y,points:V3[]=[];
   if(height>.12){
@@ -19,3 +24,4 @@ export function meshGripLines(mesh:T.Mesh):[V3,V3][]{
   }else{const a=box.getCenter(new T.Vector3()),b=a.clone(),s=box.getSize(new T.Vector3()),axis=s.x>s.z?'x':'z';a[axis]=box.min[axis];b[axis]=box.max[axis];points.push(a.toArray() as V3,b.toArray() as V3);}
   const lines=points.slice(1).map((p,i)=>[points[i],p] as [V3,V3]);cache.set(mesh,{matrix:key,lines});return lines;
 }
+

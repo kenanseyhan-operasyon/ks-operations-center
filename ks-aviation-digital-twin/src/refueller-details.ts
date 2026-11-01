@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js';
+import {cabUnits as u} from './cab-reference';
 
 // The original shell has a ring at X=.515, followed by a long straight section.
 // End the lift on that ring so the straight body and its markings stay aligned.
@@ -10,7 +11,7 @@ const skinZ=(x:number,y:number,side:number)=>{
   return .155+side*.275*Math.sqrt(Math.max(0,1-((originalY+.10175)/.15325)**2));
 };
 
-/** Package the 3000's hose equipment ahead of the tank's coupling sweep.
+/** Compact the hose equipment ahead of the tank's coupling sweep on both chassis.
  * Keep the full tank, axle positions, operating side and parked coupling intact. */
 export function clearCouplingSweep(model:THREE.Object3D,own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
   const place=(node:THREE.Object3D|undefined,depth:number,dx:number,dz=0)=>{
@@ -35,22 +36,39 @@ export function clearCouplingSweep(model:THREE.Object3D,own:(g:THREE.BufferGeome
   model.updateMatrixWorld(true);
 }
 
-/** Small service-side layout adjustment requested after visual review. Move the
- * drum with its guide/upper hose and the bonding reel with its support bracket. */
+/** The parked head is directly in front of the drum's hose exit. The bonding
+ * mounting foot occupies the rear/outboard corner of the existing deck. */
 export function spaceServiceReels(model:THREE.Object3D,own:(g:THREE.BufferGeometry)=>THREE.BufferGeometry){
-  for(const name of ['Bonding_Assembly','Bonding_Deck_Base','Bonding_Deck_Web']){
-    const n=model.getObjectByName(name);if(n)n.position.x-=.022;
-  }
-  model.traverse(n=>{
-    if(n.name==='Large_Reference_Hose_Drum'||/^Drum_Exit_/.test(n.name))n.position.x+=.022;
-    if(n.name!=='Delivery_Hose_Taut_Parked'||!(n instanceof THREE.Mesh))return;
-    const g=own(n.geometry.clone()),p=g.attributes.position,inverse=n.matrixWorld.clone().invert();
-    for(let i=0;i<p.count;i++){
-      const v=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(n.matrixWorld);v.x+=.022*THREE.MathUtils.smoothstep(v.y,-.15,-.03);
-      v.applyMatrix4(inverse);p.setXYZ(i,v.x,v.y,v.z);
+  const drum=model.getObjectByName('Large_Reference_Hose_Drum'),reel=model.getObjectByName('Bonding_Reel'),park=model.getObjectByName('Delivery_Coupling_Red_Park');
+  if(!drum||!reel||!park)return;
+  // .022 is the previous drum adjustment; the requested additional move is 5 cm.
+  const dx=.022+u(.05);
+  model.traverse(n=>{if(n===drum||/^Drum_Exit_/.test(n.name))n.position.x+=dx;if(/^Drum_Exit_/.test(n.name))n.position.z-=.065;});
+  model.updateWorldMatrix(true,true);
+  const bounds=(n:THREE.Object3D)=>new THREE.Box3().setFromObject(n);
+  const exit=model.getObjectByName('Drum_Exit_Horizontal_Roller')!,headNode=model.getObjectByName('Parked_Delivery_Coupling')!;
+  park.position.x+=bounds(exit).getCenter(new THREE.Vector3()).x-bounds(headNode).getCenter(new THREE.Vector3()).x;
+  const deck=model.getObjectByName('Common_Flat_Grey_Floor') as THREE.Mesh|undefined,base=model.getObjectByName('Bonding_Deck_Base');
+  if(deck&&base){
+    // A 240 mm mounting plate supports the narrow bonding reel. The original
+    // 465 mm square foot overlapped the coupling foot on the rigid vehicle.
+    // Keep the existing depth and move the reel/web with the plate centre.
+    if(base instanceof THREE.Mesh){
+      const b=bounds(base),centre=b.getCenter(new THREE.Vector3()),g=own(base.geometry.clone()),p=g.attributes.position;
+      const inverse=base.matrixWorld.clone().invert(),ratio=u(.24)/(b.max.x-b.min.x);
+      for(let i=0;i<p.count;i++){
+        const v=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(base.matrixWorld);
+        v.x=centre.x+(v.x-centre.x)*ratio;v.applyMatrix4(inverse);p.setXYZ(i,v.x,v.y,v.z);
+      }
+      g.computeBoundingBox();g.computeBoundingSphere();g.computeVertexNormals();base.geometry=g;
     }
-    g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();n.geometry=g;
-  });model.updateWorldMatrix(true,true);
+    const d=bounds(deck),b=bounds(base);
+    const shift=new THREE.Vector3(d.max.x-u(.025)-b.max.x,0,d.max.z-u(.025)-b.max.z);
+    for(const name of ['Bonding_Assembly','Bonding_Deck_Base','Bonding_Deck_Web']){
+      const n=model.getObjectByName(name);if(n)n.position.add(shift);
+    }
+  }
+  model.updateWorldMatrix(true,true);
 }
 
 /** Reuse the model's lettering without stretching its glyphs along the neck. */
@@ -125,3 +143,4 @@ export class FuelGauge extends THREE.Group {
   }
   setLitres(value=0){const litres=Number.isFinite(value)?THREE.MathUtils.clamp(value,0,38000):0;this.userData.fuelLitres=litres;this.needle.rotation.z=(225-270*litres/38000)*Math.PI/180;}
 }
+

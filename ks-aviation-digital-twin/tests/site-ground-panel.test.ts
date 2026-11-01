@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {JSDOM} from 'jsdom';
+import {FacilityPanel} from '../src/facility-panel';
+import {FacilityNetwork} from '../src/facility-network';
+import {newEntity} from '../src/scene-data';
+import {boundaryFill,type FillMaterial} from '../src/ground-fill';
+const dom=new JSDOM('<body></body>',{url:'https://test.invalid'});
+for(const name of ['window','document','HTMLElement','HTMLButtonElement','HTMLInputElement','HTMLFormElement','FormData'])Object.defineProperty(globalThis,name,{value:(dom.window as any)[name],configurable:true});
+const curb=newEntity('CURB',0,0);curb.points=[[-4,-4],[4,-4],[4,4],[-4,4]];const entities=[curb],placed:string[]=[],splits:string[]=[],fills:FillMaterial[]=[],draws:FillMaterial[]=[];let editable=true;
+const panel=new FacilityPanel(document.body,new FacilityNetwork(),{entities:()=>entities,editing:()=>editable,edit:()=>editable,place:p=>placed.push(p),select:()=>{},change:fn=>fn(),mount:()=>{},bridge:()=>{},points:()=>{},assembly:()=>{},training:()=>{},visuals:()=>{},notify:()=>{},fill:(id,material)=>{assert.equal(id,curb.id);fills.push(material);},drawFill:(id,material)=>{assert.equal(id,curb.id);draws.push(material);},split:id=>splits.push(id)});
+panel.toggle();assert.ok(panel.element.querySelector('[data-place="CONCRETE_FILL"]'));assert.ok(panel.element.querySelector('[data-place="GRASS_FILL"]'));
+(panel.element.querySelector('[data-place="GRASS_FILL"]') as HTMLButtonElement).click();assert.deepEqual(placed,['GRASS_FILL']);
+panel.selection(curb);panel.openProperties();const q=<E extends HTMLElement>(s:string)=>panel.element.querySelector<E>(s)!;
+q<HTMLInputElement>('[name=closed]').checked=true;q<HTMLFormElement>('form').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));assert.equal(curb.facility?.closed,true);
+q<HTMLButtonElement>('[data-fill=concrete]').click();q<HTMLButtonElement>('[data-fill=grass]').click();assert.deepEqual(fills,['concrete','grass']);q<HTMLButtonElement>('[data-ground-split]').click();assert.deepEqual(splits,[curb.id]);
+q<HTMLButtonElement>('[data-fill-draw=concrete]').click();q<HTMLButtonElement>('[data-fill-draw=grass]').click();assert.deepEqual(draws,['concrete','grass']);
+const fill=boundaryFill(curb,'grass');entities.push(fill);panel.selection(fill);panel.openProperties();assert.ok(q('[data-fill-detach]'));q<HTMLButtonElement>('[data-fill-detach]').click();assert.equal(fill.facility?.fillBoundaryId,undefined);
+editable=false;panel.selection(curb);panel.openProperties();q<HTMLButtonElement>('[data-fill=concrete]').click();assert.equal(fills.length,2,'Read-only users cannot change the scene');
+q<HTMLButtonElement>('[data-fill-draw=grass]').click();assert.equal(draws.length,2,'Read-only users cannot draw a fill');
+dom.window.close();console.log('PASS ground catalogue, close boundary, concrete/grass and divider controls, detach, and read-only permission guard.');
+

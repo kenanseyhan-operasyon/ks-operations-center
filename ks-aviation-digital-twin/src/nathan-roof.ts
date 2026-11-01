@@ -2,6 +2,7 @@ import * as T from 'three';
 import type { Entity } from './scene-data';
 import type { V3 } from './personnel-navigation';
 import { bridgeSpan, localToWorld } from './facility-data';
+import {tankStairLayout} from './tank-stairs';
 import type { NathanNavigation } from './nathan-navigation';
 
 export type RoofLeg = { surfaceId: string; kind: 'tank' | 'bridge'; points: V3[]; fromTankId?: string; toTankId?: string };
@@ -9,8 +10,8 @@ const length = (a: V3,b: V3) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 export const roofHeight = (tank: Entity) => tank.position[1]+(tank.height+.282)*tank.scale;
 export const roofRadius = (tank: Entity,radius: number) => tank.radius*tank.scale-radius-.16*tank.scale;
 export function tankRoofPoint(tank: Entity): V3 {
-  const f=tank.facility||{},angle=((f.stairStart??0)+(f.sweep??180)*(f.clockwise===false?-1:1))*Math.PI/180;
-  return localToWorld(tank,[Math.sin(angle)*(tank.radius-.65),tank.height+.282,Math.cos(angle)*(tank.radius-.65)]);
+  const exit=tankStairLayout(tank).exit;
+  return localToWorld(tank,[exit[0],tank.height+.282,exit[2]]);
 }
 export function bridgeTanks(bridge: Entity,entities: Entity[]) {
   const f=bridge.facility;
@@ -87,3 +88,4 @@ export function planRoofRoute(start: V3,fromTankId: string,end: V3,toTankId: str
   const route:RoofLeg[]=[];for(let i=1;i!==0;){const edge=previous.get(i)!;route.unshift(edge.leg);i=edge.from;}
   return route;
 }
+

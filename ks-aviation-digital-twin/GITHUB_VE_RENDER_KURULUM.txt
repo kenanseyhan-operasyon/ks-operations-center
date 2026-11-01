@@ -1,0 +1,12 @@
+KS AVIATION GEMINI - AYRI DENEME PAKETI
+
+Bu ZIP, kullanicinin onceki Gemini yerel test paketinden yalnizca ks-aviation-digital-twin proje klasoru ayiklanarak hazirlandi. Yeni bir Gemini kod iyilestirmesi YAPILMADI.
+
+GitHub: ksaviationgemini/ks-aviation-gemini-test (PRIVATE)
+ZIP dosyasini GitHub'a tek parca yuklemek kaynak kodu otomatik acmaz. Once ZIP'i ayiklayin, icindeki tum dosya ve klasorleri GitHub > Add file > Upload files ekranina tasiyin. GitHub tarayici yuklemesi buyuk dosyalari/klasorleri sinirlayabilir; hata olursa durun.
+
+Render: Private depoyu yeni Render hesabina yetkilendirin. New > Static Site; repository ks-aviation-gemini-test; Build command: npm ci && npm run build; Publish directory: dist. Root directory: BOS (bu pakette package.json kokte).
+
+DIKKAT: Private GitHub, Render'in herkese acik sitesine giden GLB/JS dosyalarini gizlemez. Siteye ozgun modelleri koymadan once erisim korumasi kararlastirilmali. Bu paket YAYINLANMADI.
+
+Guvenlik: .env ve gizli anahtarlari asla depoya yuklemeyin. Bu paket dosya adlarina gore .env dosyalarini disarida birakir; icerikteki tum gizli bilgilerin yoklugu garanti edilmez.

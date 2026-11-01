@@ -12,8 +12,10 @@ import {makeObject,applyTransform,disposeObject} from '../src/objects';
 import {GSELibrary} from '../src/gse-library';
 
 const bytes=fs.readFileSync(`public${NATHAN_MODEL_URL}`);
-assert.equal(bytes.length,25874096);
-assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),'579deba138d7311119821ffd37cf10694533322d79bcbe63dabffcbb6b65c3ef');
+const originalBytes=fs.readFileSync('public/models/personnel/KS_Nathan_15_Hareket.glb');
+assert.equal(originalBytes.length,25874096);
+assert.equal(crypto.createHash('sha256').update(originalBytes).digest('hex'),'579deba138d7311119821ffd37cf10694533322d79bcbe63dabffcbb6b65c3ef');
+assert.ok(bytes.length<originalBytes.length*.3);
 // Node has no image decoder. Stub texture decoding only; use the actual geometry,
 // skin, hierarchy and every AnimationClip from the unmodified supplied GLB.
 const loader=new GLTFLoader().register(()=>({name:'KS_HEADLESS_TEXTURE',loadTexture:async()=>new T.Texture()}));
@@ -97,3 +99,4 @@ assert.match(panel.element.textContent!,/sonraki aşamalarda/);panel.selection(n
 let placed='';const library=new GSELibrary(document.querySelector('main')!,preset=>placed=preset);library.toggle();library.element.querySelector<HTMLButtonElement>('[data-place="NATHAN_OPERATOR"]')!.click();assert.equal(placed,NATHAN_PRESET);assert.ok(library.element.querySelector('[data-place="REFUEL_OPERATOR"]'));assert.ok(library.element.querySelector('[data-place="R14"]'));
 actor.dispose();second.dispose();actors.sync([],objects);failed.sync([],objects);
 console.log(JSON.stringify({result:'PASS',bytes:bytes.length,animations:16,poseFrames:samples.reduce((n,s)=>n+s.frames,0),seconds:Number(((performance.now()-start)/1000).toFixed(2)),samples},null,2));
+

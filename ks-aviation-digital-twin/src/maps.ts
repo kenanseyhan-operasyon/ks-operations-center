@@ -1,3 +1,5 @@
+import {isGroundFill,groundFillContours} from './ground-fill';
+import {pointInPolygon} from './site-path';
 import {isFacilityGate} from './facility-gates';
 import type {RouteDisplay} from './route-planning';
 import { isRefueller } from './refueller-series';
@@ -108,6 +110,7 @@ export class PlanMap {
       if(o.points?.length){for(let i=1;i<o.points.length;i++){const A=o.points[i-1],B=o.points[i],vx=B[0]-A[0],vz=B[1]-A[1],k=Math.max(0,Math.min(1,((px-A[0])*vx+(pz-A[1])*vz)/(vx*vx+vz*vz)));if(Math.hypot(px-A[0]-k*vx,pz-A[1]-k*vz)<Math.max(.4,6/this.pixels))return o.id;}}
       else{const w=o.kind==='tank'?o.radius*2:o.width,l=o.kind==='tank'?o.radius*2:o.length;if(Math.abs(px)<Math.max(w/2,6/this.pixels)&&Math.abs(pz)<Math.max(l/2,6/this.pixels))return o.id;}
     }
+    for(const o of [...this.hooks.entities()].reverse())if(isGroundFill(o)){const a=o.heading*Math.PI/180,dx=x-o.position[0],dz=z-o.position[2],q:[number,number]=[(Math.cos(a)*dx+Math.sin(a)*dz)/o.scale,(-Math.sin(a)*dx+Math.cos(a)*dz)/o.scale];if(groundFillContours(o).some(p=>pointInPolygon(q,p)))return o.id;}
   }
   zoom(factor:number){this.span=Math.max(15,Math.min(20000,this.span*factor));this.refresh();}
   draw(){if(this.drawPending||!this.enabled)return;this.drawPending=true;requestAnimationFrame(()=>{this.drawPending=false;this.paint();});}
@@ -119,10 +122,11 @@ export class PlanMap {
     this.hooks.ground?.()?.draw(c);
     this.hooks.photo()?.draw(c);
     if(this.night){c.save();c.setTransform(d,0,0,d,0,0);c.fillStyle='rgba(3,12,29,.76)';c.fillRect(0,0,w,h);c.restore();}
-    for(const o of [...this.hooks.entities()].sort((a,b)=>Number(b.kind==='ground')-Number(a.kind==='ground'))){
+    for(const o of [...this.hooks.entities()].sort((a,b)=>(a.kind==='ground'&&!isGroundFill(a)?0:isGroundFill(a)?1:2)-(b.kind==='ground'&&!isGroundFill(b)?0:isGroundFill(b)?1:2))){
       const selected=(this.hooks.helpersVisible?.()??true)&&this.hooks.selection().has(o.id);c.save();c.translate(o.position[0],o.position[2]);c.rotate(o.heading*Math.PI/180);c.scale(o.scale,o.scale);c.fillStyle=o.color;c.strokeStyle=selected?'#b7ff3c':'#233b42';c.lineWidth=(selected?3:1)/p/o.scale;c.beginPath();
       if(isFacilityGate(o)){const amount=this.hooks.gateAmount?.(o.id)||0;c.strokeStyle=selected?'#b7ff3c':o.color;c.lineWidth=Math.max(.12,3/p/o.scale);for(let i=1;i<o.points!.length;i++){const a=o.points![i-1],b=o.points![i],dx=b[0]-a[0],dz=b[1]-a[1],shift=amount*.52;c.moveTo(a[0]-dx*shift,a[1]-dz*shift);c.lineTo(a[0]+dx*(.5-shift),a[1]+dz*(.5-shift));c.moveTo(a[0]+dx*(.5+shift),a[1]+dz*(.5+shift));c.lineTo(b[0]+dx*shift,b[1]+dz*shift);}}
-      else if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{c.lineWidth=Math.max(o.thickness,2/p/o.scale);c.strokeStyle=selected?'#b7ff3c':o.color;}}
+      else if(isGroundFill(o)){for(const poly of groundFillContours(o)){poly.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();}c.fill();}
+      else if(o.points?.length){o.points.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));if(o.kind==='ground'){c.closePath();c.globalAlpha=.72;c.fill();c.globalAlpha=1;}else{if(o.facility?.closed)c.closePath();c.lineWidth=Math.max(o.preset==='CURB'?o.width:o.thickness,2/p/o.scale);c.lineJoin='miter';c.miterLimit=4;c.strokeStyle=selected?'#b7ff3c':o.color;}}
       else if(o.kind==='person'){c.arc(0,0,.25,0,Math.PI*2);c.fillStyle='#d8ef25';c.fill();c.moveTo(0,-.48);c.lineTo(-.16,-.22);c.lineTo(.16,-.22);c.closePath();c.fill();}
       else if(o.kind==='tank'||o.kind==='tree'){c.arc(0,0,o.kind==='tank'?o.radius:o.width/2,0,Math.PI*2);c.fill();}
       else if(o.kind==='aircraft'){const W=o.width,L=o.length,spec=AIRCRAFT_SPECS[o.preset],outline=spec?aircraftOutline(spec):FLEET_SPECS[o.preset]?fleetOutline(FLEET_SPECS[o.preset]):[[0,-L/2],[W*.05,-L*.39],[W*.07,-L*.12],[W/2,L*.1],[W/2,L*.17],[W*.065,L*.1],[W*.05,L*.36],[W*.2,L*.43],[W*.2,L*.49],[-W*.2,L*.49],[-W*.2,L*.43],[-W*.05,L*.36],[-W*.065,L*.1],[-W/2,L*.17],[-W/2,L*.1],[-W*.07,-L*.12],[-W*.05,-L*.39]];outline.forEach(([x,z],i)=>i?c.lineTo(x,z):c.moveTo(x,z));c.closePath();c.fill();}
@@ -142,3 +146,5 @@ export class PlanMap {
     c.restore();if(this.pointer?.box&&this.pointer.move){const q=this.pointer;c.fillStyle='#b7ff3c25';c.strokeStyle='#b7ff3c';c.lineWidth=1.5;c.fillRect(q.x,q.y,q.cx-q.x,q.cz-q.y);c.strokeRect(q.x,q.y,q.cx-q.x,q.cz-q.y);}c.fillStyle='#071c25dd';c.fillRect(14,h-42,150,28);c.fillStyle='#e9f8ed';c.font='12px system-ui';const maxMetres=115/p,unit=10**Math.floor(Math.log10(maxMetres)),metres=([5,2,1].find(n=>n*unit<=maxMetres)??1)*unit;c.fillRect(23,h-24,metres*p,2);c.fillText(`${Number(metres.toPrecision(3))} m`,23,h-28);
   }
 }
+
+

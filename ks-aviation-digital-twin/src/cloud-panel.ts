@@ -4,7 +4,8 @@ import {CloudAuth,type AuthViewState} from './cloud-auth';
 import {CloudError,cloudErrorMessage} from './cloud-errors';
 import type {AuthCallback} from './auth-callback';
 import './cloud-auth.css';
-const STORE='KS_DIGITAL_TWIN_ADB_V1',BASE='KS_ADT_CLOUD_BASE_V1';
+import {TEST_CLOUD,SCENE_STORAGE_KEY} from './site-mode';
+const STORE=SCENE_STORAGE_KEY,BASE=TEST_CLOUD?'KS_3D_TEST_CLOUD_BASE_V1':'KS_ADT_CLOUD_BASE_V1',BACKUP=TEST_CLOUD?'KS_3D_TEST_BEFORE_CLOUD':'KS_ADT_BEFORE_CLOUD';
 export class CloudPanel{
   pending=false;busy=false;private ready=false;private lang:'tr'|'en'='tr';private published?:CloudRecord;private fallback:SceneData;
   private authState:AuthViewState={mode:'signin',email:'',retryAt:0};private authNotice='';private dialog?:HTMLDialogElement;
@@ -30,6 +31,7 @@ export class CloudPanel{
     try{this.rememberBase(row.payload);}catch{this.notify(this.say('Yayın tamamlandı; cihaz yedeği yazılamadı.','Publishing completed; the device backup could not be written.'));}this.pending=false;this.changed();
   }
   async init(callback?:AuthCallback){
+    if(TEST_CLOUD){const response=await fetch('/data/adb-test-seed.json');if(!response.ok)throw new CloudError('unavailable');this.fallback=validateScene(await response.json());}
     try{await this.store.init(callback);}catch(e){this.authNotice=cloudErrorMessage(e,this.lang);this.notify(this.authNotice);}
     try{await this.sync();}catch(e){this.notify(cloudErrorMessage(e,this.lang));}
     this.ready=true;this.changed();
@@ -47,6 +49,9 @@ export class CloudPanel{
       let next=row?.payload||this.fallback;
       if(this.store.editor&&restoreDraft){
         const meta=this.meta(),raw=this.storage.getItem(STORE);
+        if(TEST_CLOUD&&raw&&!meta){
+          try{const local=validateScene(JSON.parse(raw));if(sceneContent(local)!==sceneContent(next)){this.storage.setItem(BACKUP,raw);next=local;this.pending=true;this.notify(this.say('Bu tarayıcıdaki test çalışması korundu. Kaydet ile buluta yayınlayabilirsiniz.','Your previous browser test draft was preserved. Use Save to publish it to the cloud.'));}}catch{this.notify(this.say('Cihaz kaydı okunamadı; yayınlanan sahne açıldı.','Device data could not be read; the published scene was opened.'));}
+        }
         if(raw&&meta?.userId===this.store.userId){
           try{const local=validateScene(JSON.parse(raw));if(meta.content!==sceneContent(local)){
             next=local;this.pending=true;this.store.revision=Number.isInteger(meta.revision)?meta.revision:0;this.store.publishedRevision=Number.isInteger(meta.publishedRevision)?meta.publishedRevision:0;
@@ -56,13 +61,13 @@ export class CloudPanel{
       }
       this.apply(structuredClone(next));
       if(this.store.editor&&!this.pending){try{
-        const raw=this.storage.getItem(STORE);if(restoreDraft&&raw&&sceneContent(validateScene(JSON.parse(raw)))!==sceneContent(next))this.storage.setItem('KS_ADT_BEFORE_CLOUD',raw);
+        const raw=this.storage.getItem(STORE);if(restoreDraft&&raw&&sceneContent(validateScene(JSON.parse(raw)))!==sceneContent(next))this.storage.setItem(BACKUP,raw);
         this.rememberBase(next);
       }catch{this.notify(this.say('Ortak sahne açıldı; cihaz yedeği güncellenemedi.','Shared scene opened; the device backup could not be updated.'));}}
     }finally{this.ready=true;this.changed();}
   }
   async reloadPublished(){
-    if(this.canEdit)this.storage.setItem('KS_ADT_BEFORE_CLOUD',JSON.stringify(this.scene()));
+    if(this.canEdit)this.storage.setItem(BACKUP,JSON.stringify(this.scene()));
     await this.sync(false);this.notify(this.say('Yayınlanan son sahne açıldı.','The latest published scene was opened.'));
   }
   async signOut(){
@@ -100,11 +105,12 @@ export class CloudPanel{
     if(this.canEdit){
       button(this.say('Kaydet ve herkes için yayınla','Save and publish for everyone'),()=>void run(async()=>{const ok=await this.save(structuredClone(this.scene()));status.textContent=ok?this.status:this.say('Yayın tamamlanmadı. Cihazdaki kopya korundu.','Publishing incomplete. Device copy preserved.');}));
       const backups=document.createElement('details'),summary=document.createElement('summary');summary.textContent=this.say('Kişisel kayıt ve cihaz yedeği','Personal save and device backup');backups.append(summary);dialog.append(backups);
-      button(this.say('Kişisel bulut kaydını aç','Open personal cloud save'),()=>void run(async()=>{const row=await this.store.read();if(!row)throw new CloudError('no_cloud_scene');this.storage.setItem('KS_ADT_BEFORE_CLOUD',JSON.stringify(this.scene()));this.apply(row.payload);this.store.revision=row.revision;this.pending=true;this.changed();close();}),backups);
-      if(this.storage.getItem('KS_ADT_BEFORE_CLOUD'))button(this.say('Önceki cihaz sahnesini geri getir','Restore previous device scene'),()=>{try{this.apply(validateScene(JSON.parse(this.storage.getItem('KS_ADT_BEFORE_CLOUD')!)));this.pending=true;this.changed();close();}catch(e){status.textContent=cloudErrorMessage(e,this.lang);}},backups);
+      button(this.say('Kişisel bulut kaydını aç','Open personal cloud save'),()=>void run(async()=>{const row=await this.store.read();if(!row)throw new CloudError('no_cloud_scene');this.storage.setItem(BACKUP,JSON.stringify(this.scene()));this.apply(row.payload);this.store.revision=row.revision;this.pending=true;this.changed();close();}),backups);
+      if(this.storage.getItem(BACKUP))button(this.say('Önceki cihaz sahnesini geri getir','Restore previous device scene'),()=>{try{this.apply(validateScene(JSON.parse(this.storage.getItem(BACKUP)!)));this.pending=true;this.changed();close();}catch(e){status.textContent=cloudErrorMessage(e,this.lang);}},backups);
     }
     if(this.store.config)button(this.say('Yayınlanan son sahneyi aç','Open latest published scene'),()=>void run(async()=>{await this.reloadPublished();close();}));
     if(this.store.session)button(this.say('Çıkış yap','Sign out'),()=>void run(async()=>{await this.signOut();close();this.open();}));
     button(this.say('Kapat','Close'),close).className='cloud-close';dialog.oncancel=e=>{e.preventDefault();close();};this.host.append(dialog);dialog.showModal();
   }
 }
+

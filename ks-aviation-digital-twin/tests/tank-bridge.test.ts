@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {newEntity,validateScene,SceneHistory} from '../src/scene-data';
-import {bridgeAnchorWorld,bridgeSpan,bridgeRailingOpenings,localToWorld,updateFacilityAttachments,remapFacilityReferences} from '../src/facility-data';
+import {rotateTankBridge,bridgeAnchorWorld,bridgeSpan,bridgeRailingOpenings,localToWorld,updateFacilityAttachments,remapFacilityReferences} from '../src/facility-data';
 import {pickBridgeAnchor} from '../src/tank-bridge';
 import {makeObject,disposeObject} from '../src/objects';
 
@@ -33,3 +33,16 @@ const history=new SceneHistory(data);history.change(d=>{d.entities=d.entities.fi
 const copies=structuredClone(entities),mapping=new Map([[a.id,'a-copy'],[b.id,'b-copy']]);remapFacilityReferences(copies,mapping);assert.equal(copies[2].facility?.bridgeStart?.parentId,'a-copy');assert.equal(copies[2].facility?.bridgeEnd?.parentId,'b-copy');
 meshes.forEach(disposeObject);
 console.log('PASS: real roof ray picking, elevated two-point spans, oblique railing clearance across full bridge width, tank motion/height, deletion/undo and saved anchors.');
+
+
+const beforeRotation=structuredClone(bridgeSpan(bridge,entities)!);const heading=bridge.heading,length=bridge.length;
+assert.equal(rotateTankBridge(bridge,entities,1),true);assert.ok(Math.abs(bridge.heading-heading-1)<1e-8);assert.ok(Math.abs(bridge.length-length)<1e-8);
+assert.equal(bridge.facility?.bridgeStart?.parentId,a.id);assert.equal(bridge.facility?.bridgeEnd?.parentId,b.id);
+assert.equal(rotateTankBridge(bridge,entities,-1),true);const restored=bridgeSpan(bridge,entities)!;
+assert.ok(new THREE.Vector3(...restored.start).distanceTo(new THREE.Vector3(...beforeRotation.start))<1e-8);
+assert.ok(new THREE.Vector3(...restored.end).distanceTo(new THREE.Vector3(...beforeRotation.end))<1e-8);
+const beforeInvalid=structuredClone(bridge);assert.equal(rotateTankBridge(bridge,entities,90),false);assert.deepEqual(bridge,beforeInvalid,'Reject off-roof rotation atomically');
+const freeBridge=newEntity('TANK_BRIDGE',0,0);freeBridge.facility={bridgeStart:{parentId:a.id,point:[0,a.height+.28,0]},bridgeEnd:{point:[40,15,0]}};entities.push(freeBridge);updateFacilityAttachments(entities);
+assert.equal(rotateTankBridge(freeBridge,entities,1),true);assert.equal(freeBridge.facility.bridgeEnd?.parentId,undefined,'Free bridge ends remain free');
+const persisted=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',entities,groups:[],source:'rotation-test'});assert.deepEqual(persisted.entities.find(e=>e.id===bridge.id)?.facility,bridge.facility);
+console.log('PASS: exact 1 degree bridge rotation, fixed centre/length, inverse rotation, saved parent anchors, free ends and off-roof rejection.');

@@ -1,0 +1,1 @@
+Gemini camera damping math: PASS (0, 30/60/144 FPS)

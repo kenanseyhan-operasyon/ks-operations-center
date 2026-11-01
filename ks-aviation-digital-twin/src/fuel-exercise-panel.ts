@@ -1,0 +1,12 @@
+import {FuelExercise} from './fuel-exercise';
+import type {Entity} from './scene-data';
+const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+export function mountFuelExercise(host:HTMLElement,exercise:FuelExercise,entities:()=>Entity[]){
+ const hoses=entities().filter(e=>e.preset==='FUEL_HOSE');if(!hoses.length)return;
+ const section=document.createElement('section');section.innerHTML=`<h3>Jet A-1 · dolum / mal kabul denemesi</h3><p>Bağlantı ve işlem sırası eğitimi. Örnek debi 300 L/dk; kaynak ve hedef boş hacmi 10.000 L. Kayıtlı tank miktarları değişmez.</p><label>İşlem hattı<select data-fuel-hose><option value="">Hat seçin</option>${hoses.map(e=>`<option value="${esc(e.id)}" ${e.id===exercise.hoseId?'selected':''}>${esc(e.name)}</option>`).join('')}</select></label>${(['bonded','coupled','valve','pump'] as const).map((key,i)=>`<label><input type="checkbox" data-fuel-check="${key}" ${exercise[key]?'checked':''}>${['Bonding bağlandı','Kaplin bağlandı','Hat vanası açık','Pompa çalışıyor'][i]}</label>`).join('')}<div class="facility-row"><button data-fuel-hold>Akış · basılı tut</button><button data-fuel-stop>Acil durdur</button><button data-fuel-reset>Sıfırla</button></div><p data-fuel-status></p>`;host.prepend(section);
+ section.querySelector<HTMLSelectElement>('[data-fuel-hose]')!.onchange=e=>{exercise.reset();exercise.hoseId=(e.target as HTMLSelectElement).value;mountAgain();};
+ const mountAgain=()=>{section.remove();mountFuelExercise(host,exercise,entities);};
+ section.querySelectorAll<HTMLInputElement>('[data-fuel-check]').forEach(input=>input.onchange=()=>{exercise[input.dataset.fuelCheck as 'bonded'|'coupled'|'valve'|'pump']=input.checked;});
+ const hold=section.querySelector<HTMLButtonElement>('[data-fuel-hold]')!;hold.style.touchAction='none';hold.onpointerdown=e=>{hold.setPointerCapture(e.pointerId);exercise.held=true;};hold.onpointerup=hold.onpointercancel=()=>{exercise.held=false;};hold.onlostpointercapture=()=>{exercise.held=false;};hold.onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();exercise.held=true;}};hold.onkeyup=hold.onblur=()=>{exercise.held=false;};
+ section.querySelector<HTMLButtonElement>('[data-fuel-stop]')!.onclick=()=>{exercise.stopped=true;exercise.pump=exercise.held=false;mountAgain();};section.querySelector<HTMLButtonElement>('[data-fuel-reset]')!.onclick=()=>{exercise.reset();mountAgain();};
+}

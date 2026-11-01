@@ -1,0 +1,6 @@
+17.10.2026 Gemini Nathan test kopyası
+PASS: Sağ/sol simetrik dönüş ve yürüyüş adımı (Node.js type stripping)
+PASS: FPS bağımsız Nathan takip kamerası sönümleme matematiği
+YAPILMADI: Tam TypeScript derleme / WebGL tarayıcı testi (npm ci bu ortamda zaman aşımı)
+YAPILMADI: GitHub push / Render deployment (yeni özel GitHub deposuna bu bağlantı erişemedi)
+Korundu: Eski Astra GitHub ve Render sürümleri (değişiklik yapılmadı)

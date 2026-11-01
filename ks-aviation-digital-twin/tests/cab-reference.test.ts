@@ -35,22 +35,48 @@ assert.equal(model.getObjectByName('Cab_Lower_Reference_Correction'),undefined,'
 // The front tyre must remain clear of the fixed platform flight at full lock.
 const stairs:T.Object3D[]=[];model.traverse(n=>{if(n.name.startsWith('Fixed_Step'))stairs.push(n);});
 for(const steer of [-.55,0,.55]){rig.update(0,steer,0);model.updateWorldMatrix(true,true);for(const wheel of rig.wheels.filter(w=>w.front))for(const step of [...stairs,...['LEFT','RIGHT'].flatMap(side=>[1,2,3].map(i=>model.getObjectByName(`CAB_ACCESS_STEP_${side}_${i}`)!))])assert.ok(!new T.Box3().setFromObject(wheel.spin,true).intersectsBox(new T.Box3().setFromObject(step,true)),'Steered front tyre clears platform treads');}
-// Visual-review regressions: compact rear, original platform position and
+// Visual-review regressions: compact rear, 150 mm platform advance and
 // three treads, inset trim, and clearance throughout the full lift stroke.
-const steps=stairs.filter(n=>n instanceof T.Mesh) as T.Mesh[];
+const steps=stairs.filter(n=>n instanceof T.Mesh) as T.Mesh[],deck=bounds('Common_Flat_Grey_Floor');
 assert.equal(steps.length,3,'Exactly the three original platform treads');
-for(const [i,step] of steps.sort((a,b)=>new T.Box3().setFromObject(a).max.y-new T.Box3().setFromObject(b).max.y).entries()){
- close((new T.Box3().setFromObject(step).max.y+.454)*metres,[.355,.670,.990][i],'Re-spaced original platform tread');
-}
+const stepTops=steps.map(step=>new T.Box3().setFromObject(step).max.y).sort((a,b)=>a-b);stepTops.push(deck.max.y);
+close((stepTops[0]+.454)*metres,.355,'The first platform tread stays fixed');
+for(let i=1;i<3;i++)close(stepTops[i+1]-stepTops[i],stepTops[1]-stepTops[0],'Three equal rises to the equipment deck',.000001);
+assert.ok((stepTops[1]+.454)*metres<.67&&(stepTops[2]+.454)*metres<.99,'Second and third treads are lowered');
 const lowerFloor=bounds('Platform_Grey_Floor');
-close(lowerFloor.min.x,-.580,'Platform restored to original longitudinal position',.0001);
-close((lowerFloor.max.y+.454)*metres,1.43745,'Platform fully folded floor height');
+close((-.580-lowerFloor.min.x)*metres,.15,'Complete platform advances exactly 150 mm',.0001);
+close((lowerFloor.max.y+.454)*metres,1.33745,'Folded platform follows the 100 mm shorter deck mounts');
+// October visual-review requirements, measured on the actual GLB assembly.
+close((-.584-deck.min.x)*metres,.15,'Lower deck extends forward 150 mm',.0001);
+close(deck.max.x,-.036,'Rear deck edge retains its equipment datum');
+const probes:T.Object3D[]=[];model.traverse(n=>{if(/^Wing_Contact_Antenna(?:_\d+)?$/.test(n.name))probes.push(n);});
+assert.equal(probes.length,4,'One contact probe at each of four corners');
+const probeCentres=probes.map(n=>new T.Box3().setFromObject(n).getCenter(new T.Vector3()));
+assert.equal(new Set(probeCentres.map(c=>c.x.toFixed(3)+','+c.z.toFixed(3))).size,4,'No duplicate probes on the old diagonal');
+const rearRail=bounds('Basket_Back_Rail_1'),button=bounds('Platform_Lift_Toggle_Button'),mount=bounds('PLATFORM_CONTROL_MOUNT');
+assert.ok(button.min.z>rearRail.max.z,'Button faces the operator from the inside of the opposite barrier');
+assert.ok(mount.clone().expandByScalar(.00001).intersectsBox(rearRail),'Button backing is physically attached to the rear top rail');
+assert.ok(mount.clone().expandByScalar(.00001).intersectsBox(button),'Button is mounted on the backing plate');
+close((bounds('Drum_Open_Outer_Rim').min.x+.224)*metres,.05,'Drum moves exactly 50 mm aft of the reviewed position');
+close(bounds('Parked_Delivery_Coupling').getCenter(new T.Vector3()).x,bounds('Drum_Exit_Horizontal_Roller').getCenter(new T.Vector3()).x,'Coupling centred on drum exit');
+assert.ok(bounds('Bonding_Assembly').min.x>bounds('Large_Reference_Hose_Drum').max.x,'Bonding reel follows behind the drum');
+assert.ok(!bounds('Bonding_Assembly').intersectsBox(bounds('Delivery_Coupling_Red_Park')),'Bonding spool and parked coupling do not overlap');
+assert.ok(!bounds('Bonding_Reel').intersectsBox(bounds('Large_Reference_Hose_Drum')),'The reels retain clearance');
+const dash=bounds('DASHBOARD_LOWER');
+assert.ok((dash.min.x+.8958)*metres>.08&&(dash.max.x+.8958)*metres<.41,'Rounded dashboard remains inside the cab with more knee space');
+assert.ok(dash.getSize(new T.Vector3()).y*metres<.17,'Lower dashboard is thinner than 170 mm');
+for(const side of ['LEFT','RIGHT']){
+ const lower=bounds('CAB_ACCESS_STEP_'+side+'_1').getSize(new T.Vector3()),upper=bounds('CAB_ACCESS_STEP_'+side+'_3').getSize(new T.Vector3());
+ assert.ok((upper.x-lower.x)*metres>.045&&(upper.z-lower.z)*metres>.045,'Top tread is wider and deeper');
+ assert.ok(model.getObjectByName('CAB_WHEELHOUSE_CLOSURE_'+side),'Fixed black closure behind the curved door apron');
+}
+console.log('PASS 150 mm platform/deck advance, four unique corner probes, mounted interior button, coupling/drum/bonding order, wider upper tread and slimmer dashboard');
 const basket=model.getObjectByName('Platform_Moving_Basket')!,filter=bounds('Transverse_Filter_Behind_Panel'),lift=pack.actions.get('Platform_Raise_4s')!;
 for(let i=0;i<=80;i++){
  lift.time=lift.getClip().duration*i/80;pack.mixer.update(0);model.updateWorldMatrix(true,true);
  assert.ok(new T.Box3().setFromObject(basket,true).max.x<filter.min.x-.005,'Basket stays ahead of the filter throughout lift stroke');
 }
-close((bounds('Platform_Grey_Floor').max.y+.454)*metres,3.05526,'Original fully raised floor is retained');
+close((bounds('Platform_Grey_Floor').max.y+.454)*metres,2.95526,'Raised platform follows the lower base with its stroke retained');
 lift.time=0;pack.mixer.update(0);model.updateWorldMatrix(true,true);
 model.traverse(n=>{
  if(n.name.startsWith('Platform_Outside_Grab_Handle'))assert.equal(n.visible,false,'No supplementary external platform grab loops');
@@ -102,3 +128,4 @@ assert.equal(roofIntrusion,0,'Skinned body must remain below the cab roof while 
 assert.equal(doorIntrusion,0,'Skinned body must not pass through the open door leaf');
 assert.equal(floorIntrusion,0,'Skinned body must not pass through the solid cab floor');
 rig.dispose();actors.sync([],new Map());console.log('PASS 202 sampled boarding/alighting body poses: head, door leaf and floor clearance');
+

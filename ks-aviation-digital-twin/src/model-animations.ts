@@ -1,4 +1,24 @@
 import * as THREE from 'three';
+import {cabUnits} from './cab-reference';
+
+export function tankRailingAccessClip(source:THREE.AnimationClip){
+  if(source.name!=='Tank_Railing_Raise')return source;
+  const clip=source.clone(),height=.12+cabUnits(.10),hinge=clip.tracks.find(t=>t.name==='Tank_Rail_Post_Hinge.quaternion');
+  if(!hinge)return clip;
+  const rotation=new THREE.QuaternionLinearInterpolant(hinge.times,hinge.values,4),samples=Math.ceil(clip.duration*60);
+  // Sample the actual hinge arc. Scaling the old sparse position keys leaves
+  // the long rails disconnected between their keys because they move linearly.
+  clip.tracks=clip.tracks.map(track=>{
+    const match=track.name.match(/^Tank_Rail_Horizontal_Link(?:_(\d+))?\.position$/);if(!match)return track;
+    const radius=height*(Number(match[1]||0)%2?1:.5),times:number[]=[],values:number[]=[];
+    for(let i=0;i<=samples;i++){
+      const time=clip.duration*i/samples,q=rotation.evaluate(time),angle=2*Math.atan2(q[2],q[3]);
+      times.push(time);values.push(-radius*Math.sin(angle),radius*(Math.cos(angle)-1),0);
+    }
+    return new THREE.VectorKeyframeTrack(track.name,times,values);
+  });
+  return clip;
+}
 
 /** Refit the folded scissors without changing the upper working position.
  * Clone the clip so other vehicles and the cached GLB keep independent state. */
@@ -30,10 +50,11 @@ export function platformAccessClip(source:THREE.AnimationClip){
 export function closedAnimationPack(model:THREE.Object3D,clips:THREE.AnimationClip[]){
   const mixer=new THREE.AnimationMixer(model),actions=new Map<string,THREE.AnimationAction>();
   for(const original of clips){
-    const clip=platformAccessClip(original);
+    const clip=tankRailingAccessClip(platformAccessClip(original));
     const action=mixer.clipAction(clip);action.setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;
     action.play();action.time=0;action.paused=true;actions.set(clip.name,action);
   }
   mixer.update(0);model.updateMatrixWorld(true);
   return {mixer,actions,open:new Set<string>()};
 }
+

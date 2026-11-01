@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import * as T from 'three';
+import {JSDOM} from 'jsdom';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {newEntity} from '../src/scene-data';
+import {NathanActors} from '../src/nathan-model';
+import {NathanController} from '../src/nathan-controller';
+import {NathanNavigation} from '../src/nathan-navigation';
+import {fireApproachPoints,planFireApproach} from '../src/fire-approach';
+import {NATHAN_MODEL_URL} from '../src/nathan-data';
+import {applyTransform} from '../src/objects';
+const dom=new JSDOM('<body/>');Object.assign(globalThis,{window:dom.window,document:dom.window.document,self:globalThis});dom.window.HTMLCanvasElement.prototype.getContext=()=>null;
+const bytes=fs.readFileSync(process.env.NATHAN_TEST_MODEL||`public${NATHAN_MODEL_URL}`),loader=new GLTFLoader();loader.register(()=>({name:'HEADLESS_TEXTURE',loadTexture:async()=>new T.Texture()}));const asset=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+const person=newEntity('NATHAN_OPERATOR',0,-4),valve=newEntity('PIPE_VALVE',0,2),monitor=newEntity('FIRE_MONITOR',4,2),curb=newEntity('CURB',0,0),fill=newEntity('CONCRETE_FILL',0,1);
+valve.position[1]=.25;valve.scale=.46;monitor.scale=.74;curb.points=[[-3,0],[3,0]];curb.width=.15;curb.height=.2;fill.points=[[-3,-1],[3,-1],[3,2],[-3,2]];fill.height=.2;
+const entities=[person,valve,monitor,curb,fill],objects=new Map(entities.map(o=>{const g=new T.Group();applyTransform(g,o);return [o.id,g]}));const nav=new NathanNavigation(entities,.34,undefined,undefined,person.id);
+assert.ok(fireApproachPoints(valve).every(p=>p[1]===0),'Equipment height must not become walking height');assert.ok(planFireApproach(person.position,valve,nav,entities,()=>undefined));
+const actors=new NathanActors(()=>{},async()=>asset);actors.sync(entities,objects);await new Promise(r=>setTimeout(r,0));const operated:string[]=[];
+const c=new NathanController(actors,{entities:()=>entities,object:id=>objects.get(id),gateAmount:()=>0,speed:()=>0,prepare:()=>true,checkpoint:()=>{},changed:()=>{},input:()=>{},ui:()=>{},notify:()=>{},operate:id=>operated.push(id)});c.open(person);
+let high=0;const run=(done:()=>boolean)=>{for(let i=0;i<2000&&!done();i++){const previous=person.position[1];c.tick(.05);assert.ok(Math.abs(person.position[1]-previous)<=.051,'No vertical teleport at curb');high=Math.max(high,person.position[1]);if(i%10===0)actors.update(.05);}assert.ok(done(),c.message);};
+assert.ok(c.walkTo([0,0,1]));run(()=>c.phase==='idle');assert.ok(high>=.19,'Walk onto 20 cm concrete via curb');assert.ok(c.walkTo([0,0,-3]));run(()=>c.phase==='idle');assert.ok(person.position[1]<.01,'Step back to ground');
+for(const target of [valve,monitor]){assert.ok(c.operateFire(target.id),c.message);run(()=>operated.includes(target.id));assert.equal(operated.filter(id=>id===target.id).length,1);}
+console.log('PASS actual Nathan curb up/down, raised concrete, elevated scaled valve and rear monitor access');

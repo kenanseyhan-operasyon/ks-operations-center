@@ -1,0 +1,58 @@
+name: Import Nathan Gemini ZIP packages
+on:
+  push:
+    paths:
+      - 'transfer-packs/*.zip'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: gemini-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Expand all uploaded packages safely
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          from shutil import copyfileobj
+          root=Path.cwd().resolve()
+          files=sorted((root/'transfer-packs').glob('*.zip'))
+          if not files:
+              print('No ZIP files uploaded; nothing to import')
+          count=0
+          for pack in files:
+              print('Importing',pack.name)
+              with ZipFile(pack) as z:
+                  for info in z.infolist():
+                      if info.is_dir(): continue
+                      posix=PurePosixPath(info.filename)
+                      if posix.is_absolute() or '..' in posix.parts or posix.parts[0] in ('.github','transfer-packs'):
+                          raise ValueError('Unsafe archive path: '+info.filename)
+                      dest=(root / info.filename).resolve()
+                      if not dest.is_relative_to(root):
+                          raise ValueError('Archive path escapes project: '+info.filename)
+                      dest.parent.mkdir(parents=True,exist_ok=True)
+                      with z.open(info) as src, dest.open('wb') as output:
+                          copyfileobj(src,output)
+                      count+=1
+              pack.unlink()
+          print('Imported',count,'files')
+          PY
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          git config user.name "KS Gemini Import Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Import full Nathan Gemini 1+2 simulation package"
+            git push origin HEAD:main
+          fi

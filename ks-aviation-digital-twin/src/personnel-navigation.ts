@@ -1,3 +1,4 @@
+import {tankStairLayout} from './tank-stairs';
 import * as T from 'three';
 import type {Entity} from './scene-data';
 import {localToWorld,worldToLocal} from './facility-data';
@@ -59,11 +60,7 @@ export function personSocket(e:Entity,root:T.Object3D|undefined,socket:PersonSoc
 /** Access paths share the same dimensions and step counts as the actual models. */
 export function accessPath(e:Entity,root?:T.Object3D,socket:PersonSocket='landing'):V3[]|undefined{
   if(e.kind==='tank'&&e.facility?.stairs!==false){
-    const f=e.facility||{},H=e.height+.27,R=e.radius+(f.stairWidth??.9)/2+.12,start=(f.stairStart??0)*Math.PI/180,sweep=(f.sweep??180)*Math.PI/180*(f.clockwise===false?-1:1),N=Math.min(180,Math.max(4,Math.ceil(H/.185)));
-    const path:V3[]=[[Math.sin(start)*R-Math.cos(start)*Math.sign(sweep)*.75,0,Math.cos(start)*R+Math.sin(start)*Math.sign(sweep)*.75]];
-    for(let i=0;i<N;i++){const a=start+(i+.5)/N*sweep;path.push([Math.sin(a)*R,H*(i+1)/N,Math.cos(a)*R]);}
-    const a=start+sweep;path.push([Math.sin(a)*R,H,Math.cos(a)*R],[Math.sin(a)*(e.radius-.6),H,Math.cos(a)*(e.radius-.6)]);
-    return path.map(p=>localToWorld(e,p));
+    return tankStairLayout(e).path.map(p=>localToWorld(e,p));
   }
   if(['MOBILE_STAIR','CROSSOVER_STAIR'].includes(e.preset)){
     const top=e.preset==='MOBILE_STAIR'?.75:1.1,run=(e.length-top)/(e.preset==='MOBILE_STAIR'?1:2),count=Math.max(4,Math.ceil(e.height/.2)),path:V3[]=[[0,0,-e.length/2-.5]];
@@ -86,3 +83,4 @@ export function reachPoint(e:Entity,action:'valve'|'door'):V3{
   if(e.kind==='aircraft'){const spec=AIRCRAFT_SPECS[e.preset],p=spec?.points.find(p=>p.id==='REFUEL_PANEL'&&p.door&&p.quality!=='pending');if(p)return aircraftLocalToWorld(e,pointLocal(spec,p));}
   return localToWorld(e,[e.width*.20,1,e.length/2+.16]);
 }
+

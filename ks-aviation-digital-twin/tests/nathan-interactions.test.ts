@@ -6,7 +6,7 @@ import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 import {JSDOM} from 'jsdom';
 import {newEntity,validateScene} from '../src/scene-data';
 import {NATHAN_PRESET} from '../src/nathan-data';
-import {NathanActors} from '../src/nathan-model';
+import {NathanActors,parseNathanAccessClips} from '../src/nathan-model';
 import {NathanController} from '../src/nathan-controller';
 import {NathanNavigation} from '../src/nathan-navigation';
 import {makeNathanAccess} from '../src/nathan-access';
@@ -24,7 +24,8 @@ const dom=new JSDOM('<body><canvas></canvas></body>',{pretendToBeVisual:true});
 Object.assign(globalThis,{window:dom.window,document:dom.window.document});dom.window.HTMLCanvasElement.prototype.getContext=()=>null;
 async function read(path:string){const b=fs.readFileSync(path),l=new GLTFLoader();l.register(()=>({name:'TEST_TEXTURE',loadTexture:async()=>new T.Texture()}));return l.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');}
 const [asset,vehicle]=await Promise.all([read('public/models/personnel/KS_Nathan_15_Hareket.glb'),read('public/models/refueller-38k-r14.glb')]);
-const truck=newEntity('R14',0,0),person=newEntity(NATHAN_PRESET,-4,8),model=clone(vehicle.scene),pack=closedAnimationPack(model,vehicle.animations),rig=new VehicleRig(model);
+asset.animations.push(...parseNathanAccessClips(JSON.parse(fs.readFileSync('public/models/personnel/nathan-access-animations.json','utf8'))));
+const truck=newEntity('R14',0,0),person=newEntity(NATHAN_PRESET,-4,8),model=clone(vehicle.scene),pack=closedAnimationPack(model,vehicle.animations),rig=new VehicleRig(model);rig.optimizeRendering(vehicle.animations);
 const scale=truck.length/R14.length,bounds=new T.Box3().setFromObject(model);model.scale.setScalar(scale);model.position.set(-R14.centreX*scale,-bounds.min.y*scale,-R14.centreZ*scale);
 const root=new T.Group(),orient=new T.Group();orient.rotation.y=-Math.PI/2;orient.add(model);root.add(orient);applyTransform(root,truck);
 const personRoot=makeObject(person),objects=new Map([[truck.id,root],[person.id,personRoot]]),entities=[truck,person];
@@ -36,10 +37,19 @@ for(const kind of ['rear','platform'] as const){
   let grips=0,maxError=0;
   for(const down of [false,true])for(let i=0;i<=100;i++){
     const p=down?1-i/100:i/100,pose=stairPose(access.contacts!,p);person.position=pose.root;person.heading=access.heading;applyTransform(personRoot,person);
-    actor.motion(kind==='rear'?'Climbing_Ladder':'Climbing',.7,down);actor.contact(pose.contact);actor.update(.05);
-    const errors=actor.contactRig!.errors;maxError=Math.max(maxError,...errors);if(errors.length>2)grips++;
+    actor.motion('Climbing_Up_Ladder',.7,down);actor.contact(pose.contact);actor.update(.05);
+    const errors=actor.contactRig!.errors;maxError=Math.max(maxError,...errors);if(errors.length>2&&pose.contact.grips?.length)grips++;
     assert.ok(errors.every(e=>e<.003),`${kind} ${p}: foot/hand contact error ${errors}`);
     for(let f=0;f<2;f++)assert.ok(actor.contactRig!.sole(f).distanceTo(new T.Vector3(...pose.contact.feet[f]))<.003);
+  }
+  // Regression: at the first/last rung no handhold is selected. In that
+  // interval hands must not fold behind the torso (visible video defect).
+  const forward=new T.Vector3(0,0,-1).applyQuaternion(personRoot.getWorldQuaternion(new T.Quaternion()));
+  for(const side of ['l','r']){
+    const name='rp_nathan_animated_003_walking_';
+    const shoulder=actor.model.getObjectByName(name+'upperarm_'+side)!.getWorldPosition(new T.Vector3());
+    const wrist=actor.model.getObjectByName(name+'hand_'+side)!.getWorldPosition(new T.Vector3());
+    assert.ok(wrist.sub(shoulder).dot(forward)>-.07*person.scale,kind+': '+side+' wrist must not fold behind torso at ladder transition');
   }
   assert.ok(grips>20,`${kind}: reachable hands actually contact the modeled rails (${grips} frames)`);
   console.log(`PASS ${kind}: 202 ascent/descent poses; contact error ${maxError.toFixed(7)} m; hand contacts in ${grips} frames`);
@@ -96,12 +106,46 @@ assert.ok(control.descend());tick(55);assert.equal(control.phase,'idle',notices.
 console.log('PASS board platform → close gate → raise with occupant → lower → open gate → descend');
 
 for(const a of pack.actions.values()){a.time=0;a.paused=true;}pack.open.clear();pack.mixer.update(0);
-access=makeNathanAccess(truck,root,'driver',navigation())!;assert.ok(access);person.position=[access.points[0][0]-1,0,access.points[0][2]];applyTransform(personRoot,person);control.open(person);assert.ok(control.climb(truck.id,'driver'));tick(45);
+let naturalGroundFrames=0;
+const checkGroundWalk=()=>{
+ const support=person.nathan?.support;if(support?.kind!=='driver'||!['climbing','descending'].includes(control.phase))return;
+ const pose=driverPose(access,support.progress,control.phase==='descending');
+ if(pose.groundWalk){naturalGroundFrames++;assert.equal((actor as unknown as {contactPose?:unknown}).contactPose,undefined,'Flat approach and departure release all stair IK');assert.ok(['Idle','Nathan_Original_Walk'].includes(actor.clips[actor.index].name));}
+};
+access=makeNathanAccess(truck,root,'driver',navigation())!;assert.ok(access);person.position=[access.points[0][0]-1,0,access.points[0][2]];applyTransform(personRoot,person);control.open(person);assert.ok(control.climb(truck.id,'driver'));tick(45,checkGroundWalk);assert.ok(naturalGroundFrames>20);
 assert.equal(control.seated,true,notices.at(-1));assert.equal(running,true);assert.equal(drive,true);assert.equal(rig.cab.doorsClosed,true);assert.equal(control.blocksVehicle(truck.id),false);
 const final=driverPose(makeNathanAccess(truck,root,'driver',navigation())!,1);assert.ok(actor.contactRig!.errors.every(e=>e<.035),`Seated limbs: ${actor.contactRig!.errors}`);assert.ok(personRoot.position.distanceTo(new T.Vector3(...final.root))<.001);
 const seatedLocal=rig.cab.seat.worldToLocal(new T.Vector3(...person.position));truck.position[0]+=7;truck.heading=38;applyTransform(root,truck);tick(.2);assert.ok(rig.cab.seat.worldToLocal(new T.Vector3(...person.position)).distanceTo(seatedLocal)<.001);
-assert.ok(control.descend());tick(45);assert.equal(control.phase,'idle',notices.at(-1));assert.equal(running,false);assert.equal(rig.cab.doorsClosed,true);assert.equal(person.position[1],0);
+naturalGroundFrames=0;access=makeNathanAccess(truck,root,'driver',navigation())!;assert.ok(control.descend());
+// This is the real controller's door-opening state, not a direct driverPose
+// sample. Releasing IK here stood Nathan upright on the seat through the roof.
+let seatedWaitFrames=0;
+while(control.phase==='preparing'&&seatedWaitFrames<100){
+  tick(.05);seatedWaitFrames++;
+  assert.ok((actor as unknown as {contactPose?:unknown}).contactPose,'Retain seated contact while waiting for the door');
+  const hip=actor.model.getObjectByName('rp_nathan_animated_003_walking_hip')!.getWorldPosition(new T.Vector3());
+  const seated=driverPose(access,1,true).contact.seated!;
+  assert.ok(hip.distanceTo(new T.Vector3(...seated))<.001,'Pelvis stays on the seat until the door opens');
+  const roofY=model.worldToLocal(root.getObjectByName('CAB_HEADLINER')!.getWorldPosition(new T.Vector3())).y;
+  actor.model.traverse(n=>{if(!(n instanceof T.SkinnedMesh))return;
+    const skin=n.geometry.attributes.skinIndex,weights=n.geometry.attributes.skinWeight;
+    for(let i=0;i<n.geometry.attributes.position.count;i++){
+      let head=0;for(let j=0;j<4;j++)if(/_(head|neck)$/.test(n.skeleton.bones[skin.array[i*4+j]].name))head+=weights.array[i*4+j];
+      if(head>.5)assert.ok(model.worldToLocal(n.getVertexPosition(i,new T.Vector3()).applyMatrix4(n.matrixWorld)).y<roofY,'Actual head skin remains below the roof during door opening');
+    }
+  });
+}
+assert.ok(seatedWaitFrames>=5&&seatedWaitFrames<100,'Exercise the animated door-opening interval');
+tick(45,checkGroundWalk);assert.ok(naturalGroundFrames>20);assert.equal(control.phase,'idle',notices.at(-1));assert.equal(running,false);assert.equal(rig.cab.doorsClosed,true);assert.equal(person.position[1],0);
 console.log('PASS walk to driver door → open → board → sit → start engine → close door → move with cab → exit');
+const manual:any={vehicleRigs:new Map([[truck.id,rig]]),history:{current:{entities:[truck]}},driving:{vehicleId:truck.id,motion:{speed:0}},updateAnimationButtons(){},notify(){},say:(s:string)=>s};
+for(const side of ['left','right'])for(const open of [true,true,false,false]){
+ assert.equal((Workspace.prototype as any).commandCabDoor.call(manual,truck.id,side,open),true);for(let i=0;i<20;i++)rig.cab.updateDoors(.05);
+ assert.equal(rig.cab.doorAmount(side as 'left'|'right'),open?1:0,'Explicit requests are idempotent without any Nathan actor');
+}
+manual.driving.motion.speed=1;assert.equal((Workspace.prototype as any).commandCabDoor.call(manual,truck.id,'left',true),false);
+console.log('PASS natural ground walk before/after cab access; independent, idempotent left/right door controls');
+
 
 const gate=newEntity('PEDESTRIAN_GATE',0,0);const closed=new NathanNavigation([gate]),opened=new NathanNavigation([{...gate,facility:{...gate.facility,open:true}}]);
 assert.equal(closed.clear([0,0,-1],[0,0,1]),false);assert.equal(opened.clear([0,0,-1],[0,0,1]),true);assert.equal(opened.blocked([-.55,0,-.5]),true,'Open leaf still obstructs its sweep side');
@@ -128,3 +172,5 @@ key('v',{ctrlKey:true});assert.equal(keyboardControl.view,'free');key('v',{},hos
 key('w');assert.ok(!keys.includes('w'),'On-foot control does not leak to driving');keyboardControl.seated=true;key('w');assert.ok(keys.includes('w'),'Seated operator forwards driving input');ws.active=false;
 console.log('PASS V operator view, C vehicle cabin, repeat/modifier/text guards and driving handoff');
 actor.dispose();rig.dispose();
+
+

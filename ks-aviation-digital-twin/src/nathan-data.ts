@@ -1,5 +1,5 @@
 export const NATHAN_PRESET = 'NATHAN_OPERATOR';
-export const NATHAN_MODEL_URL = '/models/personnel/KS_Nathan_15_Hareket.glb';
+export const NATHAN_MODEL_URL = '/models/personnel/KS_Nathan_Runtime.glb';
 export const NATHAN_HEIGHT = 1.78;
 export type NathanSupport = { targetId: string; kind: 'driver' | 'rear' | 'platform' | 'steps' | 'tank' | 'bridge'; progress: number; local?: [number, number, number]; heading?: number; anchor?:string; crossingSide?: -1 | 1; fromTankId?: string; toTankId?: string };
 export type NathanSettings = { clip: string; loop: boolean; speed: number; support?: NathanSupport };
@@ -18,3 +18,4 @@ export function validateNathan(value?: Partial<NathanSettings> | null): NathanSe
           ? { local: [...value.support.local] as [number, number, number], heading: Number.isFinite(value.support.heading) ? value.support.heading : 0 } : {}) } } : {}),
   };
 }
+

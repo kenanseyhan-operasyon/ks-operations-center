@@ -1,3 +1,4 @@
+import {inspectionWalk} from './inspection-walk';
 import * as T from 'three';
 import type { Entity } from './scene-data';
 import { accessPath, type V3 } from './personnel-navigation';
@@ -12,7 +13,7 @@ export type NathanAccess = { targetId: string; kind: NathanAccessKind; points: V
 /** Match actual picked ladder, stringer, stair tread or landing mesh. */
 export function nathanAccessKind(node: T.Object3D, e: Entity): NathanAccessKind | undefined {
   if (e.kind === 'tank' && e.facility?.stairs !== false) return 'tank';
-  if (['MOBILE_STAIR', 'CROSSOVER_STAIR'].includes(e.preset)) return 'steps';
+  if (['MOBILE_STAIR', 'CROSSOVER_STAIR','FOAM_INSPECTION_ACCESS'].includes(e.preset)) return 'steps';
   for (let n: T.Object3D | null = node; n; n = n.parent) {
     if (/DRIVER_DOOR|PASSENGER_DOOR|CAB_ACCESS_STEP|CAB_ENTRY_|KS_LOW_CAB_C3/.test(n.name)) return 'driver';
     if (/Rear_Ladder|Tank_Top_Walkway|Rear_Fold.*Hand/i.test(n.name)) return 'rear';
@@ -32,14 +33,15 @@ export function sampleAccess(access: NathanAccess, progress: number): V3 {
 }
 export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: NathanAccessKind,
   nav: NathanNavigation, crossingSide?: -1 | 1): NathanAccess | undefined {
+  if(e.preset==='FOAM_INSPECTION_ACCESS'){const points=inspectionWalk(e);if(points.slice(1).some((p,i)=>!nav.clearAccess(points[i],p,e.id,'steps')))return;const length=points.slice(1).reduce((v,p,i)=>v+new T.Vector3(...p).distanceTo(new T.Vector3(...points[i])),0);return {targetId:e.id,kind:'steps',points,length,crest:1,heading:0};}
   if(kind==='driver')return root?makeDriverAccess(e,root,nav):undefined;
   let points: V3[] | undefined,contacts:StairContacts|undefined;
   if (kind === 'tank') {
     if (e.kind !== 'tank' || e.facility?.stairs === false || (e.facility?.stairWidth??.9)*e.scale < 2*nav.clearance+.1 || Math.abs(e.position[1])>.05) return;
     const flight=accessPath(e,root); if (!flight) return;
     const entry=new T.Vector3(...flight[0]),out=entry.clone().sub(new T.Vector3(...flight[1]));out.y=0;out.normalize();
-    const ground=entry.clone().addScaledVector(out,.5*e.scale);ground.y=0;
-    flight[0][1]=e.position[1]+.143*e.scale;
+    const ground=entry.clone().addScaledVector(out,.5*e.scale);ground.y=nav.surface(ground.toArray() as V3);
+    flight[0][1]+=.008*e.scale;
     for(const p of flight.slice(1))p[1]+=.012*e.scale;
     points=[ground.toArray() as V3,...flight];
   } else if (kind === 'steps' && e.preset === 'CROSSOVER_STAIR' && crossingSide) {
@@ -71,6 +73,13 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
     if (!steps.length || !floor) return;
     const landingBox: T.Box3 = floor;
     steps.sort((a, b) => a.y - b.y);
+    if(kind==='platform'){
+      const deck=root.getObjectByName('Common_Flat_Grey_Floor');
+      if(deck instanceof T.Mesh){const b=boxFor(deck),p=steps.at(-1)!.clone();p.y=b.max.y;
+        // This is the existing solid equipment deck, not a floating fourth tread.
+        if(p.y>steps.at(-1)!.y+.02&&p.y<landingBox.max.y-.02)steps.push(p);
+      }
+    }
     const first = steps[0], last = steps.at(-1)!, centre = landingBox.getCenter(new T.Vector3());
     // Stop on the landing beside the ladder, not at the far-away centre of a roof.
     const outward = first.clone().sub(centre); outward.y = 0;
@@ -97,26 +106,32 @@ export function makeNathanAccess(e: Entity, root: T.Object3D | undefined, kind: 
       grips.push(...meshGripLines(n));
     });
     const worldOut=outward.clone().transformDirection(root.matrixWorld);
-    contacts={stops:stops.map(p=>root.localToWorld(p.clone()).toArray() as V3),outward:worldOut.toArray() as V3,heading:Math.atan2(-worldOut.x,worldOut.z)*180/Math.PI,scale:e.scale,ladder:true,grips};
+    const handGrips:[[V3,V3][],[V3,V3][]]=[[],[]],right=new T.Vector3(worldOut.z,0,-worldOut.x),axisOrigin=root.localToWorld(first.clone());
+    for(const line of grips){const midpoint=new T.Vector3(...line[0]).lerp(new T.Vector3(...line[1]),.5);handGrips[midpoint.sub(axisOrigin).dot(right)>0?1:0].push(line);}
+    contacts={stops:stops.map(p=>root.localToWorld(p.clone()).toArray() as V3),outward:worldOut.toArray() as V3,heading:Math.atan2(-worldOut.x,worldOut.z)*180/Math.PI,scale:e.scale,ladder:true,grips,handGrips,gripRadius:kind==='platform'?.032:.010};
   }
   if (!points || points.length < 3) return;
-  points[0][1] = 0;
+  points[0][1] = nav.surface(points[0]);
   const outward = new T.Vector3(...points[0]).sub(new T.Vector3(...points[1])); outward.y = 0; outward.normalize();
   // The approach endpoint must be outside the whole expanded vehicle footprint.
   for (let i = 0; i < 30 && nav.blocked(points[0]); i++) {
     points[0][0] += outward.x * .1; points[0][2] += outward.z * .1;
+    points[0][1]=nav.surface(points[0]);
   }
   if (nav.blocked(points[0])) return;
   if(contacts)contacts.stops[0]=[...points[0]];
   if (crossingSide) {
     const exit = points.at(-1)!;
+    exit[1]=nav.surface(exit);
     for (let i = 0; i < 30 && nav.blocked(exit); i++) { exit[0] -= outward.x * .1; exit[2] -= outward.z * .1; }
     if (nav.blocked(exit)) return;
   }
   // Only this target has an explicit access corridor. Never exempt another obstacle.
-  for (let i = 1; i < points.length; i++) if (!nav.clear(points[i - 1], points[i], e.id)) return;
+  for (let i = 1; i < points.length; i++) if (!nav.clearAccess(points[i - 1], points[i], e.id,kind)) return;
   const lengths = points.slice(1).map((p, i) => new T.Vector3(...p).distanceTo(new T.Vector3(...points![i])));
   const length = lengths.reduce((a, b) => a + b, 0);
   return { targetId: e.id, kind, points, length, crest: 1 - lengths.at(-1)! / length,
     heading: Math.atan2(-outward.x, outward.z) * 180 / Math.PI, ...(crossingSide ? {crossingSide} : {}),...(contacts?{contacts}:{}) };
 }
+
+

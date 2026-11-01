@@ -17,6 +17,8 @@ export function planNathanRoute(start: V3, end: V3, nav: NathanNavigation, entit
   object: (id: string) => T.Object3D | undefined): NathanRouteLeg[] | undefined {
   if (distance(start, end) > 120 || nav.blocked(start) || nav.blocked(end)) return;
   if(nav.clear(start,end))return [{route:[end]}];
+  const direct = nav.path(start, end);
+  if (direct) return [{route:direct}];
   const doors=entities.filter(e=>e.preset==='PEDESTRIAN_GATE'&&e.width*e.scale>2*nav.clearance+.12)
     .sort((a,b)=>distance(start,a.position)+distance(end,a.position)-distance(start,b.position)-distance(end,b.position));
   // Common exit operation: try the actual door corridor before exhausting A*
@@ -35,8 +37,6 @@ export function planNathanRoute(start: V3, end: V3, nav: NathanNavigation, entit
       const approach=nav.path(start,entry);if(approach)return [{route:approach,gate:{id:gate.id,crossing:[exit]}},{route:[end]}];
     }
   }
-  const direct = nav.path(start, end);
-  if (direct) return [{ route: direct }];
   const nodes: V3[] = [start, end], links = new Map<number, Edge>();
   const candidates = entities.filter(e => e.preset === 'CROSSOVER_STAIR' && distance(start, e.position) < 120 && distance(end, e.position) < 120)
     .sort((a, b) => distance(start, a.position) + distance(end, a.position) - distance(start, b.position) - distance(end, b.position)).slice(0, 8);
@@ -93,3 +93,4 @@ export function planNathanRoute(start: V3, end: V3, nav: NathanNavigation, entit
   if (route.length) legs.push({ route });
   return legs;
 }
+

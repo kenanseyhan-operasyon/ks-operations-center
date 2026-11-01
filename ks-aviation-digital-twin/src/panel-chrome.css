@@ -1,0 +1,15 @@
+/* Close controls belong to the window header, not its scrolling contents. */
+.pipe-editor.pipe-editor>header,.facility-panel.facility-panel>header,.ws-library.ws-library>header,.ws-nathan.ws-nathan>header,.ws-personnel.ws-personnel>header,.deadman-panel.deadman-panel>header,.socar-fire-panel.socar-fire-panel>header{position:sticky;top:0;z-index:8;flex-shrink:0;isolation:isolate}
+.pipe-editor.pipe-editor>header{top:-18px;margin:-18px -18px 12px;padding:14px 18px;background:#fff;border-bottom:1px solid #b7cecb}
+.pipe-editor.assembly-mode>header{top:-12px;margin:-12px -12px 8px;padding:12px}
+.facility-panel.facility-panel>header{background:#142d36}
+.facility-panel.facility-panel>nav{position:static}
+.ws-library.ws-library>header{top:-14px;margin:-14px -14px 12px;padding:14px;background:#0c232b;border-bottom:1px solid #48656c}
+.ws-nathan.ws-nathan>header{top:-16px;margin:-16px -16px 12px;padding:16px;background:#102b37;border-bottom:1px solid #477a87}
+.ws-personnel.ws-personnel>header,.deadman-panel.deadman-panel>header{background:#102b37}
+.socar-fire-panel.socar-fire-panel>header{background:#fff}
+.pipe-editor>header>button,.facility-panel>header>button,.ws-library>header>button,.ws-nathan>header>button,.ws-personnel>header>button,.deadman-panel>header>button,.socar-fire-panel>header>button{flex:0 0 auto;align-self:flex-start;min-width:36px;min-height:36px}
+@media(max-width:640px){.ws-nathan.ws-nathan>header{top:-12px;margin:-12px -12px 10px;padding:12px}}
+.pipe-vector-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pipe-axis-indicator{position:absolute;left:12px;bottom:150px;width:160px;z-index:15;pointer-events:none;border:1px solid #587682;border-radius:10px;background:#102b37ec;color:white;text-align:center;font:11px Arial;box-shadow:0 3px 15px #0003}
+.pipe-axis-indicator[hidden]{display:none}.pipe-axis-indicator svg{width:140px;height:120px;display:block;margin:auto}.pipe-axis-indicator text{font:bold 12px Arial;paint-order:stroke;stroke:#102b37;stroke-width:3px}.pipe-axis-indicator span{display:block;padding:0 6px 8px}

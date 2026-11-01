@@ -22,7 +22,7 @@ export class VehicleLighting{
       if(!(n instanceof THREE.Mesh))return;
       const name=n.name,isBeacon=/Beacon_Amber_Lens|Beacon_Rounded_Top/.test(name);
       const white=/Headlamp_Lens|Fog_Lamp|Panel_Worklight_Lens|Manometer_Dial|Meter_Display|Meter_Backlit/.test(name);
-      const red=/Rear_Position_Lamp|Brake_Lamp/.test(name),amber=/Side_Marker_Amber|Amber_Indicator|Rear_Indicator/.test(name),indicator=/Amber_Indicator|Rear_Indicator/.test(name),reverse=/Reverse_Lamp|Reversing_Lamp/.test(name);
+      const red=/Rear_Position_Lamp|Brake_Lamp/.test(name),amber=/Side_Marker_Amber|Amber_Indicator|Rear_Indicator|CAB_CORNER_INDICATOR_LENS/.test(name),indicator=/Amber_Indicator|Rear_Indicator|CAB_CORNER_INDICATOR_LENS/.test(name),reverse=/Reverse_Lamp|Reversing_Lamp/.test(name);
       if(!isBeacon&&!white&&!red&&!amber&&!reverse)return;
       this.originals.push({mesh:n,material:n.material});
       const anchor=model.worldToLocal(new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3()));
@@ -54,3 +54,4 @@ export class VehicleLighting{
   }
   dispose(){this.lights.removeFromParent();this.pools.removeFromParent();for(const {mesh,material} of this.originals){(Array.isArray(mesh.material)?mesh.material:[mesh.material]).forEach(m=>m.dispose());mesh.material=material;}this.beams.forEach(b=>{b.geometry.dispose();b.material.dispose();});this.texture.dispose();}
 }
+

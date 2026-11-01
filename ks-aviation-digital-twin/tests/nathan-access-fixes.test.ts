@@ -76,8 +76,8 @@ for(const side of ['LEFT','RIGHT'])for(let i=1;i<=3;i++){
 }
 const bumperStep=model.getObjectByName('Rear_Ladder_Close_Step_BUMPER')!,bumperBox=new T.Box3().setFromObject(bumperStep);
 assert.ok(bumperBox.getSize(new T.Vector3()).y<.012);
-for(let i=0;i<2;i++){const box=new T.Box3().setFromObject(model.getObjectByName(`Rear_Ladder_Close_Step_LOWER_${i}`)!);assert.ok(box.getCenter(new T.Vector3()).x>1.54);assert.ok(box.max.y<bumperBox.min.y);}
-console.log('PASS cab steps clear both tyres; two rear steps are outside the bumper; bumper centre is a thin tread');
+for(let i=0;i<2;i++){const box=new T.Box3().setFromObject(model.getObjectByName(`Rear_Ladder_Close_Step_LOWER_${i}`)!);assert.ok(Math.abs(box.getCenter(new T.Vector3()).x-bumperBox.getCenter(new T.Vector3()).x)<1e-6,'Lower steps follow the relocated ladder');assert.ok(box.max.y<bumperBox.min.y);}
+console.log('PASS cab steps clear both tyres; two rear steps align below the bumper tread');
 const scale=truck.length/R14.length,bounds=new T.Box3().setFromObject(model);model.scale.setScalar(scale);model.position.set(-R14.centreX*scale,-bounds.min.y*scale,-R14.centreZ*scale);
 const truckRoot=new T.Group(),orient=new T.Group();orient.rotation.y=-Math.PI/2;orient.add(model);truckRoot.add(orient);applyTransform(truckRoot,truck);objects.set(truck.id,truckRoot);entities=[truck,person];
 for(const name of ['Tank_Railing_Raise','Platform_Gate_Open']){const a=pack.actions.get(name)!;a.time=a.getClip().duration;}pack.mixer.update(0);rig.cab.setDoor('left',true);for(let i=0;i<20;i++)rig.cab.updateDoors(.05);
@@ -107,6 +107,7 @@ rig.cab.setDoor('left',false);for(let i=0;i<20;i++)rig.cab.updateDoors(.05);
 let running=false;const notices:string[]=[];
 const workspace:any={mixers:new Map([[truck.id,pack]]),vehicleRigs:new Map([[truck.id,rig]]),nathanLiftRequests:new Set(),history:{current:{entities}},driving:{motion:{speed:0}},say:(s:string)=>s,notify:(s:string)=>notices.push(s),updateAnimationButtons:()=>{}};
 workspace.animateFor=(...args:any[])=>(Workspace.prototype as any).animateFor.apply(workspace,args);
+workspace.pickDeadman=(...args:any[])=>(Workspace.prototype as any).pickDeadman.apply(workspace,args);
 const control=new NathanController(actors,{entities:()=>entities,object:id=>objects.get(id),gateAmount:()=>0,speed:()=>0,
  prepare:(id,kind)=>(Workspace.prototype as any).prepareNathanAccess.call(workspace,id,kind),
  accessGate:(id,open)=>(Workspace.prototype as any).nathanPlatformGate.call(workspace,id,open),
@@ -169,3 +170,4 @@ for(let i=0;i<2;i++){const sole=actor.contactRig!.sole(i);assert.ok(sole.y>=new 
 assert.ok(control.walkTo([0,0,2]));tick(15);assert.equal(person.position[1],0);assert.equal(control.phase,'idle');
 console.log('PASS animated curb approach → step up → stop on 15 cm support → step down and continue');
 actor.dispose();rig.dispose();
+

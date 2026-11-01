@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { turningInPlace, walkingStep } from '../src/nathan-gemini-motion.ts';
+assert.equal(turningInPlace(40,35),true);
+assert.equal(turningInPlace(-40,35),true);
+assert.equal(turningInPlace(10,35),false);
+assert.equal(turningInPlace(-10,35),false);
+assert.equal(walkingStep(1,1,1/60,80),0);
+assert.equal(walkingStep(1,1,1/60,-80),0);
+assert.equal(walkingStep(1,1,.1,0),.1);
+assert.equal(walkingStep(.04,1,.1,0),.04);
+assert.equal(walkingStep(1,1,-1,0),0);
+assert.equal(walkingStep(1,1,.1,-40,30),0);
+console.log('Gemini Nathan symmetric turning / safe movement: PASS');

@@ -1,3 +1,6 @@
+import {makeTankLogos} from './tank-logo';
+import {SOCAR_LOGO} from './socar-logo';
+import {makePathSolid} from './site-surface-model';
 import {NATHAN_PRESET} from './nathan-data';
 import {makeNathanPlaceholder} from './nathan-model';
 import {makePersonnel} from './personnel-model';
@@ -14,7 +17,7 @@ import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
 export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
   if(o.kind==='person'){const g=o.preset===NATHAN_PRESET?makeNathanPlaceholder(o):makePersonnel(o);applyTransform(g,o);return g;}
-  const facility=makeFacilityObject(o);if(facility){applyTransform(facility,o);return facility;}
+  const facility=makeFacilityObject(o,tankOpenings);if(facility){applyTransform(facility,o);return facility;}
   if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
   if(o.kind==='aircraft'&&AIRCRAFT_SPECS[o.preset]){const g=makeAircraft(o);applyTransform(g,o);return g;}
@@ -31,6 +34,8 @@ export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
     const m=mesh(new THREE.ShapeGeometry(shape),0,.018,0);m.rotation.x=-Math.PI/2;m.castShadow=false;
     (m.material as THREE.MeshStandardMaterial).side=THREE.DoubleSide;
   } else if(o.kind==='wall' && o.points?.length){
+    if(o.wallStyle!=='gate'&&o.wallStyle!=='fence'&&o.preset!=='MAIN_GATE')g.add(makePathSolid(o));
+    else{
     for(let i=1;i<o.points.length;i++){
       const a=o.points[i-1],b=o.points[i],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
       if(len<.01)continue;
@@ -55,10 +60,14 @@ export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
         m.rotation.y=Math.PI/2;m.position.y=H/2;seg.add(m);
       } else add(Math.max(.1,o.thickness),H,len,0,H/2,0);
     }
+    }
   } else if(o.kind==='tank'){
     cyl(o.radius+.25,.18,0,.09,0,'#b8b5ac');cyl(o.radius,H,0,H/2+.18,0);cyl(o.radius*.99,.14,0,H+.2,0,'#e7ebeb');
-    cyl(.45,.3,0,H+.35,0,'#828d90');
-    g.add(makeTankAccess(o,tankOpenings));
+    // Central tank breather: raised neck, screened gap and weather hood.
+    cyl(.23,.08,0,H+.31,0,'#aebbbe');cyl(.14,.42,0,H+.53,0,'#aebbbe');
+    cyl(.23,.09,0,H+.79,0,'#828d90',.09);
+    for(const x of [-.12,.12])box(.018,.12,.018,x,H+.73,0,'#aebbbe');
+    g.add(makeTankAccess(o,tankOpenings));g.add(makeTankLogos(o));
   } else if(o.kind==='tree'){
     cyl(W*.07,H*.55,0,H*.275,0,'#755037');
     if(o.preset==='CYPRESS')cyl(W*.43,H*.85,0,H*.56,0,o.color,.04);
@@ -101,8 +110,12 @@ export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
       if(flag==='TR'||flag==='AZ'){
         ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(150,128,flag==='TR'?57:35,0,Math.PI*2);ctx.fill();ctx.fillStyle=flag==='TR'?'#e30a17':'#ed2939';ctx.beginPath();ctx.arc(165,125,flag==='TR'?46:28,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#fff';ctx.beginPath();const tips=flag==='TR'?5:8;for(let j=0;j<tips*2;j++){const a=-Math.PI/2+j*Math.PI/tips,r=j%2?12:29;const x=222+Math.cos(a)*r,y=128+Math.sin(a)*r;j?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();
-      }else{ctx.fillStyle='#173c4a';ctx.font='bold 60px sans-serif';ctx.fillText('SOCAR',70,155);}
+      }
       const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;flagMat.map=tex;flagMat.color.set('#fff');
+      if(flag==='SOCAR'){
+        const img=document.createElement('img');let disposed=false;flagMat.addEventListener('dispose',()=>{disposed=true;});
+        img.onload=()=>{if(disposed)return;const width=Math.min(c.width*.82,c.height*.72*img.naturalWidth/img.naturalHeight),height=width*img.naturalHeight/img.naturalWidth;ctx.drawImage(img,(c.width-width)/2,(c.height-height)/2,width,height);tex.anisotropy=8;tex.needsUpdate=true;};img.src=SOCAR_LOGO;
+      }
     }
     const f=new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.8),flagMat);f.position.set(1.4,H-1.1,0);g.add(f);
   } else if(o.preset==='CANOPY'){
@@ -128,3 +141,5 @@ export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
 }
 export function applyTransform(g:THREE.Object3D,o:Entity){g.position.fromArray(o.position);if(o.preset===NATHAN_PRESET)g.position.y=Math.max(0,g.position.y);g.rotation.y=-THREE.MathUtils.degToRad(o.heading);g.scale.setScalar(o.scale);g.name=o.name;}
 export function disposeObject(g:THREE.Object3D){g.traverse(n=>{if(n instanceof THREE.Mesh && !n.userData.sharedAsset){n.geometry.dispose();const mats=Array.isArray(n.material)?n.material:[n.material];mats.forEach(m=>{if(m instanceof THREE.MeshStandardMaterial)m.map?.dispose();m.dispose();});}});}
+
+

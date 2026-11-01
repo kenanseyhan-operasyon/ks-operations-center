@@ -3,8 +3,10 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Entity } from './scene-data';
 import { NATHAN_MODEL_URL, NATHAN_PRESET, validateNathan, type NathanSettings } from './nathan-data';
+import { relaxNathanThumbs } from './nathan-hand-pose';
 import { nathanWalkLoop } from './nathan-walk-loop';
 import { NathanContactRig, type NathanContact } from './nathan-contact';
+import { SkinnedBounds } from './skinned-bounds';
 
 export function makeNathanPlaceholder(e: Entity) {
   const root = new T.Group();
@@ -32,6 +34,7 @@ export class NathanActor {
   private motionRate = 1;
   settings: NathanSettings;
   private meshes: T.Mesh[] = [];
+  private skinBounds = new WeakMap<T.SkinnedMesh, SkinnedBounds>();
   private anchor: T.Object3D;
   private disposed = false;
   private blend?: { elapsed: number; weights: number[] };
@@ -42,6 +45,7 @@ export class NathanActor {
   private bounds = new T.Box3();
   contactRig?: NathanContactRig;
   private contactPose?: NathanContact;
+  private toolPose?:Omit<NathanContact,'feet'>;
   private headless=new Map<T.Mesh,{full:T.BufferGeometry;cut:T.BufferGeometry}>();
   private eyes=false;
   terrain?:(point:[number,number,number])=>number;
@@ -56,7 +60,7 @@ export class NathanActor {
     const parent=ladderRoot.parent!.getWorldQuaternion(new T.Quaternion());
     const correction=parent.clone().invert().multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI)).multiply(parent);
     this.clips = gltf.animations.map(source=>{
-      if(source.name!=='Climbing_Ladder')return nathanWalkLoop(source);
+      if(source.name!=='Climbing_Ladder')return relaxNathanThumbs(nathanWalkLoop(source),gltf.scene);
       const clip=source.clone(),q=new T.Quaternion();
       for(const track of clip.tracks)if(track.name===ladderRoot.name+'.quaternion')for(let i=0;i<track.values.length;i+=4)q.fromArray(track.values,i).premultiply(correction).toArray(track.values,i);
       return clip;
@@ -92,7 +96,7 @@ export class NathanActor {
     });
     this.select(Math.max(0, this.clips.findIndex(c => c.name === this.settings.clip)), false);
     const selected=this.index;this.select(this.clips.findIndex(c=>c.name==='Idle'),false);
-    this.contactRig=new NathanContactRig(root,this.model,this.offset,gltf.scene.getObjectByName('rp_nathan_animated_003_walking_root')!.quaternion.clone());this.select(selected,false);
+    this.contactRig=new NathanContactRig(root,this.model,this.offset,gltf.scene.getObjectByName('rp_nathan_animated_003_walking_root')!.quaternion.clone(),this.clips.find(c=>c.name==='Driving'));this.select(selected,false);
   }
 
   /** Exact skinned bounds in entity space; also repair local bounds used by raycasts. */
@@ -104,12 +108,15 @@ export class NathanActor {
     for (const mesh of this.meshes) {
       this.matrix.multiplyMatrices(this.inverse, mesh.matrixWorld);
       this.localBox.makeEmpty();
-      const count = mesh.geometry.attributes.position.count;
-      for (let i = 0; i < count; i++) {
-        mesh.getVertexPosition(i, this.point);
-        this.localBox.expandByPoint(this.point);
-        this.bounds.expandByPoint(this.point.applyMatrix4(this.matrix));
-      }
+      if (mesh instanceof T.SkinnedMesh) {
+        let calculator = this.skinBounds.get(mesh);
+        if (!calculator) { calculator = new SkinnedBounds(mesh); this.skinBounds.set(mesh, calculator); }
+        calculator.measure(this.localBox, this.bounds, this.matrix);
+      } else for (let i = 0; i < mesh.geometry.attributes.position.count; i++) {
+          mesh.getVertexPosition(i, this.point);
+          this.localBox.expandByPoint(this.point);
+          this.bounds.expandByPoint(this.point.applyMatrix4(this.matrix));
+        }
       if (mesh instanceof T.SkinnedMesh) {
         mesh.boundingBox ??= new T.Box3();
         mesh.boundingSphere ??= new T.Sphere();
@@ -154,7 +161,7 @@ export class NathanActor {
       this.actions.forEach((a, i) => a.stopFading().setEffectiveWeight(this.blend!.weights[i]));
     }
     this.index = index;
-    this.settings.clip = this.clips[index].name;
+    if(!this.controlled)this.settings.clip = this.clips[index].name;
     this.mixer.update(0);
     this.ground();
     this.changed();
@@ -193,8 +200,9 @@ export class NathanActor {
     if (!this.playing) { this.playing = true; this.changed(); }
     return true;
   }
-  release() { this.controlled = false; this.playing = false;this.contact(); }
+  release() { this.controlled = false; this.playing = false;this.contact();this.motionRate=1;this.select(this.clips.findIndex(c=>c.name===this.settings.clip),false); }
   contact(pose?:NathanContact){this.contactPose=pose;if(!pose){this.contactRig?.restore();this.contactRig?.resetGrips();}}
+  toolContact(pose?:Omit<NathanContact,'feet'>){this.toolPose=pose;}
   eyePoint(){const head=this.model.getObjectByName('rp_nathan_animated_003_walking_head')!,scale=this.root.getWorldScale(new T.Vector3()).y;return head.getWorldPosition(new T.Vector3()).add(new T.Vector3(0,.055*scale,-.11*scale).applyQuaternion(this.root.getWorldQuaternion(new T.Quaternion())));}
   firstPerson(on:boolean){
     if(on===this.eyes)return;this.eyes=on;
@@ -214,7 +222,7 @@ export class NathanActor {
     }
   }
   update(dt: number) {
-    if ((!this.playing&&!this.contactPose) || this.disposed || !Number.isFinite(dt)) return;
+    if ((!this.playing&&!this.contactPose&&!this.toolPose) || this.disposed || !Number.isFinite(dt)) return;
     this.contactRig?.restore();
     const step = Math.max(0, Math.min(dt, .1)) * (this.controlled ? this.motionRate : this.settings.speed);
     if (this.blend) {
@@ -229,12 +237,13 @@ export class NathanActor {
     this.mixer.update(this.playing?step:0);
     if(this.contactPose)this.contactRig?.stabilize();
     this.ground();
-    if(this.contactPose){this.contactRig?.apply(this.contactPose);this.measure();}
+    if(this.contactPose){this.contactRig?.apply(this.contactPose,Math.max(0,Math.min(dt,.1)));this.measure();}
     else if(this.terrain&&this.contactRig){
       const ground=this.root.getWorldPosition(new T.Vector3()).y;
       const feet=[0,1].map(i=>{const p=this.contactRig!.sole(i);p.y=this.terrain!(p.toArray() as [number,number,number])+Math.max(.005,p.y-ground);return p.toArray() as [number,number,number];}) as [[number,number,number],[number,number,number]];
       if(ground>.001||feet.some(p=>this.terrain!(p)>.001)){this.contactRig.apply({feet});this.measure();}
     }
+    if(this.toolPose&&this.contactRig){this.contactRig.apply({...this.toolPose,handsOnly:true,feet:[this.contactRig.sole(0).toArray(),this.contactRig.sole(1).toArray()] as [[number,number,number],[number,number,number]]},Math.max(0,Math.min(dt,.1)));this.measure();}
   }
   dispose() {
     if (this.disposed) return;
@@ -249,7 +258,7 @@ export class NathanActor {
   }
 }
 
-/** Keep the supplied 8K image in the file; cap only the shared runtime GPU texture. */
+/** The supplied 8K asset is archived separately; cap runtime textures for mobile. */
 export function limitNathanTextures(gltf: Pick<GLTF, 'scene'>, limit: number) {
   const textures = new Set<T.Texture>();
   gltf.scene.traverse(node => {
@@ -337,3 +346,4 @@ export function parseNathanAccessClips(data:{schema:number;clips:Parameters<type
   if(data.schema!==1||!Array.isArray(data.clips)||data.clips.length!==3)throw new Error('Invalid Nathan access animations');
   return data.clips.map(clip=>T.AnimationClip.parse(clip));
 }
+

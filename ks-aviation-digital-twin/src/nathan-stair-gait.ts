@@ -1,7 +1,7 @@
 import * as T from 'three';
 import type {V3} from './personnel-navigation';
 import type {NathanContact} from './nathan-contact';
-export type StairContacts={stops:V3[];heading:number;scale:number;outward:V3;ladder:boolean;grips?:[V3,V3][]};
+export type StairContacts={stops:V3[];heading:number;scale:number;outward:V3;ladder:boolean;grips?:[V3,V3][];handGrips?:[[V3,V3][],[V3,V3][]];gripRadius?:number};
 const smooth=(t:number)=>{t=T.MathUtils.clamp(t,0,1);return t*t*(3-2*t);};
 /** One foot remains planted while the other clears the riser, crosses and lands.
  * Reverse progress follows the same contacts while still facing a steep ladder. */
@@ -11,8 +11,8 @@ export function stairPose(data:StairContacts,progress:number):{root:V3;contact:N
   const points=[new T.Vector3(...stops[fixed]),new T.Vector3(...stops[fixed])];
   const a=new T.Vector3(...stops[old]),b=new T.Vector3(...stops[next]);
   // Both feet stay planted during each hand transfer. Only then lift one foot.
-  const footTime=T.MathUtils.clamp((t-.2)/.6,0,1);
-  const swing=a.clone().lerp(b,smooth(footTime)),height=Math.max(a.y,b.y)+.11*scale;
+  const footTime=T.MathUtils.clamp((t-.18)/.64,0,1);
+  const swing=a.clone().lerp(b,smooth(footTime)),height=Math.max(a.y,b.y)+.13*scale;
   swing.y=footTime<.25?T.MathUtils.lerp(a.y,height,smooth(footTime/.25)):footTime>.75?T.MathUtils.lerp(height,b.y,smooth((footTime-.75)/.25)):height;
   if(progress===1)swing.copy(b);
   points[moving]=swing;
@@ -20,7 +20,11 @@ export function stairPose(data:StairContacts,progress:number):{root:V3;contact:N
   const central=points[0].clone().add(points[1]).multiplyScalar(.5);central.y=(stops[fixed][1]+T.MathUtils.lerp(a.y,b.y,smooth(t)))/2;
   const weight=Math.min(smooth(phase),smooth((last+1-phase)));
   central.addScaledVector(new T.Vector3(...data.outward),data.ladder?.27*scale*weight:0);
-  const feet=points.map((p,i)=>p.addScaledVector(side,(i?1:-1)*.12*scale).add(new T.Vector3(0,.005*scale,0)).toArray() as V3) as [V3,V3];
+  const feet=points.map((p,i)=>p.addScaledVector(side,(i?1:-1)*.12*scale).add(new T.Vector3(0,.012*scale,0)).toArray() as V3) as [V3,V3];
   const advance=new T.Vector3(...stops[Math.min(last,step+1)]).sub(new T.Vector3(...stops[Math.max(0,step-1)])).multiplyScalar(.45);
-  return {root:central.toArray() as V3,contact:{feet,grips:weight>.02?data.grips:undefined,gripGait:{phase,advance:advance.toArray() as V3},hipHeight:data.ladder?.85:.89}};
+  const footRise=Math.max(...feet.map(p=>p[1]))-stops[0][1]-.012*scale;
+  const handWeight=smooth((central.y-stops[0][1])/(.22*scale))*smooth(footRise/(.15*scale))*smooth((last+1-phase)/.65);
+  return {root:central.toArray() as V3,contact:{feet,grips:weight>.02?data.grips:undefined,handGrips:weight>.02?data.handGrips:undefined,gripGait:{phase,advance:advance.toArray() as V3},hipHeight:data.ladder?.85:.89,
+    procedural:true,gripHands:true,freeHands:true,handWeight,disableClimbFallback:true,gripRadius:data.gripRadius}};
 }
+

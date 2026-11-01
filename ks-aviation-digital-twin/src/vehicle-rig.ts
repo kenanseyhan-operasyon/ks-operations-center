@@ -1,10 +1,19 @@
+import {stabilizeVehicleMarkings} from './vehicle-markings';
+import {stabilizeVehicleSurfaces,refineVehicleHatches} from './vehicle-surfaces';
+import {seatSampleJar,separatePlatformGateFaces} from './vehicle-surface-contacts';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { R14 } from './r14-spec';
+import { R14,R14_WHEEL_SCALE } from './r14-spec';
 import { FuelGauge, refitTankMarkings, tankLift, clearCouplingSweep,spaceServiceReels } from './refueller-details';
 import {VehicleCab} from './vehicle-cab';
-import {completeVehicleSteps,clarifyFrontIndicators} from './vehicle-access';
+import {completeVehicleSteps,clarifyFrontIndicators,refitTankAccessRails} from './vehicle-access';
 import {refitCabExterior} from './cab-geometry';
+import {lowerEquipmentDeck,refitServicePlatform} from './vehicle-service-layout';
+import {refitWheelSurrounds} from './vehicle-running-gear';
+import {refitFuelDelivery} from './refueller-fueling';
+import {VehicleDeadman} from './vehicle-deadman';
+import {trailerFrameGeometry,clearFrameTyreSides} from './vehicle-frame';
+import {batchVehicle} from './vehicle-batching';
 type Wheel={pivot:THREE.Group;spin:THREE.Group;front:boolean;trailer:boolean};
 
 /** Prepare one cloned R14 in native coordinates, before scaling/grounding.
@@ -14,7 +23,10 @@ export class VehicleRig {
   readonly trailer=new THREE.Group();
   readonly gauges:FuelGauge[]=[];
   readonly cab:VehicleCab;
+  readonly deadman:VehicleDeadman;
   private platformButton?:THREE.MeshStandardMaterial;
+  private platformRaised?:boolean;
+  private batching?:ReturnType<typeof batchVehicle>;
   private geometries=new Set<THREE.BufferGeometry>();
   private materials=new Set<THREE.Material>();
   get wheelbase(){return ((this.articulated?R14.tractorAxle:(R14.tractorAxle+R14.trailerAxle)/2)-R14.frontAxle)*this.model.scale.x;}
@@ -50,8 +62,13 @@ export class VehicleRig {
       }
       geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();mesh.geometry=geometry;
     }
-    if(articulated){refitTankMarkings(meshes,g=>this.own(g));clearCouplingSweep(model,g=>this.own(g));}
+    if(articulated)refitTankMarkings(meshes,g=>this.own(g));
+    // Both chassis variants need the same free bay for the overwing reel.
+    clearCouplingSweep(model,g=>this.own(g));
     spaceServiceReels(model,g=>this.own(g));
+    lowerEquipmentDeck(model,g=>this.own(g));
+    refitWheelSurrounds(model,g=>this.own(g));
+    clearFrameTyreSides(model,g=>this.own(g));
     const steel=this.material('#343e45',.7,.45),silver=this.material('#b8c4cb',.7,.35),rubber=this.material('#232629',0,.94),dark=this.material('#14191d',.3,.65),red=this.material('#b72f24',.3,.5);
     const add=(name:string,geometry:THREE.BufferGeometry,material:THREE.Material)=>{
       const mesh=new THREE.Mesh(this.own(geometry),material);mesh.name=name;mesh.userData.sharedAsset=true;model.add(mesh);return mesh;
@@ -65,17 +82,10 @@ export class VehicleRig {
       const mesh=add(name,new THREE.CylinderGeometry(radius,radius,delta.length(),24),material);
       mesh.position.copy(start.add(end).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());if(trailer)attach(mesh);return mesh;
     };
-    const beam=(name:string,a:number[],b:number[])=>{
-      const start=new THREE.Vector3().fromArray(a),end=new THREE.Vector3().fromArray(b),delta=end.clone().sub(start);
-      const mesh=add(name,new THREE.BoxGeometry(delta.length(),.036,.028),steel);
-      mesh.position.copy(start.add(end).multiplyScalar(.5));mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),delta.normalize());attach(mesh);
-    };
     if(articulated){
       for(const z of [.065,.245]){
         box('R14_TRACTOR_RAIL',[.755,.042,.028],[-.2025,-.31,z]);
-        beam('R14_TRAILER_NECK',[R14.hitchX,-.212,z],[.27,-.23,z]);
-        beam('R14_TRAILER_SLOPE',[.27,-.23,z],[.52,-.31,z]);
-        beam('R14_TRAILER_RAIL',[.52,-.31,z],[1.51,-.31,z]);
+        const frame=add('R14_TRAILER_FRAME',trailerFrameGeometry(),steel);frame.position.z=z;attach(frame);
       }
       for(const mesh of meshes)if(/^Side_Marker_Housing/.test(mesh.name)&&belongsToTrailer(mesh)){
         const c=centre(mesh),y=c.x<.27?-.212-(c.x-R14.hitchX)*.018/(.27-R14.hitchX):c.x<.52?-.23-(c.x-.27)*.08/.25:-.31;
@@ -87,7 +97,11 @@ export class VehicleRig {
       tube('R14_KINGPIN',[R14.hitchX,-.245,.155],[R14.hitchX,-.21,.155],.013,silver);
       for(const z of [-.035,.345]){
         for(const y of [-.35,-.375])box('R14_TRAILER_SIDEGUARD',[.49,.01,.01],[.79,y,z],silver,true);
-        for(const x of [.545,1.035])box('R14_TRAILER_GUARD_MOUNT',[.008,.065,.008],[x,-.34,z],steel,true);
+        for(const x of [.545,1.035]){
+          box('R14_TRAILER_GUARD_MOUNT',[.008,.065,.008],[x,-.34,z],steel,true);
+          const railZ=z<.155?.065:.245;
+          box('R14_TRAILER_GUARD_OUTRIGGER',[.014,.014,Math.abs(z-railZ)+.014],[x,-.315,(z+railZ)/2],steel,true);
+        }
       }
       // Tank outlet and filling/top-up valves on both sides, above the sideguards.
       tube('R14_TANK_OUTLET',[.77,-.244,.155],[.77,-.309,.155],.019,silver);
@@ -121,21 +135,27 @@ export class VehicleRig {
     }
     const boltGeometry=this.own(mergeGeometries(bolts)!);bolts.forEach(g=>g.dispose());
     const holeGeometry=this.own(mergeGeometries(holes)!);holes.forEach(g=>g.dispose());
+    for(const geometry of [tyre,rim,hub,boltGeometry,holeGeometry])geometry.scale(R14_WHEEL_SCALE,R14_WHEEL_SCALE,R14_WHEEL_SCALE);
     for(const [index,x] of [R14.frontAxle,R14.tractorAxle,R14.trailerAxle].entries())for(const side of [-1,1]){
       const pivot=new THREE.Group(),spin=new THREE.Group();pivot.name=`R14_WHEEL_${index}_${side}`;
       pivot.position.set(x,R14.axleY,.155+side*.19);model.add(pivot);pivot.add(spin);
-      for(const [geometry,material] of [[tyre,rubber],[rim,silver],[hub,steel],[boltGeometry,silver],[holeGeometry,dark]] as const){
-        const mesh=new THREE.Mesh(geometry,material);mesh.userData.sharedAsset=true;spin.add(mesh);
+      for(const [name,geometry,material] of [['R14_TYRE',tyre,rubber],['R14_RIM',rim,silver],['R14_HUB',hub,steel],['R14_WHEEL_BOLTS',boltGeometry,silver],['R14_WHEEL_VENTS',holeGeometry,dark]] as const){
+        const mesh=new THREE.Mesh(geometry,material);mesh.name=name;mesh.userData.sharedAsset=true;spin.add(mesh);
       }
       if(articulated&&index===2)attach(pivot);this.wheels.push({pivot,spin,front:index===0,trailer:articulated&&index===2});
     }
     completeVehicleSteps(model,g=>this.own(g),silver);clarifyFrontIndicators(model,g=>this.own(g));
-    this.cab=new VehicleCab(model);model.updateMatrixWorld(true);
+    refitServicePlatform(model,g=>this.own(g),silver);
+    refitFuelDelivery(model,g=>this.own(g),{metal:silver,dark,black:rubber,red,white:this.material('#e7ecef',.15,.4)});
+    refitTankAccessRails(model,g=>this.own(g),silver);
+    this.deadman=new VehicleDeadman(model);
+    this.cab=new VehicleCab(model);seatSampleJar(model);separatePlatformGateFaces(model,g=>this.own(g));refineVehicleHatches(model,g=>this.own(g));stabilizeVehicleSurfaces(model,m=>this.materials.add(m));stabilizeVehicleMarkings(model,g=>this.own(g),m=>this.materials.add(m));model.updateMatrixWorld(true);
     const button=model.getObjectByName('Platform_Lift_Toggle_Button') as THREE.Mesh|undefined;
     if(button){this.platformButton=this.material('#28df62',.15,.4);button.material=this.platformButton;this.setPlatformRaised(false);}
   }
   private own<T extends THREE.BufferGeometry>(g:T):T{this.geometries.add(g);return g;}
-  setPlatformRaised(raised:boolean){if(this.platformButton){this.platformButton.color.set(raised?'#ff2020':'#28df62');this.platformButton.emissive.copy(this.platformButton.color);this.platformButton.emissiveIntensity=raised?1.2:.35;}}
+  optimizeRendering(clips:THREE.AnimationClip[]){return this.batching??=batchVehicle(this.model,clips,g=>this.own(g),m=>this.materials.add(m),[this.trailer,...this.wheels.flatMap(w=>[w.pivot,w.spin])]);}
+  setPlatformRaised(raised:boolean){if(this.platformButton&&this.platformRaised!==raised){this.platformRaised=raised;this.platformButton.color.set(raised?'#ff2020':'#28df62');this.platformButton.emissive.copy(this.platformButton.color);this.platformButton.emissiveIntensity=raised?1.2:.35;}}
   private material(color:string,metalness:number,roughness:number){const m=new THREE.MeshStandardMaterial({color,metalness,roughness});this.materials.add(m);return m;}
   setArticulation(angle=0){this.trailer.rotation.y=this.articulated?-THREE.MathUtils.clamp(angle,-R14.maxArticulation,R14.maxArticulation):0;}
   setFuelLevel(litres=0){this.gauges.forEach(g=>g.setLitres(litres));}
@@ -143,5 +163,8 @@ export class VehicleRig {
     const scale=this.model.getWorldScale(new THREE.Vector3()).x;this.setArticulation(trailerAngle);
     for(const wheel of this.wheels){wheel.spin.rotation.z=distanceMetres/(R14.tyreRadius*scale);wheel.pivot.rotation.y=wheel.front?-steer:0;}
   }
-  dispose(){this.cab.dispose();this.geometries.forEach(g=>g.dispose());this.materials.forEach(m=>m.dispose());}
+  dispose(){this.deadman.dispose();this.cab.dispose();this.geometries.forEach(g=>g.dispose());this.materials.forEach(m=>m.dispose());}
 }
+
+
+

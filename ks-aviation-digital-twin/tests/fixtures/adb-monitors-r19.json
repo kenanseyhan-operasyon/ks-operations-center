@@ -1,0 +1,591 @@
+{
+  "groups": [
+    {
+      "id": "mtfij5v840ifws",
+      "name": "TESİS AĞAÇLARI"
+    },
+    {
+      "id": "mtfit0k5ajhzy5",
+      "name": "TESİS"
+    },
+    {
+      "id": "mtfitqafvth22u",
+      "name": "YOL AĞAÇLARI"
+    },
+    {
+      "id": "mtfjkui5k4jr8q",
+      "name": "UÇAK"
+    },
+    {
+      "id": "socar-adb-fire-reference-20261024",
+      "name": "SOCAR · Yangın suyu / köpük hatları · Fotoğraf eşleştirmesi"
+    }
+  ],
+  "routes": [
+    {
+      "id": "0a877134-1a2d-4ac9-9054-d07029f38f0f",
+      "name": "3000 → A320-200 · CFM56 · Sharklets",
+      "points": [
+        [
+          4.84594460709787,
+          3.8506116864645463
+        ],
+        [
+          9.297085634205303,
+          14.035110346931958
+        ],
+        [
+          13.008145005258541,
+          18.458449896987076
+        ],
+        [
+          18.95870600140698,
+          21.754657565137293
+        ]
+      ],
+      "speedKmh": 20,
+      "vehicleId": "795bb6d3-b737-45d6-8f80-56f824494095",
+      "aircraftId": "c80946a1-b7b2-4549-a518-93d7cd7f850b",
+      "approachKmh": 2,
+      "approachDistance": 20
+    },
+    {
+      "id": "0f7bf25c-e047-4850-814a-e786183f2c08",
+      "name": "3000 → A320-200 · CFM56 · Sharklets",
+      "points": [
+        [
+          6.278083642334386,
+          9.195427329469894
+        ],
+        [
+          6.917933379887748,
+          11.915326353954516
+        ],
+        [
+          7.620200144201412,
+          15.751328513499827
+        ],
+        [
+          9.4620180365269,
+          18.59725494731513
+        ],
+        [
+          12.337203348490007,
+          21.155295767499133
+        ],
+        [
+          16.169834756812897,
+          23.000909073665085
+        ],
+        [
+          19.127352557060362,
+          23.877666156099707
+        ],
+        [
+          23.62425479038079,
+          24.458497520364524
+        ],
+        [
+          29.12275110381638,
+          23.460255669465198
+        ],
+        [
+          33.99930383639505,
+          21.012604593310087
+        ],
+        [
+          37.711560799364094,
+          17.507588145983135
+        ],
+        [
+          41.457783008283265,
+          10.994953585082108
+        ],
+        [
+          42.0738869805119,
+          -1.4741594046068474
+        ],
+        [
+          -23.47052899848707,
+          -243.334426543789
+        ],
+        [
+          -28.174956428429972,
+          -257.5502651160041
+        ],
+        [
+          -26.196612415921493,
+          -272.3740645392783
+        ],
+        [
+          -9.405956619491459,
+          -282.96200186456974
+        ],
+        [
+          34.14302137153255,
+          -289.89411227969987
+        ],
+        [
+          96.53768909255294,
+          -292.5484240551882
+        ],
+        [
+          110.72820230997294,
+          -290.1817261233892
+        ],
+        [
+          119.08887371078684,
+          -277.8803901409758
+        ],
+        [
+          123.20093238289637,
+          -265.1894954376882
+        ],
+        [
+          125.64201931551703,
+          -248.1372230721529
+        ],
+        [
+          125.21792815571483,
+          -235.1076837964938
+        ],
+        [
+          205.0339471686388,
+          106.7720449563094
+        ],
+        [
+          232.73241167548787,
+          127.8008235632381
+        ],
+        [
+          260.00627388507047,
+          118.71214255200317
+        ],
+        [
+          269.28091218486406,
+          91.41314923401518
+        ],
+        [
+          260.32829914215745,
+          71.0010866449617
+        ],
+        [
+          251.3393108389615,
+          57.66659651805037
+        ],
+        [
+          235.43750340180367,
+          56.210283045361706
+        ],
+        [
+          223.93975345873804,
+          64.33226962959775
+        ]
+      ],
+      "speedKmh": 20,
+      "reference": "front-axle",
+      "vehicleId": "795bb6d3-b737-45d6-8f80-56f824494095",
+      "aircraftId": "c80946a1-b7b2-4549-a518-93d7cd7f850b",
+      "approachKmh": 2,
+      "startHeading": 2.8797932657906435,
+      "approachDistance": 20
+    }
+  ],
+  "schema": "KS_DIGITAL_TWIN_V1",
+  "source": "Eski ADB kaydı · 2026-09-15",
+  "airport": "ADB",
+  "entities": [
+    {
+      "id": "24b73628-9d60-42f1-9e81-e59fada1b947",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 109.35509965047639,
+      "doorSide": "",
+      "facility": {
+        "tag": "MON-3",
+        "open": false,
+        "circuit": "monitor-3",
+        "supplyId": "adb-fire-monitor-3-valve",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "bendRadius": 0.16,
+        "routeEdited": true,
+        "supplyRoute": [
+          [
+            -0.16385228489503117,
+            0.4045501523929349,
+            -0.643527335540426
+          ]
+        ],
+        "pipeDiameter": 0.102,
+        "concentrateId": "0b49dcf4-9031-47e7-b2f1-b1cd5d18c03e",
+        "concentrateRoute": [
+          [
+            -0.23289504067997502,
+            0.9629642127459827,
+            0.4739996599064871
+          ],
+          [
+            0.032982338314777454,
+            0.8765253301846924,
+            0.49914339000419655
+          ]
+        ],
+        "ratioUnspecified": true,
+        "referenceRevision": 10
+      },
+      "position": [
+        18.40578474461467,
+        0,
+        12.168543758752193
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "a51cb392-2737-46ac-9c2a-9830e63109e3",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 109.35509965047639,
+      "doorSide": "",
+      "facility": {
+        "tag": "MON-2",
+        "open": false,
+        "circuit": "monitor-2",
+        "supplyId": "adb-fire-monitor-2-valve",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "routeEdited": true,
+        "supplyRoute": [
+          [
+            -0.16385228489503054,
+            0.4045501523929349,
+            -0.6435273355404314
+          ]
+        ],
+        "concentrateId": "5a1c7446-aed7-4a9a-9158-25bd42fc20c2",
+        "concentrateRoute": [
+          [
+            -0.2190626346511946,
+            0.9629166441622393,
+            0.5203983246152558
+          ],
+          [
+            -0.1338701287977455,
+            0.6068252285894024,
+            0.4258249434054023
+          ]
+        ],
+        "ratioUnspecified": true,
+        "referenceRevision": 10
+      },
+      "position": [
+        12.068524337031667,
+        0,
+        -9.86760156776385
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "246150dc-cb83-4f89-812a-1128f9aaae2b",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 78.20165664604828,
+      "doorSide": "",
+      "facility": {
+        "tag": "MON-1",
+        "open": false,
+        "circuit": "monitor-1",
+        "supplyId": "adb-fire-monitor-1-valve",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "routeEdited": true,
+        "supplyRoute": [
+          [
+            0.19269483683252675,
+            0.4045501523929349,
+            -0.6354869807566319
+          ]
+        ],
+        "concentrateId": "e7c08f05-3263-482d-8f7e-a7af7bab0ea9",
+        "concentrateRoute": [
+          [
+            0.8565294013059184,
+            0.9629166441622393,
+            -0.1284487328046958
+          ],
+          [
+            0.6877031395478819,
+            0.6068252285894026,
+            0.4501691142053925
+          ]
+        ],
+        "ratioUnspecified": true,
+        "referenceRevision": 10
+      },
+      "position": [
+        6.277860309280156,
+        0,
+        -29.702432110814037
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "8467e638-4199-4838-abcc-e165465cd34e",
+      "flag": "",
+      "kind": "structure",
+      "name": "Yangın monitörü kopya kopya kopya",
+      "color": "#bd2927",
+      "scale": 0.7415644221748147,
+      "width": 1.1,
+      "height": 1.65,
+      "length": 1.8,
+      "preset": "FIRE_MONITOR",
+      "radius": 2,
+      "heading": 192.6677799716615,
+      "doorSide": "",
+      "facility": {
+        "tag": "MON-4",
+        "open": false,
+        "circuit": "monitor-4",
+        "supplyId": "adb-fire-monitor-4-valve",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "routeEdited": true,
+        "supplyRoute": [
+          [
+            0.375912074101416,
+            0.4045501523929349,
+            -0.5474167657259509
+          ]
+        ],
+        "concentrateId": "ec3dbbc7-9dab-4fbc-a4fd-af82d11ef7a5",
+        "concentrateRoute": [
+          [
+            0.7449261387686356,
+            0.9629166441622393,
+            -0.08809750132721327
+          ],
+          [
+            0.24026617160729735,
+            0.6068252285894024,
+            0.37484279189069397
+          ]
+        ],
+        "ratioUnspecified": true,
+        "referenceRevision": 10
+      },
+      "position": [
+        -14.280623255190523,
+        0,
+        14.925809915415732
+      ],
+      "thickness": 1.1,
+      "wallStyle": ""
+    },
+    {
+      "id": "adb-fire-main-north",
+      "flag": "",
+      "kind": "structure",
+      "name": "4 inç yangın suyu · kuzey kolu",
+      "color": "#b63530",
+      "scale": 1,
+      "width": 0.12,
+      "height": 0.65,
+      "length": 3,
+      "preset": "PIPE_RED",
+      "radius": 2,
+      "groupId": "socar-adb-fire-reference-20261024",
+      "heading": 161.10772495374954,
+      "doorSide": "",
+      "facility": {
+        "circuit": "supply-1",
+        "pipePath": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1.5478547576606658,
+            -1.6653345369377348e-16,
+            -24.032222619199402
+          ]
+        ],
+        "supplyId": "adb-fire-main-1",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "routeEdited": true,
+        "supplyRoute": [],
+        "pipeDiameter": 0.1016,
+        "referenceRevision": 10
+      },
+      "position": [
+        6.961345978668108,
+        0.3,
+        -32.22280227399214
+      ],
+      "thickness": 0.12,
+      "wallStyle": ""
+    },
+    {
+      "id": "adb-fire-main-south",
+      "flag": "",
+      "kind": "structure",
+      "name": "4 inç yangın suyu · güney kolu",
+      "color": "#b63530",
+      "scale": 1,
+      "width": 0.12,
+      "height": 0.65,
+      "length": 3,
+      "preset": "PIPE_RED",
+      "radius": 2,
+      "groupId": "socar-adb-fire-reference-20261024",
+      "heading": 161.10772495374954,
+      "doorSide": "",
+      "facility": {
+        "circuit": "supply-2",
+        "pipePath": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            -1.4491401749303296,
+            0,
+            22.499999999999996
+          ]
+        ],
+        "supplyId": "adb-fire-source-2",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "supplyRoute": [
+          [
+            2.7186967260850374,
+            -0.7,
+            -15.33210376771844
+          ],
+          [
+            1.0658141036401503e-14,
+            -0.7,
+            -15.332103767718445
+          ],
+          [
+            0,
+            -0.7,
+            0
+          ]
+        ],
+        "pipeDiameter": 0.1016,
+        "referenceRevision": 10
+      },
+      "position": [
+        19.18402233730167,
+        0.3,
+        12.74191219097978
+      ],
+      "thickness": 0.12,
+      "wallStyle": ""
+    },
+    {
+      "id": "adb-fire-main-west",
+      "flag": "",
+      "kind": "structure",
+      "name": "B · Monitör ve tank çevre nozulu hattı",
+      "color": "#b63530",
+      "scale": 1,
+      "width": 0.12,
+      "height": 0.65,
+      "length": 3,
+      "preset": "PIPE_RED",
+      "radius": 2,
+      "groupId": "socar-adb-fire-reference-20261024",
+      "heading": 161.10772495374954,
+      "doorSide": "",
+      "facility": {
+        "circuit": "manifold",
+        "pipePath": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.09571076920036958,
+            0,
+            -1.1554894151304491
+          ],
+          [
+            0.09571076920036958,
+            -0.47000000000000003,
+            -1.1554894151304491
+          ],
+          [
+            6.706613164299471,
+            -0.47000000000000003,
+            -0.6078993246820674
+          ],
+          [
+            14.62593972714442,
+            -0.4699999999999993,
+            65.81019409596678
+          ],
+          [
+            5.240456149600444,
+            -0.47000000000000003,
+            64.86551733091704
+          ]
+        ],
+        "supplyId": "adb-fire-water-header",
+        "reference": "SOCAR-ADB-2026-10-24",
+        "routeEdited": true,
+        "supplyRoute": [],
+        "pipeDiameter": 0.1016,
+        "referenceRevision": 10
+      },
+      "position": [
+        -0.4270168763873059,
+        0.77,
+        31.655938636493406
+      ],
+      "thickness": 0.12,
+      "wallStyle": ""
+    }
+  ],
+  "updatedAt": "2026-10-30T06:20:14.501Z",
+  "groundModes": {
+    "airport": "photo",
+    "facility": "satellite"
+  },
+  "groundPhoto": {
+    "x": -40.19719225446513,
+    "z": -1021.9775424217576,
+    "width": 3700,
+    "height": 1233,
+    "enabled": false,
+    "opacity": 1,
+    "rotation": -103
+  },
+  "sharedGround": "ortho"
+}

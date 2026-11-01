@@ -3,7 +3,7 @@ import { CloudError, providerError, validateNewPassword } from './cloud-errors';
 import type { AuthCallback } from './auth-callback';
 export { CloudConflict } from './cloud-errors';
 
-export type CloudConfig={url:string;anonKey:string};
+export type CloudConfig={url:string;anonKey:string;claimEditor?:boolean};
 type Session={access_token:string;refresh_token:string;expires_at:number;user:{id:string;email?:string};recovery?:boolean};
 export type CloudRecord={revision:number;payload:SceneData;updated_at:string};
 export type PublishedSave=CloudRecord&{published_revision:number};
@@ -69,6 +69,7 @@ export class CloudStore{
   signOut(){this.session=undefined;this.revision=0;this.editor=false;this.storage.removeItem(SESSION);}
   async refreshEditor(){
     this.editor=false;if(!this.session||this.recovering)return false;
+    if(this.config?.claimEditor){this.editor=await this.api('/rest/v1/rpc/ks_adt_claim_editor',{method:'POST',body:'{}'})===true;return this.editor;}
     const rows=await this.api('/rest/v1/ks_adt_editors?select=user_id&enabled=eq.true&user_id=eq.'+encodeURIComponent(this.userId!));
     this.editor=Array.isArray(rows)&&rows.some(r=>r.user_id===this.userId);return this.editor;
   }
@@ -97,3 +98,4 @@ export class CloudStore{
     this.revision=row.revision;return {...row,payload:snapshot};
   }
 }
+
