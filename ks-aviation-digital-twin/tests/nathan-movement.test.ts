@@ -203,7 +203,9 @@ assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...acrossRo
 assert.equal(control.tankTo(tankA.id,localToWorld(tankA,[tankA.radius-.1,tankA.height+.282,0])),false,'Never walk through the roof railing or off the roof');
 console.log('PASS exterior → bund crossover → actual T1 curved stairs → pause/save/reload/resume → roof; roof walking avoids hatch and railing');
 
-assert.ok(control.crossBridge(tankBridge.id));until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.3,50,checkTankBody);
+const probeNav=nav();const bridgeLeg=makeRoofBridge(tankBridge,tankA.id,entities,probeNav,.34);
+console.error('BRIDGE_STATE',JSON.stringify({pos:person.position,personSupport:person.nathan?.support,bridgeLeg,route:!!planRoofRoute(person.position,tankA.id,tankRoofPoint(tankB),tankB.id,entities,probeNav,.34)}));
+assert.ok(control.crossBridge(tankBridge.id),control.message);until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.3,50,checkTankBody);
 control.pause();const bridgePosition=[...person.position];
 savedTank=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});
 person=savedTank.entities.find(e=>e.id===person.id)!;entities=[...seed.entities,person];actors.sync(entities,objects);control.sync();control.close();control.open(person);

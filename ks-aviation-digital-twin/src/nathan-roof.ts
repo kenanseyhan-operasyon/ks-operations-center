@@ -40,7 +40,11 @@ export function makeRoofBridge(bridge: Entity,fromTankId: string,entities: Entit
   };
   const pa=portal(a,span.start,-1),pb=portal(b,span.end,1);if(!pa||!pb)return;
   const points:V3[]=[pa,[span.start[0],span.start[1]+.02,span.start[2]],[span.end[0],span.end[1]+.02,span.end[2]],pb];
-  if(points.slice(1).some((p,i)=>!nav.clear(points[i],p,bridge.id)))return;
+  const segments=points.slice(1).map((p,i)=>nav.clear(points[i],p,bridge.id));
+  if(segments.some(ok=>!ok)){
+    console.error('BRIDGE_SEGMENTS_BLOCKED',JSON.stringify({bridge:bridge.id,fromTankId,points,segments,headings:[a.heading,b.heading]}));
+    return;
+  }
   if(fromTankId===b.id)points.reverse();
   return {surfaceId:bridge.id,kind:'bridge',points,fromTankId,toTankId:fromTankId===a.id?b.id:a.id};
 }
