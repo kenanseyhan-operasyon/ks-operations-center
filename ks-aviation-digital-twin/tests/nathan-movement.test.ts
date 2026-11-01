@@ -179,9 +179,21 @@ for(const tank of [tankA,tankB])objects.set(tank.id,makeObject(tank,bridgeRailin
 objects.set(tankBridge.id,makeObject(tankBridge));
 person.position=[...outside];delete person.nathan!.support;applyTransform(personRoot,person);control.open(person);
 const tankNav=nav();let usedBund=false,usedTankStairs=false;
+let graspOnAscent=0,graspOnDescent=0,stairContactFrames=0;
 const checkTankBody=()=>{
   const support=person.nathan?.support;
   if(support?.crossingSide)usedBund=true;if(support?.kind==='tank'&&support.progress<1)usedTankStairs=true;
+  if(support?.kind==='tank'&&support.progress>.16&&support.progress<.86&&person.position[1]>2){
+    const pose=(actor as unknown as {contactPose?:{handGrips?:[[unknown,unknown][],[unknown,unknown][]]}}).contactPose;
+    if(pose?.handGrips){
+      const count=pose.handGrips.filter(lines=>lines.length>0).length;
+      assert.equal(count,1,'On the tank stairs exactly one hand should have the outside rail');
+      stairContactFrames++;
+    }
+    const gripCount=actor.contactRig!.handContacts.filter(x=>x?.gripping).length;
+    assert.ok(gripCount<=1,'Never grip the tank stair rail with both hands');
+    if(gripCount===1){if(control.phase==='descending')graspOnDescent++;else graspOnAscent++;}
+  }
   if(support?.kind==='tank'&&support.progress>0&&support.progress<1&&person.position[1]>2){
     assert.equal(actor.terrain,undefined,'Mid-stair foot IK must not query the ground below the tank');
     const feet=[0,1].map(i=>actor.contactRig!.sole(i).y);
@@ -249,6 +261,10 @@ until(()=>control.phase==='standing',50,checkTankBody);assert.equal(person.natha
 assert.ok(control.tankTo(tankA.id));until(()=>control.phase==='standing',60,checkTankBody);assert.equal(person.nathan?.support?.targetId,tankA.id);
 assert.ok(control.walkTo(outside));until(()=>control.phase==='idle',180,checkTankBody);assert.equal(person.nathan?.support,undefined);
 assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...outside))<.03);soles();
+assert.ok(stairContactFrames>50,'Tank access must exercise procedural hand-and-foot contacts');
+assert.ok(graspOnAscent>10,'Nathan must physically grip one outside rail while ascending tank stairs');
+assert.ok(graspOnDescent>10,'Nathan must physically grip one outside rail while descending tank stairs');
+console.log('PASS real skinned Nathan: one outside hand grip on tank ascent/descent, feet on steps, no double handhold');
 console.log('PASS T1 roof → real bridge → pause/save/reload/resume → T2 roof → bridge back → tank stairs → ground → outside bund');
 
 assert.ok(control.crossBridge(tankBridge.id));until(()=>control.phase==='standing',180,checkTankBody);
