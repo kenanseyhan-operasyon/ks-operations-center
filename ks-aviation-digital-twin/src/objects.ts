@@ -7,6 +7,7 @@ import {makePersonnel} from './personnel-model';
 import { isRefueller } from './refueller-series';
 import type {TankOpening} from './facility-data';
 import {makeFacilityObject,makeTankAccess} from './facility-model';
+import {prepareMonitor} from './monitor-training';
 import * as THREE from 'three';
 import { FLEET_SPECS } from './fleet-specs';
 import { makeFleetAircraft } from './fleet-model';
@@ -17,7 +18,7 @@ import { AIRCRAFT_SPECS } from './aircraft-specs';
 import { makeAircraft } from './aircraft-model';
 export function makeObject(o: Entity, tankOpenings:TankOpening[]=[]) {
   if(o.kind==='person'){const g=o.preset===NATHAN_PRESET?makeNathanPlaceholder(o):makePersonnel(o);applyTransform(g,o);return g;}
-  const facility=makeFacilityObject(o,tankOpenings);if(facility){applyTransform(facility,o);return facility;}
+  const facility=makeFacilityObject(o,tankOpenings);if(facility){if(o.preset==='FIRE_MONITOR')prepareMonitor(facility,o);applyTransform(facility,o);return facility;}
   if(o.kind==='aircraft'&&FLEET_SPECS[o.preset]){const g=makeFleetAircraft(o);applyTransform(g,o);return g;}
   if(GSE_SPECS[o.preset]){const g=makeGSE(o);applyTransform(g,o);return g;}
   if(o.kind==='aircraft'&&AIRCRAFT_SPECS[o.preset]){const g=makeAircraft(o);applyTransform(g,o);return g;}

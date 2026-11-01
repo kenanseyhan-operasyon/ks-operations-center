@@ -15,7 +15,7 @@ export class MonitorPanel{
  this.element.querySelector<HTMLButtonElement>('[data-close]')!.onclick=()=>this.close();
  this.element.querySelector<HTMLButtonElement>('[data-aim]')!.onclick=()=>this.setAim(!this.aimMode);
  this.element.querySelectorAll<HTMLInputElement>('[data-setting]').forEach(input=>input.oninput=()=>{if(!this.valid()){this.close();return;}s[input.dataset.setting as keyof typeof s]=Number(input.value);this.element.querySelector(`[data-value="${input.dataset.setting}"]`)!.textContent=input.value;this.network.evaluate(this.entities());this.last=0;});
- this.element.querySelector<HTMLButtonElement>('[data-water]')!.onclick=()=>{if(this.valid())this.network.operate(o,this.entities());else this.close();};return true;
+ this.element.querySelector<HTMLButtonElement>('[data-water]')!.onclick=()=>{if(this.valid())this.network.operate(o,this.entities());else this.close();};this.setAim(true);return true;
  }
  close(){this.setAim(false);this.element.hidden=true;this.id='';}
  private wireDirectAim(host:HTMLElement){
