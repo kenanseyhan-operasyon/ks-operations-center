@@ -47,7 +47,7 @@ export function tankStairContact(tank:Entity,access:NathanAccess,progress:number
   const rail:[V3,V3]=[a,b],mid=a.map((v,i)=>(v+b[i])*.5) as V3;
   const radial:[number,number]=[Math.sin(angle),Math.cos(angle)];
   const h=heading*Math.PI/180;
-  const right:[number,number]=[Math.cos(h),Math.sin(h)];
+  const right:[number,number]=[Math.cos(h),-Math.sin(h)];
   const handSide=right[0]*radial[0]+right[1]*radial[1]>0?1:0;
   // Plant the soles on neighbouring access samples, never on generic Y=0.
   const stride=Math.min(.007,.16/Math.max(.1,access.length));
