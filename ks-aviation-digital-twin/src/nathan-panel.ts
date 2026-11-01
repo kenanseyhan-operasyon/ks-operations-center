@@ -91,7 +91,7 @@ export class NathanPanel {
     this.element.querySelectorAll<HTMLButtonElement>('[data-nathan]').forEach(button => button.onclick = () => {
       switch (button.dataset.nathan) {
         case 'lift': control?.togglePlatform(); break;
-        case 'close': control?.close(); this.close(); this.hooks.close?.(); break;
+        case 'close': control?.setMode('camera'); this.close(); break; // Hide the panel; only the explicit STOP command cancels a mission.
         case 'person': control?.setMode('person'); break;
         case 'camera': control?.setMode('camera'); break;
         case 'halt': control?.pause(); break;
