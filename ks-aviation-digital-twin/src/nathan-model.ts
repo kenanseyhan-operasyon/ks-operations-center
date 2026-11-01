@@ -240,7 +240,16 @@ export class NathanActor {
     if(this.contactPose){this.contactRig?.apply(this.contactPose,Math.max(0,Math.min(dt,.1)));this.measure();}
     else if(this.terrain&&this.contactRig){
       const ground=this.root.getWorldPosition(new T.Vector3()).y;
-      const feet=[0,1].map(i=>{const p=this.contactRig!.sole(i);p.y=this.terrain!(p.toArray() as [number,number,number])+Math.max(.005,p.y-ground);return p.toArray() as [number,number,number];}) as [[number,number,number],[number,number,number]];
+      const scale=this.root.getWorldScale(new T.Vector3()).y;
+      // A missing elevated tread sample must not pull Nathan's skinned feet
+      // back to Y=0 while the controller/root remains on an elevated surface.
+      const minimumSurface=ground-.22*scale;
+      const feet=[0,1].map(i=>{
+        const p=this.contactRig!.sole(i);
+        const sampled=this.terrain!(p.toArray() as [number,number,number]);
+        p.y=Math.max(Number.isFinite(sampled)?sampled:minimumSurface,minimumSurface)+Math.max(.005,p.y-ground);
+        return p.toArray() as [number,number,number];
+      }) as [[number,number,number],[number,number,number]];
       if(ground>.001||feet.some(p=>this.terrain!(p)>.001)){this.contactRig.apply({feet});this.measure();}
     }
     if(this.toolPose&&this.contactRig){this.contactRig.apply({...this.toolPose,handsOnly:true,feet:[this.contactRig.sole(0).toArray(),this.contactRig.sole(1).toArray()] as [[number,number,number],[number,number,number]]},Math.max(0,Math.min(dt,.1)));this.measure();}
