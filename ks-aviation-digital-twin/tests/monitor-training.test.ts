@@ -19,7 +19,7 @@ assert.equal(monitorTrajectory(m,{...config,lossBar:10},[]).range,0);
 // Direct manipulation is bounded by the same mechanical travel as the sliders.
 const aim=defaultMonitor();
 aimMonitorByDrag(aim,50,-30);
-assert.equal(aim.yaw,14);assert.equal(aim.elevation,36);
+assert.ok(Math.abs(aim.yaw-14)<1e-8,'drag scaling is within floating-point precision');assert.equal(aim.elevation,36);
 aimMonitorByDrag(aim,2000,-2000);assert.equal(aim.yaw,150);assert.equal(aim.elevation,75);
 aimMonitorByDrag(aim,-4000,4000);assert.equal(aim.yaw,-150);assert.equal(aim.elevation,0);
 aim.opening=1;adjustMonitorOpening(aim,120);assert.equal(aim.opening,.95);
