@@ -7,11 +7,11 @@ import type {NathanNavigation} from './nathan-navigation';
 import {planNathanRoute} from './nathan-route';
 /** Equipment elevation is not the operator's walking elevation. */
 export function fireApproachPoints(o:Entity):V3[]{
- const offsets=o.preset==='FIRE_MONITOR'?[-1,-1.3,-1.6,-1.9,-2.2,-2.4].flatMap(z=>[0,-.6,.6,-1,1].map(x=>[x,0,z])):[.75,1,1.2].flatMap(d=>Array.from({length:16},(_,i)=>[Math.sin(i*Math.PI/8)*d/o.scale,0,Math.cos(i*Math.PI/8)*d/o.scale]));
+ const offsets=o.preset==='FIRE_MONITOR'?[-.85,-1,-1.15,-1.3,-1.6,-1.9,-2.2,-2.4].flatMap(z=>[0,-.35,.35,-.6,.6,-1,1].map(x=>[x,0,z])):[.75,1,1.2].flatMap(d=>Array.from({length:16},(_,i)=>[Math.sin(i*Math.PI/8)*d/o.scale,0,Math.cos(i*Math.PI/8)*d/o.scale]));
  return offsets.map(p=>{const q=localToWorld(o,p as V3);return [q[0],0,q[2]];});
 }
 export function planFireApproach(start:V3,o:Entity,nav:NathanNavigation,entities:Entity[],object:(id:string)=>T.Object3D|undefined){
- const candidates=fireApproachPoints(o).filter(p=>!nav.blocked(p)).sort((a,b)=>{
+ const candidates=fireApproachPoints(o).filter(p=>!nav.blocked(p)&&(o.preset!=='FIRE_MONITOR'||canGripMonitor(o,p))).sort((a,b)=>{
   // Reach the two real yoke grips first; a far control point cannot animate Nathan's hands.
   const gripA=o.preset==='FIRE_MONITOR'&&canGripMonitor(o,a),gripB=o.preset==='FIRE_MONITOR'&&canGripMonitor(o,b);
   if(gripA!==gripB)return gripA?-1:1;
