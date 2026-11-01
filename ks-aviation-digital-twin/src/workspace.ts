@@ -459,7 +459,7 @@ export class Workspace {
   private syncMonitorGrip(){
   const id=this.monitorPanel?.aimingMonitorId,person=this.nathanControl?.entity;
   const actor=person&&this.nathanActors.states.get(person.id)?.actor;
-  const personRoot=person&&this.objects.get(person.id),monitorRoot=id&&this.objects.get(id);
+  const personRoot=person?this.objects.get(person.id):undefined,monitorRoot=id?this.objects.get(id):undefined;
   const left=monitorRoot?.getObjectByName('MONITOR_GRIP_LEFT'),right=monitorRoot?.getObjectByName('MONITOR_GRIP_RIGHT');
   if(id&&person&&actor&&personRoot&&left&&right&&this.nathanControl?.phase==='idle'&&!person.nathan?.support){
    left.updateWorldMatrix(true,false);right.updateWorldMatrix(true,false);
