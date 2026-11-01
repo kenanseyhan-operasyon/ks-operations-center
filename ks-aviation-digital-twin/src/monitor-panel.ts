@@ -3,21 +3,23 @@ import type {Entity} from './scene-data';
 import type {FacilityNetwork} from './facility-network';
 export class MonitorPanel{
  readonly element=document.createElement('section');private id='';private last=0;
- private aimMode=false;private stage?:HTMLElement;private lastCursor='';private pointer?:{id:number;x:number;y:number};
+ private aimMode=false;private gripMode=false;private stage?:HTMLElement;private lastCursor='';private pointer?:{id:number;x:number;y:number};
  private readonly aimHud=document.createElement('aside');
  get aimingMonitorId(){return this.aimMode&&!this.element.hidden&&this.valid()?this.id:undefined;}
+ get grippingMonitorId(){return this.gripMode&&!this.element.hidden&&this.valid()?this.id:undefined;}
  constructor(host:HTMLElement,private network:FacilityNetwork,private entities:()=>Entity[],private operator:()=>Entity|undefined){
   this.element.hidden=true;this.element.style.cssText='position:absolute;right:16px;bottom:20px;z-index:35;width:290px;max-height:70vh;overflow:auto;background:#102a32;color:white;padding:16px;border:1px solid #64828a;border-radius:10px;box-shadow:0 6px 20px #0008';host.append(this.element);
   this.element.addEventListener('pointerdown',e=>e.stopPropagation());this.element.addEventListener('keydown',e=>e.stopPropagation());this.wireDirectAim(host);
  }
- open(o:Entity){this.setAim(false);const person=this.operator();if(!person||!behindMonitor(o,person.position))return false;this.id=o.id;this.element.hidden=false;
- const s=this.network.monitor(o.id);this.element.innerHTML=`<strong>Monitör kumandası</strong><button type="button" data-close style="float:right" aria-label="Kumandadan ayrıl">×</button><p>Besleme: 10 bar · Eğitim modeli</p>${[['yaw','Sağ / sol (°)',-150,150,1],['elevation','Yukarı / aşağı (°)',0,75,1],['opening','Debi kumandası',0,1,.05],['lossBar','Varsayılan hat kaybı (bar)',0,10,.5]].map(([key,label,min,max,step])=>`<label style="display:block;margin:12px 0">${label} <output data-value="${key}">${s[key as keyof typeof s]}</output><input aria-label="${label}" data-setting="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${s[key as keyof typeof s]}" style="width:100%"></label>`).join('')}<button type="button" data-aim aria-pressed="false">🎯 Fareyle hedefle</button><p data-aim-help>Elle yönlendirme: Nathan tutamağı kavrar, 3D sahnede sürükleyerek hedeflersiniz.</p><button type="button" data-water>Monitör çıkışını aç / kapat</button><p data-status aria-live="polite"></p><small>Menzil yaklaşık balistik modeldir. Kayıp değeri saha ölçümü değildir; gerçek nozul eğrisiyle kalibre edilmemiştir. Debi kumandası yüzde açıklıktır, L/dk ölçümü değildir.</small>`;
+ open(o:Entity){this.setAim(false);this.gripMode=false;const person=this.operator();if(!person||!behindMonitor(o,person.position))return false;this.id=o.id;this.element.hidden=false;
+ const s=this.network.monitor(o.id);this.element.innerHTML=`<strong>Monitör kumandası</strong><button type="button" data-close style="float:right" aria-label="Kumandadan ayrıl">×</button><p>Besleme: 10 bar · Eğitim modeli</p>${[['yaw','Sağ / sol (°)',-150,150,1],['elevation','Yukarı / aşağı (°)',0,75,1],['opening','Debi kumandası',0,1,.05],['lossBar','Varsayılan hat kaybı (bar)',0,10,.5]].map(([key,label,min,max,step])=>`<label style="display:block;margin:12px 0">${label} <output data-value="${key}">${s[key as keyof typeof s]}</output><input aria-label="${label}" data-setting="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${s[key as keyof typeof s]}" style="width:100%"></label>`).join('')}<button type="button" data-grip aria-pressed="false">✋ TUT · Monitörü kavra</button><button type="button" data-aim aria-pressed="false">🖱 Fareyle hedefle</button><p data-aim-help>Elle yönlendirme: Nathan tutamağı kavrar, 3D sahnede sürükleyerek hedeflersiniz.</p><button type="button" data-water>Monitör çıkışını aç / kapat</button><p data-status aria-live="polite"></p><small>Menzil yaklaşık balistik modeldir. Kayıp değeri saha ölçümü değildir; gerçek nozul eğrisiyle kalibre edilmemiştir. Debi kumandası yüzde açıklıktır, L/dk ölçümü değildir.</small>`;
  this.element.querySelector<HTMLButtonElement>('[data-close]')!.onclick=()=>this.close();
+ this.element.querySelector<HTMLButtonElement>('[data-grip]')!.onclick=()=>this.setGrip(!this.gripMode);
  this.element.querySelector<HTMLButtonElement>('[data-aim]')!.onclick=()=>this.setAim(!this.aimMode);
  this.element.querySelectorAll<HTMLInputElement>('[data-setting]').forEach(input=>input.oninput=()=>{if(!this.valid()){this.close();return;}s[input.dataset.setting as keyof typeof s]=Number(input.value);this.element.querySelector(`[data-value="${input.dataset.setting}"]`)!.textContent=input.value;this.network.evaluate(this.entities());this.last=0;});
- this.element.querySelector<HTMLButtonElement>('[data-water]')!.onclick=()=>{if(this.valid())this.network.operate(o,this.entities());else this.close();};this.setAim(true);return true;
+ this.element.querySelector<HTMLButtonElement>('[data-water]')!.onclick=()=>{if(this.valid())this.network.operate(o,this.entities());else this.close();};this.setGrip(true);this.setAim(true);return true;
  }
- close(){this.setAim(false);this.element.hidden=true;this.id='';}
+ close(){this.setAim(false);this.gripMode=false;this.element.hidden=true;this.id='';}
  private wireDirectAim(host:HTMLElement){
   this.stage=host.querySelector<HTMLElement>('#wsStage')||undefined;
   this.aimHud.setAttribute('aria-live','polite');
@@ -74,8 +76,20 @@ export class MonitorPanel{
   },true);
   window.addEventListener('blur',()=>this.setAim(false));
  }
+ private setGrip(on:boolean){
+  if(on){
+   const monitor=this.entities().find(o=>o.id===this.id),person=this.operator();
+   if(!monitor||!person||!this.valid()||!canGripMonitor(monitor,person.position)){
+    const status=this.element.querySelector<HTMLElement>('[data-status]');
+    if(status)status.textContent='Önce Nathan monitöre arkadan yaklaşmalı; tutamak güvenli kavrama mesafesinde değil.';
+    return;
+   }
+  }else this.setAim(false);
+  this.gripMode=on;this.syncAimControls();
+ }
  private setAim(on:boolean){
   if(on&&!this.valid())return;
+  if(on&&!this.gripMode){this.setGrip(true);if(!this.gripMode)return;}
   if(on){
    const monitor=this.entities().find(o=>o.id===this.id),person=this.operator();
    if(!monitor||!person||!canGripMonitor(monitor,person.position)){
@@ -107,10 +121,12 @@ export class MonitorPanel{
    const output=this.element.querySelector<HTMLOutputElement>('[data-value="'+key+'"]');
    if(output)output.textContent=String(setting[key]);
   });
+  const grip=this.element.querySelector<HTMLButtonElement>('[data-grip]');
+  if(grip){grip.textContent=this.gripMode?'✓ TUTULUYOR · BIRAK':'✋ TUT · Monitörü kavra';grip.setAttribute('aria-pressed',String(this.gripMode));}
   const button=this.element.querySelector<HTMLButtonElement>('[data-aim]');
-  if(button){button.textContent=this.aimMode?'✓ Hedefleme aktif · ESC: çık':'🎯 Fareyle hedefle';button.setAttribute('aria-pressed',String(this.aimMode));}
+  if(button){button.textContent=this.aimMode?'✓ Fare kontrolü açık · ESC: çık':'🖱 Fareyle hedefle';button.setAttribute('aria-pressed',String(this.aimMode));button.disabled=!this.gripMode;}
   const help=this.element.querySelector<HTMLElement>('[data-aim-help]');
-  if(help)help.textContent=this.aimMode?'Sahnede sol fareyle sürükle: yön ve yükseliş · Fare tekerleği: açıklık · Boşluk: su aç/kapat · ESC: çık':'Nathan tutamağı kavrar; 3D sahnede fareyle monitörü yönlendirebilirsiniz. Kaydırma ayarları da kullanılabilir.';
+  if(help)help.textContent=this.aimMode?'Sahnede sol fareyle sürükle: yön ve yükseliş · Fare tekerleği: açıklık · Boşluk: su aç/kapat · ESC: çık':this.gripMode?'Nathan gerçek monitör tutamaklarını kavrıyor. Fareyle hedeflemek için düğmeye basın veya BIRAK ile kumandayı bırakın.':'Önce TUT komutuyla monitör tutamaklarını kavrayın; ardından fareyle hedeflemeyi açın.';
  }
  private valid(){const o=this.entities().find(e=>e.id===this.id),p=this.operator();return !!o&&!!p&&this.network.active&&behindMonitor(o,p.position);}
  tick(now:number){if(this.element.hidden||now-this.last<200)return;this.last=now;if(!this.valid()){this.close();return;}const o=this.entities().find(e=>e.id===this.id)!,flow=this.network.states.get(o.id),r=monitorTrajectory(o,this.network.monitor(o.id),this.entities());if(this.aimMode){this.aimHud.textContent='🎯 MONİTÖR · '+(r.hit||'Hedef yok')+' · '+r.range.toFixed(1)+' m · '+Math.round(this.network.monitor(o.id).opening*100)+'% açıklık';}this.element.querySelector('[data-status]')!.textContent=flow?.flowing?`${flow.fluid==='solution'?'Köpüklü su':'Su'} · Tahmini uç basıncı ${r.pressure.toFixed(1)} bar · ${r.range.toFixed(1)} m · ${r.hit||'Menzil sınırı'}`:'Akış yok: çıkış ve besleme vanalarını kontrol edin.';}
