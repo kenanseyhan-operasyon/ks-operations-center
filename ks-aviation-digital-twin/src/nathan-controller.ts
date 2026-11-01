@@ -11,6 +11,7 @@ import { localToWorld, worldToLocal } from './facility-data';
 import { planNathanRoute, type NathanRouteLeg, type NathanGatePass } from './nathan-route';
 import { bridgeTanks, makeRoofBridge, onTankRoof, planRoofRoute, remainingRoofBridge, roofBridgeIds, roofHeight, tankRoofPoint, type RoofLeg } from './nathan-roof';
 import {stairPose} from './nathan-stair-gait';
+import {tankStairContact} from './nathan-tank-contact';
 import {standingContact} from './nathan-contact';
 import {driverPose,driverLanding} from './nathan-driver';
 import type {NathanView} from './nathan-camera';
@@ -50,6 +51,7 @@ export class NathanController {
   mode: 'person' | 'camera' | 'closed' = 'closed';
   view:NathanView='free';
   phase: NathanPhase = 'idle';
+  pace: 'walk'|'run' = 'walk';
   message = 'Zemine veya merdivene tıklayın / dokunun.';
   private route: V3[] = [];
   private goal?: V3;
@@ -79,6 +81,7 @@ export class NathanController {
   get seated(){const s=this.entity?.nathan?.support;return s?.kind==='driver'&&s.progress===1;}
   driveKey(key:string,down:boolean){return this.seated?this.hooks.driveKey?.(key,down):false;}
   get capturing() { return this.mode === 'person'; }
+  setPace(pace:'walk'|'run'){this.pace=pace;this.hooks.ui();}
   get entity() { return this.hooks.entities().find(e => e.id === this.id && e.preset === NATHAN_PRESET); }
   private get actor() { return this.id ? this.actors.states.get(this.id)?.actor : undefined; }
   private navigation() { const e = this.entity; return new NathanNavigation(this.hooks.entities(), .34 * (e?.scale || 1), this.hooks.gateAmount, this.hooks.object, this.id); }
@@ -328,7 +331,8 @@ export class NathanController {
       const d = distance(e.position, next), heading = Math.atan2(next[0] - e.position[0], -(next[2] - e.position[2])) * 180 / Math.PI;
       if (d < .015) { if(this.hooks.canStep?.(next)===false){this.fail('40 m kablo sınırı.');return;} e.position = [next[0],this.nav.surface(next),next[2]]; this.route.shift(); this.transform(); return; }
       const error = this.turn(heading, dt);
-      const desired = Math.min(1.15 * e.scale, Math.sqrt(2 * 2.2 * d)) * Math.max(0, Math.cos(error * Math.PI / 180));
+      const maximum=this.pace==='run'?2.3:1.15;
+      const desired = Math.min(maximum * e.scale, Math.sqrt(2 * (this.pace==='run'?3.3:2.2) * d)) * Math.max(0, Math.cos(error * Math.PI / 180));
       const targetVelocity = turningInPlace(error,35) ? 0 : desired;
       const responseRate = targetVelocity > this.velocity ? 4.5 : 6;
       this.velocity = T.MathUtils.lerp(this.velocity, targetVelocity, 1 - Math.exp(-responseRate * dt));
@@ -343,7 +347,10 @@ export class NathanController {
       }
       if(this.hooks.canStep?.(p)===false){this.fail('40 m kablo sınırı. Geri yürüyün veya deadman’ı kutusuna bırakın.');return;}
       e.position = p;
-      if (step > .0001) this.actor.motion('Nathan_Original_Walk', step / Math.max(dt, .001) / (1.15 * e.scale));
+      if (step > .0001) {
+        const running=this.pace==='run'&&this.velocity>1.35*e.scale;
+        this.actor.motion(running?'Running':'Nathan_Original_Walk',step/Math.max(dt,.001)/((running?2.3:1.15)*e.scale));
+      }
       else this.actor.motion('Idle');
     } else if (this.phase === 'aligning' && this.access) {
       this.idle();this.actor.terrain=undefined;
@@ -514,6 +521,7 @@ export class NathanController {
   }
   private restoreContact(){
     const e=this.entity,s=e?.nathan?.support;if(!e||!s||!this.actor)return;
+    if(s.progress<1&&s.kind==='tank'&&this.access){const tank=this.hooks.entities().find(o=>o.id===s.targetId);this.actor.motion('Idle');this.actor.contact(tank?tankStairContact(tank,this.access,s.progress,e.heading):undefined);this.actor.pause();}
     if(s.progress<1&&this.access?.contacts){const pose=this.access.driver?driverPose(this.access,s.progress):stairPose(this.access.contacts,s.progress);const ground='groundWalk' in pose&&pose.groundWalk;this.actor.motion(ground?'Idle':s.kind==='rear'?'Climbing_Ladder':'Climbing');this.actor.contact(ground?undefined:pose.contact);this.actor.pause();}
   }
   operateFire(id:string){
@@ -613,6 +621,8 @@ export class NathanController {
     if(distance(e.position,point)>.0001&&this.turn(heading,dt)>20){this.actor!.motion('Idle');return;}
     const slope=point[1]-e.position[1];support.progress=progress;e.position=point;
     if(Math.abs(slope)<.0001)this.actor!.motion('Nathan_Original_Walk',speed/(1.15*e.scale));else this.stairsMotion(slope<0);
+    const tank=this.hooks.entities().find(o=>o.id===access.targetId);
+    this.actor!.contact(tank?tankStairContact(tank,access,progress,e.heading):undefined);
     this.rememberSupport();
     if(!down&&progress===1){this.access=undefined;this.idle();this.status('Tank çatısında bekliyor. Çatıya, bağlı köprüye veya diğer tanka tıklayın.','standing');if(!this.continueDestination())this.commit();}
     if(down&&progress===0){delete e.nathan!.support;this.access=undefined;e.position[1]=0;this.idle();this.status('Tank merdiveninden zemine indi · Idle','idle');if(!this.continueDestination())this.commit();}
