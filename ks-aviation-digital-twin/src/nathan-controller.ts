@@ -532,7 +532,7 @@ export class NathanController {
   }
   private restoreContact(){
     const e=this.entity,s=e?.nathan?.support;if(!e||!s||!this.actor)return;
-    if(s.progress<1&&s.kind==='tank'&&this.access){const tank=this.hooks.entities().find(o=>o.id===s.targetId);this.actor.motion('Idle');this.actor.contact(tank?tankStairContact(tank,this.access,s.progress,e.heading):undefined);this.actor.pause();}
+    if(s.progress<1&&s.kind==='tank'&&this.access){const tank=this.hooks.entities().find(o=>o.id===s.targetId);this.actor.motion('Idle');this.actor.contact(tank?tankStairContact(tank,this.access,s.progress,e.heading,this.phase==='descending'):undefined);this.actor.pause();}
     if(s.progress<1&&this.access?.contacts){const pose=this.access.driver?driverPose(this.access,s.progress):stairPose(this.access.contacts,s.progress);const ground='groundWalk' in pose&&pose.groundWalk;this.actor.motion(ground?'Idle':s.kind==='rear'?'Climbing_Ladder':'Climbing');this.actor.contact(ground?undefined:pose.contact);this.actor.pause();}
   }
   operateFire(id:string){
@@ -645,7 +645,7 @@ export class NathanController {
     if(error>26){
       // Pivot on the current tread with planted soles and continuous rail grip.
       this.actor!.motion('Idle');
-      this.actor!.contact(tank?tankStairContact(tank,access,support.progress,e.heading):undefined);
+      this.actor!.contact(tank?tankStairContact(tank,access,support.progress,e.heading,down):undefined);
       return;
     }
     const travelled=new T.Vector3(...point).distanceTo(new T.Vector3(...e.position));
@@ -653,7 +653,7 @@ export class NathanController {
     // A natural walk cycle played at the actual slow stair speed. Limb IK then
     // places each sole on the real step and keeps one palm on the outside rail.
     this.actor!.motion('Nathan_Original_Walk',Math.max(.15,Math.min(.95,travelled/Math.max(dt,.001)/(1.15*e.scale))));
-    this.actor!.contact(tank?tankStairContact(tank,access,progress,e.heading):undefined);
+    this.actor!.contact(tank?tankStairContact(tank,access,progress,e.heading,down):undefined);
     this.rememberSupport();
     if(!down&&progress===1){this.access=undefined;this.idle();this.status('Tank çatısında bekliyor. Çatıya, bağlı köprüye veya diğer tanka tıklayın.','standing');if(!this.continueDestination())this.commit();}
     if(down&&progress===0){this.finishDescent(e);}
