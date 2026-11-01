@@ -355,6 +355,6 @@ const panel=new NathanPanel(document.querySelector('#host')!,actors,{entity:()=>
 control.open(person);panel.open(person);assert.equal(panel.element.querySelectorAll('option').length,21);assert.ok(panel.element.textContent!.includes('Personeli Yönet'));
 panel.element.querySelector<HTMLButtonElement>('[data-nathan="camera"]')!.click();assert.equal(control.mode,'camera');panel.element.querySelector<HTMLButtonElement>('[data-nathan="person"]')!.click();assert.equal(control.mode,'person');
 const select=panel.element.querySelector<HTMLSelectElement>('[data-nathan-clips]')!;select.value='9';select.dispatchEvent(new dom.window.Event('change'));assert.equal(actor.index,9);assert.equal(control.mode,'camera');panel.element.querySelector<HTMLButtonElement>('[data-nathan="play"]')!.click();assert.equal(actor.index,9,'Preview Play retains chosen clip');assert.equal(actor.playing,true);
-panel.element.querySelector<HTMLButtonElement>('[data-nathan="close"]')!.click();assert.equal(control.active,false);assert.equal(panel.element.hidden,true);
+panel.element.querySelector<HTMLButtonElement>('[data-nathan="close"]')!.click();assert.equal(control.active,true,'Closing Nathan overlay must not cancel an assigned task');assert.equal(control.mode,'camera');assert.equal(panel.element.hidden,true);
 console.log('PASS mouse, touch, drag, multitouch, cancel, camera handoff and panel/preview modes');
 console.log('All Nathan movement tests passed. Real browser/GPU rendering is not covered by this test.');
