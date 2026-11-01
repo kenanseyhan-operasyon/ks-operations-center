@@ -75,6 +75,10 @@ jobs:
           node node_modules/.cache/nathan-task-persistence.mjs
       - name: Reconstruct Nathan animation assets before testing movement
         run: npm run pretest
+      - name: Real 3D Nathan holds monitor grips and BIRAK physically releases
+        run: |
+          npx esbuild tests/nathan-monitor-grip-ik.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/nathan-monitor-grip-ik.mjs
+          node node_modules/.cache/nathan-monitor-grip-ik.mjs
       - name: Nathan stair and bridge movement regression (blocking)
         run: npm run test:nathan-movement
       - name: Nathan grips, hand contact, door and valve interaction regressions (blocking)
