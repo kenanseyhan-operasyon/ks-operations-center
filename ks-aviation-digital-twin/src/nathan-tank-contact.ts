@@ -16,7 +16,7 @@ const tau=Math.PI*2;
  * outer guardrail; the other remains free. The route still owns body position.
  * No synthetic grasp is allowed at the ground/roof transitions or missing rail.
  */
-export function tankStairContact(tank:Entity,access:NathanAccess,progress:number,heading:number):NathanContact|undefined{
+export function tankStairContact(tank:Entity,access:NathanAccess,progress:number,heading:number,descending=false):NathanContact|undefined{
   if(tank.kind!=='tank'||tank.facility?.stairs===false||progress<=.025||progress>=.975)return;
   const layout=tankStairLayout(tank);
   const root=sampleAccess(access,progress),q=worldToLocal(tank,root);
@@ -49,14 +49,43 @@ export function tankStairContact(tank:Entity,access:NathanAccess,progress:number
   const h=heading*Math.PI/180;
   const right:[number,number]=[Math.cos(h),-Math.sin(h)];
   const handSide=right[0]*radial[0]+right[1]*radial[1]>0?1:0;
-  // Plant the soles on neighbouring access samples, never on generic Y=0.
-  const stride=Math.min(.007,.16/Math.max(.1,access.length));
-  const aFoot=sampleAccess(access,T.MathUtils.clamp(progress-stride,0,1));
-  const bFoot=sampleAccess(access,T.MathUtils.clamp(progress+stride,0,1));
-  const feet:[V3,V3]=[
-    [aFoot[0]-.11*right[0]*tank.scale,aFoot[1]+.012*tank.scale,aFoot[2]-.11*right[1]*tank.scale],
-    [bFoot[0]+.11*right[0]*tank.scale,bFoot[1]+.012*tank.scale,bFoot[2]+.11*right[1]*tank.scale]
-  ];
+  // Footfall model: stance foot stays planted on its tread while the other
+  // swings toward the next step. Reverse the travel distance for descent.
+  // At every stride boundary the formerly swinging foot becomes the planted
+  // one, preserving continuous foot positions instead of ground-level snaps.
+  const stride=.34*tank.scale,length=access.length;
+  const travelled=(descending?1-progress:progress)*length;
+  const index=Math.floor(travelled/stride),fraction=T.MathUtils.clamp((travelled-index*stride)/stride,0,1);
+  const path=(d:number)=>sampleAccess(access,T.MathUtils.clamp((descending?length-d:d)/length,0,1));
+  const plant=path(index*stride),previous=path((index-1)*stride),next=path((index+1)*stride);
+  const swing=T.MathUtils.smoothstep(fraction,0,1),moving=new T.Vector3(...previous).lerp(new T.Vector3(...next),swing).toArray() as V3;
+  const stanceLeg=index%2,swingLeg=1-stanceLeg;
+  const feet:[V3,V3]=[[...plant],[...plant]];
+  feet[stanceLeg]=plant;feet[swingLeg]=moving;
+  // Visible treads are flat at piece.y1, not the sloping route interpolation.
+  // Sample each shoe against the same tankStairLayout that builds the mesh.
+  const treadHeight=(p:V3)=>{
+    const q=worldToLocal(tank,p),a=Math.atan2(q[0],q[2]);
+    let best=Infinity,top=q[1];
+    for(const piece of layout.pieces){
+      if(piece.roofLanding)continue;
+      const middle=(piece.a+piece.b)/2,unwrapped=a+Math.round((middle-a)/tau)*tau;
+      const clamped=T.MathUtils.clamp(unwrapped,Math.min(piece.a,piece.b),Math.max(piece.a,piece.b));
+      const lateral=Math.abs(unwrapped-clamped)*layout.radius;
+      const mismatch=Math.abs(q[1]-piece.y1);
+      const score=lateral*3+mismatch;
+      if(score<best){best=score;top=piece.y1;}
+    }
+    return best<.46?localToWorld(tank,[0,top,0])[1]:p[1];
+  };
+  for(let i=0;i<2;i++){
+    const side=i===0?-1:1;
+    feet[i]=[feet[i][0]+side*.11*right[0]*tank.scale,feet[i][1],feet[i][2]+side*.11*right[1]*tank.scale];
+    feet[i][1]=Math.max(feet[i][1],treadHeight(feet[i])+.012*tank.scale);
+  }
+  // The swing foot rises rather than sliding through each next riser.
+  feet[swingLeg][1]+=.105*tank.scale*Math.sin(Math.PI*fraction);
+
   const nearGround=smooth((progress-.025)/.07),nearRoof=smooth((.975-progress)/.07);
   const handWeight=Math.min(nearGround,nearRoof);
   return {feet,grips:[rail],handGrips:handSide===0?[[rail],[]]:[[],[rail]],
