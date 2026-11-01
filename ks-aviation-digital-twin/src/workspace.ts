@@ -162,7 +162,7 @@ export class Workspace {
       operate:id=>{const e=this.history.current.entities.find(e=>e.id===id);if(e&&['PIPE_VALVE','FIRE_MONITOR'].includes(e.preset)){if(!this.facilityNetwork.active)this.facilityNetwork.start(this.history.current.entities);if(e.preset==='FIRE_MONITOR')this.monitorPanel?.open(e);else this.facilityNetwork.operate(e,this.history.current.entities);this.refreshFacilityVisuals();return;}if(e?.preset==='PEDESTRIAN_GATE'){if(this.facilityNetwork.active)this.facilityNetwork.operate(e,this.history.current.entities);else{e.facility={...e.facility,open:!e.facility?.open};}this.refreshFacilityVisuals();}},
       accessGate:(id,open)=>this.nathanPlatformGate(id,open),platform:id=>this.animateFor(id,'Platform_Raise_4s'),view:mode=>{if(mode!=='free')this.driving?.setCabin(false);this.nathanCamera?.set(mode);this.syncCabVisibility();this.nathanInputMode(!!this.nathanControl?.capturing);},input:on=>this.nathanInputMode(on),ui:()=>{this.root.classList.toggle('nathan-managing',!!this.nathanControl?.active);this.nathanPanel?.sync();},notify:s=>this.notify(s)
     });
-    this.monitorPanel=new MonitorPanel(this.$('.ws-map'),this.facilityNetwork,()=>this.history.current.entities,()=>this.nathanControl?.capturing?this.nathanControl.entity:undefined);
+    this.monitorPanel=new MonitorPanel(this.$('.ws-map'),this.facilityNetwork,()=>this.history.current.entities,()=>this.nathanControl?.active?this.nathanControl.entity:undefined);
     this.nathanPanel=new NathanPanel(this.$('.ws-map'),this.nathanActors,{
       entity:id=>this.history.current.entities.find(e=>e.id===id),
       configure:(e,settings)=>{if(this.cloud.canEdit){this.history.checkpoint();e.nathan={...settings,support:e.nathan?.support};this.changed();}},
@@ -461,7 +461,7 @@ export class Workspace {
   }
   private applyUnderground(){setUndergroundVisible(this.scene,this.showUnderground);this.firePanel?.setUnderground(this.showUnderground);const b=this.$<HTMLButtonElement>('[data-action="underground"]');b.textContent=this.showUnderground?'Yeraltını gizle':'Yeraltı göster';b.setAttribute('aria-pressed',String(this.showUnderground));b.classList.toggle('active',this.showUnderground);}
   private syncMonitorGrip(){
-  const id=this.monitorPanel?.aimingMonitorId,person=this.nathanControl?.entity;
+  const id=this.monitorPanel?.grippingMonitorId,person=this.nathanControl?.entity;
   const actor=person&&this.nathanActors.states.get(person.id)?.actor;
   const personRoot=person?this.objects.get(person.id):undefined,monitorRoot=id?this.objects.get(id):undefined;
   const left=monitorRoot?.getObjectByName('MONITOR_GRIP_LEFT'),right=monitorRoot?.getObjectByName('MONITOR_GRIP_RIGHT');
