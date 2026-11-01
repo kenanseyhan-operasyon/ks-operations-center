@@ -675,7 +675,11 @@ export class Workspace {
     if(action==='deadman'){const id=this.selected().find(e=>this.vehicleRigs.has(e.id))?.id;if(id)this.deadmanPanel?.open(id);return;}
     if(['undo','redo','remove','import','discard','drive','finishEdit'].includes(action))this.closeNathan();
     if(['free','top','focus','vehicle','restoreCamera'].includes(action)&&this.nathanControl?.active)this.nathanControl.setMode('camera');
-    if(action==='personnel'){this.setMenu(undefined);this.library.element.hidden=true;this.facilityPanel.element.hidden=true;this.openPerson(this.selected()[0]);return;}
+    if(action==='personnel'){this.setMenu(undefined);this.library.element.hidden=true;this.facilityPanel.element.hidden=true;
+      const chosen=this.selected()[0];
+      // Return to the assigned Nathan even while a valve, pipe or vehicle
+      // is selected for inspection; only an explicit person choice switches.
+      this.openPerson(chosen?.kind==='person'?chosen:(this.nathanControl?.active?this.nathanControl.entity:chosen));return;}
     if(['undo','redo','remove','import','discard','free','top','focus','vehicle','restoreCamera','library','facilityLibrary','services','photo'].includes(action))this.personnel?.stop();
     if(this.cabView?.active){if(action==='zoomIn'||action==='zoomOut'){this.cabView.zoom(action==='zoomIn'?-180:180);return;}if(['focus','vehicle','top','free','restoreCamera'].includes(action))this.driving?.setCabin(false);}
     if(['focus','vehicle','top','free','zoomIn','zoomOut','restoreCamera'].includes(action))this.airportOverview=false;
