@@ -43,7 +43,7 @@ export class NathanPanel {
     const roofs = control?.roofOptions() || [];
     const expanded = this.element.querySelector<HTMLDetailsElement>('details')?.open || false;
     const signature = JSON.stringify([this.id, entity.name, this.lang, state?.status, Math.floor((state?.progress || 0) * 100),
-      actor?.index, actor?.playing, actor?.settings.clip, actor?.settings.speed, actor?.settings.loop, this.hooks.ready(), control?.mode, control?.view, control?.phase, control?.message, support?.kind, support?.targetId, !!support, access, roofs]);
+      actor?.index, actor?.playing, actor?.settings.clip, actor?.settings.speed, actor?.settings.loop, this.hooks.ready(), control?.mode, control?.view, control?.phase, control?.message, control?.pace, support?.kind, support?.targetId, !!support, access, roofs]);
     if (signature === this.signature) return;
     this.signature = signature;
     const status = !this.hooks.ready() ? this.t('Animasyon için 3D görünümünü açın.', 'Switch to 3D to preview animations.') :
@@ -51,7 +51,7 @@ export class NathanPanel {
       !actor ? this.t(`Model yükleniyor… ${Math.floor((state?.progress || 0) * 100)}%`, `Loading model… ${Math.floor((state?.progress || 0) * 100)}%`) :
       this.t(`${actor.clips.length} hareket · ${actor.playing ? 'Oynatılıyor' : 'Durduruldu'}`, `${actor.clips.length} clips · ${actor.playing ? 'Playing' : 'Stopped'}`);
     this.element.innerHTML = `<header><div><small>${this.t(control ? 'PERSONELİ YÖNET' : 'PERSONEL · ANİMASYON', control ? 'MANAGE OPERATOR' : 'PERSONNEL · ANIMATION')}</small><strong>${esc(entity.name)}</strong></div><button data-nathan="close" aria-label="${this.t('Paneli kapat', 'Close panel')}">×</button></header>
-      ${control ? `<div class="nathan-modes" role="group" aria-label="Kontrol modu"><button data-nathan="person" aria-pressed="${control.capturing}">🚶 ${this.t('Personeli Yönet', 'Manage operator')}</button><button data-nathan="camera" aria-pressed="${control.mode === 'camera'}">${this.t('Kamera', 'Camera')}</button></div>
+      ${control ? `<div class="nathan-modes" role="group" aria-label="Kontrol modu"><button data-nathan="person" aria-pressed="${control.capturing}">🚶 ${this.t('Personeli Yönet', 'Manage operator')}</button><button data-nathan="camera" aria-pressed="${control.mode === 'camera'}">${this.t('Kamera', 'Camera')}</button><button data-nathan="pace" aria-pressed="${control.pace==='run'}">${control.pace==='run'?this.t('🚶 Yürüme hızı','🚶 Walk pace'):this.t('🏃 Koşarak git','🏃 Run to target')}</button></div>
       <p class="nathan-help">${control.view==='eyes'?this.t('V: serbest görünüme dön. Sürükle: etrafa bak. Kısa tıkla / dokun: hedef ver.','V: return to free view. Drag to look; tap to set a target.'):control.capturing ? this.t('Tıkla / dokun: yürü. Sol sürükle / tek parmak: haritayı kaydır. Sağ sürükle: döndür. Tekerlek / iki parmak: yakınlaş. Geçiş merdiveni: karşı tarafa geç.', 'Click / tap to walk. Left drag / one finger to pan. Right drag to orbit. Wheel / two fingers to zoom. Crossover stairs lead to the other side.') : this.t('Kamera kontrolleri açık. Hedef vermek için Personeli Yönet seçin.', 'Camera controls are active. Choose Manage operator to set a target.')}</p>
       <div class="nathan-views">${(['eyes','rear','front','top','free'] as const).map((v,i)=>`<button data-nathan-view="${v}" aria-pressed="${control.view===v}">${[this.t('Gözünden · V','Eyes · V'),this.t('Arkadan','Rear'),this.t('Önden','Front'),this.t('Üstten','Top'),this.t('Serbest','Free')][i]}</button>`).join('')}</div>
       <p class="nathan-motion" role="status">${esc(control.message)}</p>
@@ -95,6 +95,7 @@ export class NathanPanel {
         case 'person': control?.setMode('person'); break;
         case 'camera': control?.setMode('camera'); break;
         case 'halt': control?.pause(); break;
+        case 'pace': control?.setPace(control.pace==='run'?'walk':'run'); break;
         case 'descend': control?.descend(); break;
         case 'resume': control?.resume(); break;
         case 'retry': this.actors.retry(entity); break;
