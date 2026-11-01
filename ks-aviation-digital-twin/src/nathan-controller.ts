@@ -285,7 +285,21 @@ export class NathanController {
     if (!this.id) return;
     const e = this.entity;
     if (!e) { this.close(); return; }
-    if (e !== this.entityRef) { this.entityRef = e; this.pause(); this.restoreSupport(); }
+    if (e !== this.entityRef) {
+      const old=this.entityRef;
+      this.entityRef=e;
+      // SceneHistory can recreate the same Nathan object during an unrelated
+      // facility edit. Do not cancel the assigned route just because its JS
+      // object identity changed; re-read obstacles and retain the task.
+      if(old?.id===e.id && distance(old.position,e.position)<.75) {
+        this.nav=this.navigation();this.navAge=0;
+        if(e.nathan?.support&&!this.restoreSupport())this.fail('Merdiven desteği değişti; güvenli hareket durduruldu.');
+      }else{
+        // Switching to a genuinely different operator/location is explicit,
+        // and must not silently teleport a running Nathan.
+        this.pause();this.restoreSupport();
+      }
+    }
   }
   private turn(target: number, dt: number) {
     const e = this.entity!; const error = angle(e.heading, target);
