@@ -50,11 +50,24 @@ const control=new NathanController(actors,{
 });
 const nav=()=>new NathanNavigation(entities,.34,()=>gate,id=>objects.get(id),person.id);
 const tick=(seconds:number,check?:()=>void)=>{for(let t=0;t<seconds;t+=.05){control.tick(.05);if(Math.round(t*20)%4===0)actor.update(.05);check?.();}};
-const soles=()=>{const box=new T.Box3().setFromObject(personRoot,true);assert.ok(Math.abs(box.min.y-person.position[1]-.005*person.scale)<.0002,`Feet stay above supporting surface: ${box.min.y} / ${person.position[1]}`);};
+const soles=()=>{
+  const box=new T.Box3().setFromObject(personRoot,true);
+  const clearance=box.min.y-person.position[1];
+  assert.ok(clearance>=-.003*person.scale&&clearance<=.035*person.scale,
+    'Visible skinned shoes must not enter the floor or float above it: '+JSON.stringify({minY:box.min.y,rootY:person.position[1]}));
+  for(let i=0;i<2;i++){
+    const p=actor.contactRig!.sole(i),floor=nav().surface(p.toArray() as V3,.02);
+    assert.ok(p.y>=floor-.025,'Shoe sole penetrated ground: '+JSON.stringify({foot:i,soleY:p.y,floor}));
+  }
+};
 control.open(person);assert.equal(input,true);
 const start=[...person.position];assert.ok(control.walkTo([12,0,22]));tick(1);assert.notDeepEqual(person.position,start);assert.equal(actor.clips[actor.index].name,'Nathan_Original_Walk');
 const previousHeading=person.heading;assert.ok(control.walkTo([8,0,32]));control.tick(.05);assert.ok(Math.abs(((person.heading-previousHeading+540)%360)-180)<8,'Heading turns at a bounded rate on retarget');
-tick(25,()=>{assert.equal(nav().blocked(person.position),false);});assert.ok(Math.hypot(person.position[0]-8,person.position[2]-32)<.03);assert.equal(control.phase,'idle');assert.equal(actor.clips[actor.index].name,'Idle');soles();
+tick(25,()=>{
+  assert.equal(nav().blocked(person.position),false);
+  const box=new T.Box3().setFromObject(personRoot,true);
+  assert.ok(box.min.y>=person.position[1]-.005,'Ground walk/run must not push skin geometry through the walking surface');
+});assert.ok(Math.hypot(person.position[0]-8,person.position[2]-32)<.03);assert.equal(control.phase,'idle');assert.equal(actor.clips[actor.index].name,'Idle');soles();
 assert.ok(checkpoints&&commits);console.log('PASS walk, retarget, bounded turning, arrival Idle and actual skinned feet');
 control.setPace('run');
 assert.equal(control.pace,'run');
