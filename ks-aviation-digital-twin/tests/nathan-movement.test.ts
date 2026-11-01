@@ -183,13 +183,7 @@ const checkTankBody=()=>{
   const support=person.nathan?.support;
   if(support?.crossingSide)usedBund=true;if(support?.kind==='tank'&&support.progress<1)usedTankStairs=true;
   const except=support?.kind==='tank'&&support.progress===1?[support.targetId,tankBridge.id]:support?.targetId;
-  const blocked=tankNav.blocked(person.position,except);
-  if(blocked){
-    const p=person.position,hit=((tankNav as unknown as {obstacles:{id:string,bottom:number,top:number,hit:(p:number[])=>boolean}[]}).obstacles||[])
-      .filter(o=>!(Array.isArray(except)?except.includes(o.id):o.id===except)&&p[1]<o.top+.025&&p[1]+1.78>o.bottom&&o.hit(p)).map(o=>o.id);
-    console.error('TANK_ROOF_OBSTACLE_DIAGNOSTIC',JSON.stringify({position:p,phase:control.phase,support:person.nathan?.support,hit}));
-  }
-  assert.equal(blocked,false,'Tank route clears other objects and the central roof hatch');
+  assert.equal(tankNav.blocked(person.position,except),false,'Tank route clears other objects and the central roof hatch');
 };
 const until=(condition:()=>boolean,seconds:number,check=()=>{})=>{
   for(let i=0;i<seconds*20&&!condition();i++){control.tick(.05);if(i%4===0)actor.update(.05);check();}

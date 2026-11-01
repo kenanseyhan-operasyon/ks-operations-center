@@ -178,7 +178,25 @@ export class NathanNavigation {
   }
   blocked(p: V3, except?: Except) {
     const height = 1.78 * this.radius / .34;
-    const hit=(o:Obstacle)=>!(Array.isArray(except)?except.includes(o.id):o.id===except)&&p[1]<o.top+.025&&p[1]+height>o.bottom&&o.hit(p);
+    const allowed=Array.isArray(except)?except:except?[except]:[];
+    const hit=(o:Obstacle)=>{
+      if(allowed.includes(o.id)||p[1]>=o.top+.025||p[1]+height<=o.bottom||!o.hit(p))return false;
+      // A tank stair lands at the open end of its connecting bridge. Allow the
+      // stair-to-bridge join only while that specific tank is the access target;
+      // retain collisions with all other deck and railing spans.
+      if(allowed.length){
+        const bridge=this.entities.find(e=>e.id===o.id&&e.preset==='TANK_BRIDGE');
+        if(bridge&&allowed.some(id=>[bridge.facility?.tankA,bridge.facility?.tankB,bridge.facility?.bridgeStart?.parentId,bridge.facility?.bridgeEnd?.parentId].includes(id))){
+          const span=bridgeSpan(bridge,this.entities);
+          if(span){
+            const near=Math.min(distance(p,span.start),distance(p,span.end));
+            const dy=Math.min(Math.abs(p[1]-span.start[1]),Math.abs(p[1]-span.end[1]));
+            if(near<1.6*bridge.scale&&dy<=.65)return false;
+          }
+        }
+      }
+      return true;
+    };
     return this.global.some(hit)||(this.cells.get(`${Math.floor(p[0]/4)}:${Math.floor(p[2]/4)}`)||[]).some(hit);
   }
   clear(a: V3, b: V3, except?: Except) {
