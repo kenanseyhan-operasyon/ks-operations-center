@@ -1,0 +1,39 @@
+name: Import Gemini published ADB scene to Hotmail staging
+on:
+  push:
+    branches: [fix/nathan-monitor-stage]
+    paths: [.github/workflows/ks-import-latest-adb.yml]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch published ADB scene (read-only source)
+        run: |
+          python - <<'PY'
+          import json, urllib.request, pathlib, hashlib
+          def read(url,headers={}):
+              req=urllib.request.Request(url,headers={'User-Agent':'KS-ADB-migration',**headers})
+              with urllib.request.urlopen(req,timeout=30) as r: return json.load(r)
+          config=read('https://ks-gemini-nathan-test.onrender.com/cloud-config.json')
+          if not config.get('url') or not config.get('anonKey'):
+              raise SystemExit('Source not published')
+          rows=read(config['url']+'/rest/v1/ks_adt_published_scenes?scene_id=eq.ADB&select=revision,payload,updated_at',{'apikey':config['anonKey']})
+          if not rows or int(rows[0]['revision'])<24:raise SystemExit('Unexpected source revision')
+          record=rows[0];scene=record['payload'];count=len(scene['entities'])
+          if count<200:raise SystemExit('Unexpected facility size')
+          data=(json.dumps(scene,ensure_ascii=False,separators=(',',':'))+'\n').encode()
+          pathlib.Path('ks-aviation-digital-twin/public/data/adb-test-seed.json').write_bytes(data)
+          meta={'source':'https://ks-gemini-nathan-test.onrender.com','publishedRevision':record['revision'],'publishedAt':record['updated_at'],'entities':count,'sha256':hashlib.sha256(data).hexdigest()}
+          pathlib.Path('ks-aviation-digital-twin/docs/adb-test-seed.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2)+'\n')
+          print('Imported Gemini published scene',record['revision'],'objects',count)
+          PY
+      - name: Commit to Hotmail staging branch only
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add ks-aviation-digital-twin/public/data/adb-test-seed.json ks-aviation-digital-twin/docs/adb-test-seed.json
+          git diff --cached --quiet || (git commit -m "Stage Gemini published ADB scene in Hotmail test" && git push origin HEAD:fix/nathan-monitor-stage)
