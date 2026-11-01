@@ -1,0 +1,65 @@
+name: KS Hotmail Monitor Runtime and Gemini Scene Probe
+on:
+  push:
+    branches: [fix/nathan-monitor-stage]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe-scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect Gemini latest shared ADB scene (read only, no credentials logged)
+        run: |
+          python - <<'PY'
+          import json,urllib.request
+          def get(url,headers=None):
+              req=urllib.request.Request(url,headers={'User-Agent':'KS-Aviation-Scene-Sync/1.0',**(headers or {})})
+              with urllib.request.urlopen(req,timeout=35) as res:
+                  return json.load(res)
+          try:
+              cfg=get('https://ks-gemini-nathan-test.onrender.com/cloud-config.json')
+              if not cfg.get('url') or not cfg.get('anonKey'):
+                  print('SCENE_PROBE: GEMINI_CLOUD_NOT_CONFIGURED')
+                  raise SystemExit(1)
+              data=get(cfg['url']+'/rest/v1/ks_adt_published_scenes?scene_id=eq.ADB&select=revision,payload,updated_at',{'apikey':cfg['anonKey']})
+              if not isinstance(data,list) or not data:
+                  print('SCENE_PROBE: NO_PUBLISHED_ADB_SCENE')
+                  raise SystemExit(1)
+              s=data[0];p=s.get('payload') or {}
+              print('SCENE_PROBE: AVAILABLE revision=',s.get('revision'),'entities=',len(p.get('entities',[])),'updated=',s.get('updated_at'))
+              if len(p.get('entities',[]))<178:
+                  print('SCENE_PROBE: REJECT_SMALLER_THAN_OLD_SEED')
+                  raise SystemExit(1)
+          except Exception as e:
+              print('SCENE_PROBE: ERROR',type(e).__name__)
+              raise SystemExit(1)
+          PY
+  verify-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VITE_KS_TEST_SITE: "1"
+      VITE_KS_TEST_CLOUD: "0"
+      VITE_SUPABASE_URL: ""
+      VITE_SUPABASE_ANON_KEY: ""
+      VITE_TEST_SUPABASE_URL: ""
+      VITE_TEST_SUPABASE_ANON_KEY: ""
+    defaults:
+      run:
+        working-directory: ks-aviation-digital-twin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ks-aviation-digital-twin/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Runtime monitor integration regression
+        run: |
+          npx esbuild tests/monitor-training.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/monitor-training-check.mjs
+          node node_modules/.cache/monitor-training-check.mjs
+      - name: Build, test and validate test-site isolation
+        run: npm run build && npm run verify:test-build
