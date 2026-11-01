@@ -35,7 +35,13 @@ const indexed=new NathanNavigation(seed.entities),all=(indexed as unknown as {ob
 let random=17;const rand=()=>{random=(Math.imul(random,1664525)+1013904223)>>>0;return random/4294967296;};
 for(let i=0;i<10000;i++){const p:V3=[rand()*120-60,rand()*4,rand()*120-60];assert.equal(indexed.blocked(p),all.some(o=>p[1]<o.top+.025&&p[1]+1.78>o.bottom&&o.hit(p)),'Spatial index preserves precise obstacle clearance');}
 const exitGate=seed.entities.find(e=>e.id==='8d3c50cf-90aa-4655-89df-3af373f183ca')!;
-assert.ok(planNathanRoute([4.53,0,2.5],localToWorld(exitGate,[.06,0,-3]),indexed,seed.entities,()=>undefined)?.some(l=>l.gate?.id===exitGate.id),'Route from the real facility vehicle area to outside');
+// The previous hard-coded [4.53, 0, 2.5] was INSIDE the parked R14
+// in the latest 249-object ADB scene. Test a human-sized corridor at its side,
+// not a fictitious pedestrian position in the vehicle chassis.
+const parkedRefueller=seed.entities.find(e=>e.id==='795bb6d3-b737-45d6-8f80-56f824494095')!;
+const operatorStart=localToWorld(parkedRefueller,[-parkedRefueller.width/2-1,0,0]);
+assert.equal(indexed.blocked(operatorStart),false,'Operator must begin beside, not inside, the parked R14');
+assert.ok(planNathanRoute(operatorStart,localToWorld(exitGate,[.06,0,-3]),indexed,seed.entities,()=>undefined)?.some(l=>l.gate?.id===exitGate.id),'Route from beside the real facility R14 to outside');
 console.log('PASS obstacle index matches 10,000 exact collision samples; route from actual ADB vehicle area to emergency exit');
 const curb=newEntity('CURB',0,0);curb.height=.15;curb.width=.15;curb.points=[[-5,0],[5,0]];
 const curbNav=new NathanNavigation([curb]);assert.ok(curbNav.path([0,0,-2],[0,0,2]));assert.equal(curbNav.surface([0,0,0]),.15);
