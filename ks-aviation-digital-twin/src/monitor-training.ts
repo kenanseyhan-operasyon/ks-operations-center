@@ -44,7 +44,7 @@ export function prepareMonitor(g:T.Group,o:Entity){
  // The old crossbar was over 30 cm beyond his animated palms even though
  // the logical contact flag read "gripping". Two steel cheeks extend the
  // moving yaw assembly to the operator-side crossbar.
- const yokeZ=-.52;
+ const yokeZ=-.59;
  // Batch the crossbar and both cheek supports into ONE mesh. Keeping the
  // fire-network draw-call budget prevents a regression in large ADB scenes.
  const yokeParts:T.BufferGeometry[]=[];
