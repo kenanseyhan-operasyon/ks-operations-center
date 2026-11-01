@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+import {newEntity} from '../src/scene-data';
+import {NATHAN_PRESET} from '../src/nathan-data';
+import {Workspace} from '../src/workspace';
+
+const dom=new JSDOM('<!doctype html><body><div class="ws-person-button"></div></body>',{url:'https://ks-3d-test.onrender.com/'});
+Object.assign(globalThis,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement});
+const nathan=newEntity(NATHAN_PRESET,0,0),valve=newEntity('PIPE_VALVE',9,1),secondNathan=newEntity(NATHAN_PRESET,12,8);
+let closed=0,paused=0,otherOpened=0,selectedPanel:string|undefined,display='person';
+const ws=Object.create(Workspace.prototype) as any;
+ws.history={current:{entities:[nathan,valve,secondNathan]}};
+ws.selection=new Set([nathan.id]);
+ws.nathanControl={active:true,id:nathan.id,entity:nathan,mode:'person',setMode:(v:string)=>{display=v;ws.nathanControl.mode=v;},close:()=>{closed++;}};
+ws.nathanPanel={selection:(o:{id:string}|undefined)=>{selectedPanel=o?.id;},close:()=>{closed++;}};
+ws.nathanActors={pause:()=>{paused++;}};
+ws.facilityPanel={selection:()=>{}};
+ws.services={selection:()=>{}};
+ws.plan={enabled:false,canvas:{hidden:false},draw:()=>{},refresh:()=>{}};
+ws.personnel={close:()=>{}};
+ws.driving={setCabin:()=>{}};
+ws.root={querySelectorAll:()=>[]};
+ws.$=()=>({hidden:false});
+for(const name of ['updateSelectionBox','renderList','renderProperties','updateLocation','updateAnimationButtons','updatePad','resize','goToPoint'])ws[name]=()=>{};
+ws.airportOverview=false;
+// These methods exercise the actual Workspace implementation, without WebGL.
+(Workspace.prototype as any).refreshSelection.call(ws);
+assert.equal(closed,0);assert.equal(selectedPanel,nathan.id);
+ws.selection=new Set([valve.id]);
+(Workspace.prototype as any).refreshSelection.call(ws);
+assert.equal(closed,0,'Selecting a valve must never close Nathan control');
+assert.equal(selectedPanel,nathan.id,'Operator panel remains attached to Nathan, not to the inspected valve');
+ws.nathanControl.mode='camera';
+(Workspace.prototype as any).clickMap.call(ws,9,1,valve.id,false,true);
+assert.deepEqual([...ws.selection],[valve.id]);assert.equal(closed,0,'Clicking another system in camera mode must not cancel mission');
+ws.openPerson=()=>{otherOpened++;};
+(Workspace.prototype as any).clickMap.call(ws,12,8,secondNathan.id,false,true);
+assert.equal(otherOpened,0,'Merely selecting a second Nathan must not silently replace the controlled operator');
+assert.equal(closed,0);
+(Workspace.prototype as any).setView.call(ws,'2d');
+assert.equal(ws.plan.enabled,true);assert.equal(display,'camera');
+assert.equal(closed,0,'2D map inspection must retain the running mission');
+assert.equal(paused,0,'Switching to 2D must not pause the actor or delete route');
+// Tab switches suspend RAF, not the persistent assignment; check the
+// registered browser lifecycle callback never clears the route or actor state.
+const source=fs.readFileSync('src/workspace.ts','utf8');
+const visibility=source.match(/document\.addEventListener\('visibilitychange',\(\)=>\{[^\n]+/);
+assert.ok(visibility,'Visibility handler must exist');
+assert.ok(!visibility![0].includes('nathanControl?.pause()'),'Changing browser tab must not clear the mission');
+assert.ok(!visibility![0].includes('nathanActors.pause()'),'Changing browser tab must not kill walking animation state');
+console.log('PASS selection of pipes, valves, second operator, camera mode, 2D/map and browser-tab change preserve Nathan task');
+dom.window.close();
