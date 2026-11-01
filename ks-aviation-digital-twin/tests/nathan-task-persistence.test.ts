@@ -4,6 +4,7 @@ import {JSDOM} from 'jsdom';
 import {newEntity} from '../src/scene-data';
 import {NATHAN_PRESET} from '../src/nathan-data';
 import {Workspace} from '../src/workspace';
+import {NathanPanel} from '../src/nathan-panel';
 
 const dom=new JSDOM('<!doctype html><body><div class="ws-person-button"></div></body>',{url:'https://ks-3d-test.onrender.com/'});
 Object.assign(globalThis,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement});
@@ -56,5 +57,20 @@ const visibility=source.match(/document\.addEventListener\('visibilitychange',\(
 assert.ok(visibility,'Visibility handler must exist');
 assert.ok(!visibility![0].includes('nathanControl?.pause()'),'Changing browser tab must not clear the mission');
 assert.ok(!visibility![0].includes('nathanActors.pause()'),'Changing browser tab must not kill walking animation state');
+// Closing only Nathan's overlay must NOT destroy the independent assignment.
+const panelHost=document.createElement('section');document.body.append(panelHost);
+let cancelled=0,hardClosed=0,mode='person';
+const fakeControl={
+ active:true,id:nathan.id,mode:'person',capturing:true,view:'free',phase:'walking',message:'Tank 1 vanasına yürüyor',pace:'walk',
+ nearby:()=>[],roofOptions:()=>[],seated:false,close:()=>{cancelled++;},
+ setMode:(next:string)=>{mode=next;fakeControl.mode=next;fakeControl.capturing=next==='person';}
+};
+const panel=new NathanPanel(panelHost,{states:new Map()} as any,{entity:()=>nathan,ready:()=>false,close:()=>{hardClosed++;}} as any,fakeControl as any);
+panel.open(nathan);
+panel.element.querySelector<HTMLButtonElement>('[data-nathan="close"]')!.click();
+assert.equal(panel.element.hidden,true,'X hides the operator overlay');
+assert.equal(mode,'camera','Closing the overlay re-enables camera interaction');
+assert.equal(cancelled,0,'X must not call NathanController.close while task is running');
+assert.equal(hardClosed,0,'X must not call Workspace.closeNathan');
 console.log('PASS selection of pipes, valves, second operator, camera mode, 2D/map and browser-tab change preserve Nathan task');
 dom.window.close();
