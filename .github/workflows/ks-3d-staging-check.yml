@@ -1,0 +1,43 @@
+name: KS 3D Staging Smoke and Regression
+on:
+  push:
+    branches:
+      - sync/gemini-20261101-staging
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_KS_TEST_SITE: "1"
+      VITE_KS_TEST_CLOUD: "0"
+      VITE_SUPABASE_URL: ""
+      VITE_SUPABASE_ANON_KEY: ""
+      VITE_TEST_SUPABASE_URL: ""
+      VITE_TEST_SUPABASE_ANON_KEY: ""
+    defaults:
+      run:
+        working-directory: ks-aviation-digital-twin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ks-aviation-digital-twin/package-lock.json
+      - name: Install isolated dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Existing end-to-end and movement regression macros
+        run: npm test
+      - name: Facility bridges, models and pipe geometry regression macros
+        run: npm run test:facility && npm run test:bridge && npm run test:details
+      - name: New two-handed monitor aiming and 10 bar hydraulic regression macro
+        run: |
+          npx esbuild tests/monitor-training.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/ks-monitor-training-test.mjs
+          node node_modules/.cache/ks-monitor-training-test.mjs
+      - name: Compile offline test-only site with cloud publishing disabled
+        run: npm run build
+      - name: Verify isolated site, glb meshes, animations and cloud config
+        run: npm run verify:test-build
