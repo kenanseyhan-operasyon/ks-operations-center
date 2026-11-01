@@ -96,6 +96,33 @@ export class TestSitePanel {
       this.say('Kaydet, çalışmayı yalnızca bu cihazdaki tarayıcıda tutar. Ana sahneye yayın yapılmaz. Tarayıcı verilerini silerseniz yerel kayıt da silinir.','Save keeps your work only in this browser on this device. It does not publish to the main scene. Clearing browser data also removes this save.'),
       this.say('Telefon ve bilgisayar arasında aktarmak veya yedeklemek için Çizim / Tasarım → JSON dışarı aktar / içeri al kullanın.','Use Draw / Design → Export / Import JSON to back up or transfer work between your phone and computer.'),
     ]){const p=document.createElement('p');p.textContent=message;dialog.append(p);}
+    // Explicit refresh never silently discards drafts or requests production cloud data.
+    // The latest bundled Gemini snapshot is shipped with this isolated test build.
+    const loadLatest=document.createElement('button');loadLatest.type='button';
+    loadLatest.setAttribute('data-load-latest-test-scene','');
+    loadLatest.textContent=this.say('Aktarılmış son ADB tesisini aç (mevcut sahneyi yedekle)','Open latest bundled ADB facility (back up current scene)');
+    loadLatest.onclick=async()=>{
+      loadLatest.disabled=true;
+      try{
+        const response=await this.request('/data/adb-test-seed.json',{cache:'no-store'});
+        if(!response.ok)throw new Error('Latest bundled scene unavailable');
+        const latest=validateScene(await response.json());
+        const current=validateScene(structuredClone(this.scene()));
+        const currentRaw=JSON.stringify(current),latestRaw=JSON.stringify(latest);
+        if(currentRaw!==latestRaw)this.storage.setItem(TEST_SCENE_PREVIOUS_BACKUP,currentRaw);
+        // Store the version before the new payload: a failed payload write must not
+        // silently overwrite the local scene on the next page load.
+        this.storage.setItem(TEST_SCENE_SEED_MARKER,String(latest.updatedAt||'')+':'+latest.entities.length);
+        this.storage.setItem(TEST_SCENE_KEY,latestRaw);
+        this.apply(structuredClone(latest));this.pending=false;this.changed();
+        dialog.close();dialog.remove();this.dialog=undefined;
+        this.notify(this.say('Aktarılan son ADB tesisi açıldı. Önceki farklı sahneniz yedeklendi.','Latest bundled ADB facility loaded. Your previous different scene was backed up.'));
+      }catch{
+        loadLatest.disabled=false;
+        this.notify(this.say('Son tesis açılamadı; mevcut sahneniz korunuyor. JSON yedeği alabilirsiniz.','Could not load the bundled facility; your current scene is preserved. You can export a JSON backup.'));
+      }
+    };
+    dialog.append(loadLatest);
     if(this.storage.getItem(TEST_SCENE_PREVIOUS_BACKUP)){
       const restore=document.createElement('button');restore.type='button';
       restore.textContent=this.say('Önceki test sahnemin yedeğini aç','Open previous local test backup');
