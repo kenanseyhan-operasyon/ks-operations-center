@@ -182,6 +182,12 @@ const tankNav=nav();let usedBund=false,usedTankStairs=false;
 const checkTankBody=()=>{
   const support=person.nathan?.support;
   if(support?.crossingSide)usedBund=true;if(support?.kind==='tank'&&support.progress<1)usedTankStairs=true;
+  if(support?.kind==='tank'&&support.progress>0&&support.progress<1&&person.position[1]>2){
+    assert.equal(actor.terrain,undefined,'Mid-stair foot IK must not query the ground below the tank');
+    const feet=[0,1].map(i=>actor.contactRig!.sole(i).y);
+    assert.ok(Math.min(...feet)>person.position[1]-.75,
+      'Skinned feet dropped toward Y=0 despite Nathan remaining on a tank stair: '+JSON.stringify({rootY:person.position[1],feet}));
+  }
   const except=support?.kind==='tank'&&support.progress===1?[support.targetId,tankBridge.id]:support?.targetId;
   assert.equal(tankNav.blocked(person.position,except),false,'Tank route clears other objects and the central roof hatch');
 };
@@ -202,6 +208,18 @@ assert.ok(control.tankTo(tankA.id,acrossRoof));until(()=>control.phase==='standi
 assert.ok(new T.Vector3(...person.position).distanceTo(new T.Vector3(...acrossRoof))<.03);
 assert.equal(control.tankTo(tankA.id,localToWorld(tankA,[tankA.radius-.1,tankA.height+.282,0])),false,'Never walk through the roof railing or off the roof');
 console.log('PASS exterior → bund crossover → actual T1 curved stairs → pause/save/reload/resume → roof; roof walking avoids hatch and railing');
+// Reproduce the original visual defect: a height sampler intermittently returns
+// Y=0 for a foot even though the 3D actor is supported on the elevated tank roof.
+// The skinned actor must not move its soles down toward the ground.
+actor.motion('Nathan_Original_Walk',.5);
+actor.terrain=()=>0;
+actor.update(.05);
+const elevatedSoles=[0,1].map(i=>actor.contactRig!.sole(i).y);
+assert.ok(Math.min(...elevatedSoles)>person.position[1]-.75,
+  'Terrain fallback snapped an elevated skinned foot toward ground: '+JSON.stringify({root:person.position,feet:elevatedSoles}));
+actor.terrain=undefined;
+actor.motion('Idle');
+console.log('PASS actual skinned feet stay near supported tank height even when terrain probe returns ground Y=0');
 
 const probeNav=nav();const bridgeLeg=makeRoofBridge(tankBridge,tankA.id,entities,probeNav,.34);
 assert.ok(bridgeLeg,'Connected stair/bridge roof portal must remain traversable without disabling the hatch or side rails');
