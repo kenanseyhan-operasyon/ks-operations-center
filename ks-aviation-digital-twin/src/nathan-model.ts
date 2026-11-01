@@ -244,13 +244,18 @@ export class NathanActor {
       // A missing elevated tread sample must not pull Nathan's skinned feet
       // back to Y=0 while the controller/root remains on an elevated surface.
       const minimumSurface=ground-.22*scale;
+      let sinking=false;
       const feet=[0,1].map(i=>{
         const p=this.contactRig!.sole(i);
-        const sampled=this.terrain!(p.toArray() as [number,number,number]);
-        p.y=Math.max(Number.isFinite(sampled)?sampled:minimumSurface,minimumSurface)+Math.max(.005,p.y-ground);
+        const sample=this.terrain!(p.toArray() as [number,number,number]);
+        // Walk/run as well as elevated surfaces: the ground probe can report
+        // zero even when Nathan's source clip bends the shoe below Y=0.
+        // Keep swing-foot lift, correct ONLY actual penetration.
+        const floor=Math.max(Number.isFinite(sample)?sample:minimumSurface,minimumSurface);
+        if(p.y<floor+.006*scale){p.y=floor+.006*scale;sinking=true;}
         return p.toArray() as [number,number,number];
       }) as [[number,number,number],[number,number,number]];
-      if(ground>.001||feet.some(p=>this.terrain!(p)>.001)){this.contactRig.apply({feet});this.measure();}
+      if(sinking){this.contactRig.apply({feet});this.measure();}
     }
     if(this.toolPose&&this.contactRig){this.contactRig.apply({...this.toolPose,handsOnly:true,feet:[this.contactRig.sole(0).toArray(),this.contactRig.sole(1).toArray()] as [[number,number,number],[number,number,number]]},Math.max(0,Math.min(dt,.1)));this.measure();}
   }
