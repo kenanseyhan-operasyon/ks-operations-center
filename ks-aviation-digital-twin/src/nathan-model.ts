@@ -252,7 +252,7 @@ export class NathanActor {
         // zero even when Nathan's source clip bends the shoe below Y=0.
         // Keep swing-foot lift, correct ONLY actual penetration.
         const floor=Math.max(Number.isFinite(sample)?sample:minimumSurface,minimumSurface);
-        if(p.y<floor+.006*scale){p.y=floor+.006*scale;sinking=true;}
+        if(p.y<floor+.005*scale){p.y=floor+.005*scale;sinking=true;}
         return p.toArray() as [number,number,number];
       }) as [[number,number,number],[number,number,number]];
       if(sinking){this.contactRig.apply({feet});this.measure();}
