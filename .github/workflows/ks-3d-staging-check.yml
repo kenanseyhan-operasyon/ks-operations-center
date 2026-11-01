@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     env:
       VITE_KS_TEST_SITE: "1"
       VITE_KS_TEST_CLOUD: "0"
@@ -29,15 +29,51 @@ jobs:
           cache-dependency-path: ks-aviation-digital-twin/package-lock.json
       - name: Install isolated dependencies
         run: npm ci --no-audit --no-fund
-      - name: Existing end-to-end and movement regression macros
+      - name: Legacy regression macros
+        id: legacy
+        continue-on-error: true
         run: npm test
-      - name: Facility bridges, models and pipe geometry regression macros
+      - name: Facility and bridge regression macros
+        id: facility
+        if: always()
+        continue-on-error: true
         run: npm run test:facility && npm run test:bridge && npm run test:details
-      - name: New two-handed monitor aiming and 10 bar hydraulic regression macro
+      - name: New two-hand monitor and hydraulic regression macros
+        id: monitor
+        if: always()
+        continue-on-error: true
         run: |
           npx esbuild tests/monitor-training.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/ks-monitor-training-test.mjs
           node node_modules/.cache/ks-monitor-training-test.mjs
-      - name: Compile offline test-only site with cloud publishing disabled
+      - name: Fire pipe and Nathan access macros
+        id: fire
+        if: always()
+        continue-on-error: true
+        run: npm run test:fire && npm run test:fire-access && npm run test:islands
+      - name: Compile offline test-only site with cloud disabled
+        id: build
+        if: always()
+        continue-on-error: true
         run: npm run build
-      - name: Verify isolated site, glb meshes, animations and cloud config
+      - name: Verify build models and isolated cloud config
+        id: verify
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
         run: npm run verify:test-build
+      - name: Strict quality gate
+        if: always()
+        env:
+          LEGACY: ${{ steps.legacy.outcome }}
+          FACILITY: ${{ steps.facility.outcome }}
+          MONITOR: ${{ steps.monitor.outcome }}
+          FIRE: ${{ steps.fire.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+        run: |
+          for v in "$LEGACY" "$FACILITY" "$MONITOR" "$FIRE" "$BUILD" "$VERIFY"; do
+            if [ "$v" != "success" ]; then
+              echo "Quality gate blocked: $LEGACY $FACILITY $MONITOR $FIRE $BUILD $VERIFY"
+              exit 1
+            fi
+          done
+          echo "All validation groups passed"
