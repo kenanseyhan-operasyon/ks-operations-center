@@ -15,7 +15,7 @@ import { bindNathanInput, isNathanInputEvent } from '../src/nathan-input';
 import { planNathanRoute } from '../src/nathan-route';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { configureWorkspaceOrbit } from '../src/camera-navigation';
-import { bridgeRailingOpenings, localToWorld } from '../src/facility-data';
+import { bridgeRailingOpenings, bridgeSpan, localToWorld } from '../src/facility-data';
 import { bridgeTanks, makeRoofBridge, planRoofRoute, roofHeight, tankRoofPoint } from '../src/nathan-roof';
 import { applyTransform, makeObject } from '../src/objects';
 import { closedAnimationPack } from '../src/model-animations';
@@ -205,6 +205,19 @@ console.log('PASS exterior → bund crossover → actual T1 curved stairs → pa
 
 const probeNav=nav();const bridgeLeg=makeRoofBridge(tankBridge,tankA.id,entities,probeNav,.34);
 console.error('BRIDGE_STATE',JSON.stringify({pos:person.position,personSupport:person.nathan?.support,bridgeLeg,route:!!planRoofRoute(person.position,tankA.id,tankRoofPoint(tankB),tankB.id,entities,probeNav,.34)}));
+
+const debugSpan=bridgeSpan(tankBridge,entities);
+if(debugSpan){
+ const obstructed:any[]=[];
+ const all=(probeNav as unknown as {obstacles:{id:string;bottom:number;top:number;hit:(p:V3)=>boolean}[]}).obstacles;
+ for(let i=0;i<=40;i++){
+   const t=i/40,p:V3=[debugSpan.start[0]*(1-t)+debugSpan.end[0]*t,debugSpan.start[1]*(1-t)+debugSpan.end[1]*t+.02,debugSpan.start[2]*(1-t)+debugSpan.end[2]*t];
+   const found=all.filter(o=>o.id!==tankBridge.id&&p[1]<o.top+.025&&p[1]+1.78>o.bottom&&o.hit(p)).map(o=>({id:o.id,name:entities.find(e=>e.id===o.id)?.name||'',preset:entities.find(e=>e.id===o.id)?.preset||''}));
+   if(found.length)obstructed.push({i,p,found});
+ }
+ console.error('BRIDGE_COLLISION_SAMPLES',JSON.stringify(obstructed.slice(0,16)));
+}
+
 assert.ok(control.crossBridge(tankBridge.id),control.message);until(()=>person.nathan?.support?.kind==='bridge'&&(person.nathan.support.progress||0)>.3,50,checkTankBody);
 control.pause();const bridgePosition=[...person.position];
 savedTank=validateScene({schema:'KS_DIGITAL_TWIN_V1',airport:'ADB',groups:[],entities,source:'test'});
