@@ -61,5 +61,13 @@ jobs:
         run: |
           npx esbuild tests/monitor-training.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/monitor-training-check.mjs
           node node_modules/.cache/monitor-training-check.mjs
+      - name: Browser-like monitor control regression
+        run: |
+          npx esbuild tests/monitor-panel-runtime.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/monitor-panel-runtime.mjs
+          node node_modules/.cache/monitor-panel-runtime.mjs
+      - name: Test scene migration without destroying local drafts
+        run: |
+          npx esbuild tests/test-site.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/test-site-migrate.mjs
+          node node_modules/.cache/test-site-migrate.mjs
       - name: Build, test and validate test-site isolation
         run: npm run build && npm run verify:test-build
