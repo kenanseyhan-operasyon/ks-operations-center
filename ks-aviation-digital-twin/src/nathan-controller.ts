@@ -12,6 +12,7 @@ import { planNathanRoute, type NathanRouteLeg, type NathanGatePass } from './nat
 import { bridgeTanks, makeRoofBridge, onTankRoof, planRoofRoute, remainingRoofBridge, roofBridgeIds, roofHeight, tankRoofPoint, type RoofLeg } from './nathan-roof';
 import {stairPose} from './nathan-stair-gait';
 import {tankStairContact} from './nathan-tank-contact';
+import {equipmentGripPose} from './nathan-equipment-contact';
 import {standingContact} from './nathan-contact';
 import {driverPose,driverLanding} from './nathan-driver';
 import type {NathanView} from './nathan-camera';
@@ -68,6 +69,7 @@ export class NathanController {
   private operation?:string;
   private gatePass?:NathanGatePass;
   private operationTime=0;
+  private operationApplied=false;
   private landing?: { fromY:number;toY:number;elapsed:number;duration:number };
   private velocity = 0;
   private nav?: NathanNavigation;
@@ -147,7 +149,7 @@ export class NathanController {
     this.hooks.input(false); this.hooks.ui();
   }
   pause() {
-    this.fireOperation=undefined;this.operation=undefined;this.operationTime=0;this.gatePass=undefined;
+    this.fireOperation=undefined;this.operation=undefined;this.operationTime=0;this.operationApplied=false;this.gatePass=undefined;
     this.route = []; this.goal = undefined; this.journey = []; this.queuedTarget = undefined; this.velocity = 0;
     this.roofLeg = undefined; this.roofLegs = []; this.roofAfterDescent = false; this.destination = undefined;
     const support = this.entity?.nathan?.support;
@@ -299,18 +301,27 @@ export class NathanController {
     if (!this.active || !e || !this.actor || !Number.isFinite(dt)) return;
     dt = T.MathUtils.clamp(dt, 0, .1);
     if(this.tickLanding(e,dt))return;
-    if(this.fireOperation&&!this.operation&&this.phase==='idle'&&!this.route.length&&!this.journey.length){this.operation=this.fireOperation;this.fireOperation=undefined;this.operationTime=0;}
+    if(this.fireOperation&&!this.operation&&this.phase==='idle'&&!this.route.length&&!this.journey.length){this.operation=this.fireOperation;this.fireOperation=undefined;this.operationTime=0;this.operationApplied=false;}
     if(this.operation&&this.phase==='idle'){
       const gate=this.hooks.entities().find(o=>o.id===this.operation);if(!gate){this.operation=undefined;return;}
       const h=Math.atan2(gate.position[0]-e.position[0],-(gate.position[2]-e.position[2]))*180/Math.PI;
-      if(this.turn(h,dt)>3){this.transform();return;}this.transform();this.operationTime+=dt;this.actor.motion('Opening');
-      const root=this.hooks.object(e.id)!;this.actor.contact(gate.preset==='PEDESTRIAN_GATE'?{...standingContact(root),lean:.18,grips:[[localToWorld(gate,[-gate.width*.42,1,.07]),localToWorld(gate,[gate.width*.42,1,.07])]]}:undefined);
-      if(this.operationTime>1.1){
+      if(this.turn(h,dt)>3){this.transform();return;}
+      this.transform();
+      this.operationTime+=dt;
+      const total=1.45,weight=Math.min(1,this.operationTime/.25,(total-this.operationTime)/.25);
+      this.actor.motion(gate.preset==='PIPE_VALVE'?'Pulling_Lever':'Opening');
+      const root=this.hooks.object(e.id)!;
+      this.actor.contact(equipmentGripPose(e,root,gate,this.hooks.object(gate.id),Math.max(0,weight)));
+      // The valve/door changes only after Nathan reaches and grips the handle.
+      if(!this.operationApplied&&this.operationTime>=.95){
         if(!this.gatePass||this.hooks.gateAmount(this.operation)<.98)this.hooks.operate?.(this.operation);
-        this.operation=undefined;this.idle();
+        this.operationApplied=true;
+      }
+      if(this.operationTime>=total){
+        this.operation=undefined;this.operationApplied=false;this.idle();
         if(this.gatePass){this.route=this.gatePass.crossing;this.goal=this.route.at(-1);this.gatePass=undefined;this.nav=this.navigation();this.navAge=0;this.status('Acil çıkış kapısından geçiyor…','walking');}
         else{this.status(gate.preset==='PEDESTRIAN_GATE'?'Kapı konumu değiştirildi. Yeni hedef seçebilirsiniz.':'Yangın ekipmanı kumandası hazır.');this.commit();}
-      }return;
+      }return;eturn;
     }
     if (this.phase === 'idle' || this.phase === 'paused' || this.phase === 'standing') return;
     if (this.phase === 'roofwalking') { this.tickRoof(dt); return; }
