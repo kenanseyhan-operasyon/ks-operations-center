@@ -69,8 +69,9 @@ jobs:
         run: |
           npx esbuild tests/test-site.test.ts --bundle --platform=node --format=esm --external:jsdom --loader:.css=empty --outfile=node_modules/.cache/test-site-migrate.mjs
           node node_modules/.cache/test-site-migrate.mjs
-      - name: Known tank bridge regression (diagnostic, never weaken actual geometry)
-        continue-on-error: true
+      - name: Reconstruct Nathan animation assets before testing movement
+        run: npm run pretest
+      - name: Nathan stair and bridge movement regression (blocking)
         run: npm run test:nathan-movement
       - name: Build, test and validate test-site isolation
         run: npm run build && npm run verify:test-build
