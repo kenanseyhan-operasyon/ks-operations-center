@@ -8,7 +8,7 @@ import { gateSegments, isFacilityGate } from './facility-gates';
 import { bridgeSpan, localToWorld, worldToLocal } from './facility-data';
 import type { V3 } from './personnel-navigation';
 
-type Obstacle = { id: string; bottom: number; top: number; bounds?:[number,number,number,number]; hit: (p: V3) => boolean };
+type Obstacle = { id: string; bottom: number; top: number; bounds?:[number,number,number,number]; role?:'tank-stair'; hit: (p: V3) => boolean };
 type Except = string | string[];
 const stepHeight=(e:Entity)=>isGroundFill(e)?e.position[1]+e.height*e.scale:e.kind==='ground'&&e.points?.length?(e.position[1]>.01?e.position[1]+.018*e.scale:0):e.position[1]+e.height*e.scale;
 export const walkableStep = (e:Entity) => (e.preset==='CURB'||e.kind==='ground'||isGroundFill(e))&&e.position[1]>=0&&stepHeight(e)<=.221;
@@ -108,7 +108,7 @@ export class NathanNavigation {
           if (e.facility?.stairs !== false) {
             const layout=tankStairLayout(e),w=layout.width,R=layout.radius,H=layout.height;
             const pad=radius/e.scale,bodyHeight=1.78*radius/.34/e.scale;
-            this.obstacles.push({...extent,top:e.position[1]+(H+1.1)*e.scale,hit:p=>{
+            this.obstacles.push({...extent,role:'tank-stair',top:e.position[1]+(H+1.1)*e.scale,hit:p=>{
               const [x,y,z]=worldToLocal(e,p),rad=Math.hypot(x,z);if(rad<R-w/2-pad||rad>R+w/2+pad)return false;
               const theta=Math.atan2(x,z),anglePad=pad/R;
               return layout.pieces.some(piece=>{
@@ -181,6 +181,27 @@ export class NathanNavigation {
     const allowed=Array.isArray(except)?except:except?[except]:[];
     const hit=(o:Obstacle)=>{
       if(allowed.includes(o.id)||p[1]>=o.top+.025||p[1]+height<=o.bottom||!o.hit(p))return false;
+      // The spiral stair's top landing overlaps a linked tank bridge entrance.
+      // Ignore ONLY its conservative stair-volume footprint on the narrow deck
+      // centreline near the matching roof portal. Keep tank wall, hatch, other
+      // stairs, side rails and independent pipe obstacles fully collidable.
+      if(o.role==='tank-stair'&&allowed.length){
+        for(const bridge of this.entities){
+          if(bridge.preset!=='TANK_BRIDGE'||!allowed.includes(bridge.id))continue;
+          const f=bridge.facility;
+          const start=f?.bridgeStart?.parentId||f?.tankA,end=f?.bridgeEnd?.parentId||f?.tankB;
+          if(start!==o.id&&end!==o.id)continue;
+          const span=bridgeSpan(bridge,this.entities);if(!span)continue;
+          const portal=start===o.id?span.start:span.end;
+          const dx=span.end[0]-span.start[0],dz=span.end[2]-span.start[2],den=dx*dx+dz*dz;
+          const t=T.MathUtils.clamp(((p[0]-span.start[0])*dx+(p[2]-span.start[2])*dz)/(den||1),0,1);
+          const deckY=T.MathUtils.lerp(span.start[1],span.end[1],t);
+          const safeHalfWidth=bridge.width*bridge.scale/2-this.radius-.025;
+          if(safeHalfWidth>0&&distance(p,portal)<1.65*bridge.scale&&
+             Math.abs(p[1]-deckY)<.12&&
+             segmentDistance(p,[span.start[0],span.start[2]],[span.end[0],span.end[2]])<safeHalfWidth)return false;
+        }
+      }
       // A tank stair lands at the open end of its connecting bridge. Allow the
       // stair-to-bridge join only while that specific tank is the access target;
       // retain collisions with all other deck and railing spans.
