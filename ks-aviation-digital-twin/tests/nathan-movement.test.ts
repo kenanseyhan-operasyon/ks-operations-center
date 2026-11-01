@@ -56,6 +56,17 @@ const start=[...person.position];assert.ok(control.walkTo([12,0,22]));tick(1);as
 const previousHeading=person.heading;assert.ok(control.walkTo([8,0,32]));control.tick(.05);assert.ok(Math.abs(((person.heading-previousHeading+540)%360)-180)<8,'Heading turns at a bounded rate on retarget');
 tick(25,()=>{assert.equal(nav().blocked(person.position),false);});assert.ok(Math.hypot(person.position[0]-8,person.position[2]-32)<.03);assert.equal(control.phase,'idle');assert.equal(actor.clips[actor.index].name,'Idle');soles();
 assert.ok(checkpoints&&commits);console.log('PASS walk, retarget, bounded turning, arrival Idle and actual skinned feet');
+control.setPace('run');
+assert.equal(control.pace,'run');
+assert.ok(control.walkTo([8,0,10]));
+tick(2);
+assert.equal(actor.clips[actor.index].name,'Running','Run mode must actually play the supplied Running clip');
+tick(15);
+assert.equal(control.phase,'idle','Run must stop precisely at the intended walkable destination');
+assert.ok(Math.hypot(person.position[0]-8,person.position[2]-10)<.03);
+control.setPace('walk');
+assert.equal(control.pace,'walk');
+console.log('PASS selectable running gait, speed and precise stop; restored walking pace');
 
 const building=newEntity('BUILDING',0,0);building.width=4;building.length=5;building.heading=32;
 const wall=newEntity('WALL',0,0);wall.points=[[0,-100],[0,100]];
