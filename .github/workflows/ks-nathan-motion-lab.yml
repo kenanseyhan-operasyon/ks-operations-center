@@ -34,6 +34,8 @@ jobs:
         run: npm run test:tank-access && npm run test:tank-walk
       - name: Assemble the currently licensed local Nathan assets
         run: npm run pretest
+      - name: Inspect actual Nathan GLB clips and suspect root motion (diagnostic)
+        run: node scripts/audit-nathan-clips.mjs
       - name: Real skinned Nathan movement regression
         run: npm run test:nathan-movement
       - name: Real hand/contact interactions
