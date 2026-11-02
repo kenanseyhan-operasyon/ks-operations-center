@@ -30,6 +30,10 @@ jobs:
         run: |
           npx esbuild tests/nathan2-engine.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan2-engine.mjs
           node node_modules/.cache/nathan2-engine.mjs
+      - name: Verify actual skinned Nathan palms GRIP physical rail and feet land on treads
+        run: |
+          npx esbuild tests/nathan2-skin-contact.test.ts --bundle --external:jsdom --loader:.css=empty --platform=node --format=esm --outfile=node_modules/.cache/nathan2-skin-contact.mjs
+          node node_modules/.cache/nathan2-skin-contact.mjs
       - name: Build real Nathan model and the two independent entrypoints
         run: npm run build
       - name: Verify both HTML pages and Nathan runtime GLB exist
