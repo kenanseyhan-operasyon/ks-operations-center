@@ -5,6 +5,7 @@ import type { Entity } from './scene-data';
 import { NATHAN_MODEL_URL, NATHAN_PRESET, validateNathan, type NathanSettings } from './nathan-data';
 import { relaxNathanThumbs } from './nathan-hand-pose';
 import { nathanWalkLoop } from './nathan-walk-loop';
+import { nathanInPlaceClip } from './nathan-motion-sanitize';
 import { NathanContactRig, type NathanContact } from './nathan-contact';
 import { SkinnedBounds } from './skinned-bounds';
 
@@ -60,10 +61,10 @@ export class NathanActor {
     const parent=ladderRoot.parent!.getWorldQuaternion(new T.Quaternion());
     const correction=parent.clone().invert().multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.PI)).multiply(parent);
     this.clips = gltf.animations.map(source=>{
-      if(source.name!=='Climbing_Ladder')return relaxNathanThumbs(nathanWalkLoop(source),gltf.scene);
+      if(source.name!=='Climbing_Ladder')return nathanInPlaceClip(relaxNathanThumbs(nathanWalkLoop(source),gltf.scene));
       const clip=source.clone(),q=new T.Quaternion();
       for(const track of clip.tracks)if(track.name===ladderRoot.name+'.quaternion')for(let i=0;i<track.values.length;i+=4)q.fromArray(track.values,i).premultiply(correction).toArray(track.values,i);
-      return clip;
+      return nathanInPlaceClip(clip);
     });
     this.model.traverse(node => {
       if (node instanceof T.Mesh) {
