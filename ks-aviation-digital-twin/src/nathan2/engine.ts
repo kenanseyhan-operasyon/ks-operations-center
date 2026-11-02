@@ -1,7 +1,7 @@
 import * as T from 'three';
 import type {Entity} from '../scene-data';
 import type {NathanContact} from '../nathan-contact';
-import {tankStairLayout} from '../tank-stairs';
+import {tankStairLayout,type StairPiece} from '../tank-stairs';
 import {localToWorld,worldToLocal} from '../facility-data';
 import {outsideRailHand,stairStepPhase} from '../nathan-motion-contract';
 
@@ -70,7 +70,7 @@ export class StairArc {
   }
   outsideRailAt(metres:number):[V3,V3]|undefined{
     const root=this.at(metres),p=worldToLocal(this.tank,root),angle=Math.atan2(p[0],p[2]);
-    let nearest:{piece:(typeof this.layout.pieces)[number],u:number,score:number}|undefined;
+    let nearest:{piece:StairPiece,u:number,score:number}|undefined;
     for(const piece of this.layout.pieces){
       if(piece.roofLanding||Math.abs(piece.b-piece.a)<1e-6)continue;
       const mid=(piece.a+piece.b)/2;
