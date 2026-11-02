@@ -105,3 +105,33 @@ görsel Y=0 çökmesi ve 30/60/120 fps testlerinin kapsamadığı kusurlar.
 
 **Güvenli sınır:** Gemini'deki canlı proje, Supabase verileri ve Hotmail'in
 `ks-3d-test` yayın dalı bu araştırmayla değiştirilmedi.
+
+## Yeni ölçüm: Kaynak GLB'de root motion (test laboratuvarı)
+
+`node scripts/audit-nathan-clips.mjs` orijinal Nathan GLB'sindeki
+`rp_nathan_animated_003_walking_root` pozisyon kanallarını ölçtü:
+- `Nathan_Original_Walk`: kök Y değişimi **+289,0099 kaynak birimi**;
+- `Running`: kök Y değişimi **−281,6383 kaynak birimi**;
+- `Running_Up_Stairs`: kök Y +53,5702; Z −48,7852 kaynak birimi;
+- `Climbing_Ladder`: kök Z −50,7332 kaynak birimi.
+
+**Bunlar metre değildir**; dönüşümdeki model ölçeği ayrı hesaplanmalıdır.
+Ancak kaynak hareketin kendi başına kök pozisyonunu değiştirdiği kesindir.
+`NathanController` aynı anda dünya pozisyonunu hesapladığında iki hareket
+birbirine eklenmemelidir.
+
+Bu nedenle `src/nathan-motion-sanitize.ts`, yalnızca dünya/merdiven
+rotasını controller'ın yönettiği kliplerde orijinal kökün `.position` izini
+çıkarır. Kaynak dosya değiştirilmez; parmak, el, ayak ve vücut dönüşleri
+korunur. `tests/nathan-movement.test.ts` gerçek GLB'ye karşı bunu doğrular.
+
+**Ek kontrol:** `applyTransform` personel nesnesini `rotation.y = -heading`
+ile döndürüyor. Bu yüzden world-space sağ yönü
+`[cos(heading), +sin(heading)]` olur. Eski korkuluk kodu ters işaret kullanıyordu.
+Yeni `outsideRailHand` hesabını testte bağımsız `THREE.Group` dönüşüyle
+karşılaştırarak doğruluyoruz. Kendi matematiğimizi aynı yanlış varsayımla
+bir kez daha test etmek yeterli değildir.
+
+**Sınır:** Kod/IK testleri geçtiğinde bile insan benzeri hareket kalitesi,
+doğru kol uzunluğu, ekipmana temas ve videoda ışınlanma olmaması ayrıca
+görsel olarak kontrol edilmelidir.
