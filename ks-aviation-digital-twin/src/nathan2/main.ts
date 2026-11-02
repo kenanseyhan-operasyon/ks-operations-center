@@ -126,6 +126,7 @@ function showPose(p:MotorPose){
  el('foot').textContent=p.plantedFoot===undefined?'Geçiş':p.plantedFoot===0?'SOL ayak basıyor':'SAĞ ayak basıyor';
  el('position').textContent=p.position.map(x=>x.toFixed(2)).join(' / ');
  el('speed-label').textContent=`${p.speed}× test hızı`;
+ el('scene-telemetry').textContent=`Nathan 2.0 · ${names[p.activity]} · ${Math.round(p.progress*100)}% · Y ${p.position[1].toFixed(2)} m · ${p.speed}×`;
 }
 function cameraPreset(which:'wide'|'side'){
  const point=which==='side'?new T.Vector3(-11,4,-13):new T.Vector3(16,14,19);
