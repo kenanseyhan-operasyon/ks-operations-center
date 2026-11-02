@@ -186,6 +186,15 @@ export class NathanActor {
   }
   pause() { this.playing = false; this.changed(); }
   stop() { this.playing = false; this.select(this.index, false); }
+  /** Isolated laboratory hook: add a licensed, retargeted animation to this
+   * actor instance without modifying the original Nathan GLB or global cache. */
+  addExternalMotion(clip:T.AnimationClip):boolean {
+    if(this.disposed||!clip.tracks.length||this.clips.some(c=>c.name===clip.name))return false;
+    const safe=nathanInPlaceClip(clip);
+    this.clips.push(safe);
+    this.actions.push(this.mixer.clipAction(safe));
+    return true;
+  }
   /** Locomotion playback is ephemeral; never overwrite the saved preview settings. */
   motion(clip: string, rate = 1, reverse = false) {
     const index = this.clips.findIndex(c => c.name === clip);
