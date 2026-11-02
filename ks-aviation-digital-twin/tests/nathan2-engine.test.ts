@@ -3,12 +3,61 @@ import * as T from 'three';
 import {newEntity} from '../src/scene-data';
 import {Nathan2Motor} from '../src/nathan2/engine';
 import {outsideRailHand} from '../src/nathan-motion-contract';
+import {worldToLocal} from '../src/facility-data';
+
+/** Use actual Three.js mesh raycasts as an independent surface oracle.
+ * These dimensions are the visible meshes in the lab entry point. Checking
+ * a target against itself cannot detect shoes floating above a tread.
+ */
+function visibleSupports(motor:Nathan2Motor){
+ const {layout}=motor.stairs,group=new T.Group(),tank=motor.tank;
+ group.position.fromArray(tank.position);group.rotation.y=-T.MathUtils.degToRad(tank.heading);group.scale.setScalar(tank.scale);
+ const box=(width:number,depth:number,top:number,x:number,z:number,yaw:number)=>{
+  const mesh=new T.Mesh(new T.BoxGeometry(width,.08,depth));
+  mesh.position.set(x,top-.04,z);mesh.rotation.y=yaw;group.add(mesh);
+ };
+ for(const piece of layout.pieces)if(!piece.roofLanding){
+  const a=(piece.a+piece.b)/2;
+  box(layout.width,Math.max(.13,Math.abs(piece.b-piece.a)*layout.radius+.04),piece.y1,
+   Math.sin(a)*layout.radius,Math.cos(a)*layout.radius,a+Math.PI/2);
+ }
+ const [entry,first]=layout.path;
+ box(layout.width,new T.Vector3(...entry).distanceTo(new T.Vector3(...first))+.08,entry[1],
+  (entry[0]+first[0])/2,(entry[2]+first[2])/2,Math.atan2(first[0]-entry[0],first[2]-entry[2]));
+ const landing=layout.roofLanding,r=(landing.inner+landing.outer)/2;
+ box(landing.outer-landing.inner,landing.depth,landing.height,Math.sin(landing.angle)*r,Math.cos(landing.angle)*r,landing.angle+Math.PI/2);
+ const roof=new T.Mesh(new T.CylinderGeometry(tank.radius-.08,tank.radius-.08,.10,72));
+ roof.position.y=layout.height-.05;group.add(roof);
+ box(150,150,0,0,0,0);
+ group.updateMatrixWorld(true);
+ const ray=new T.Raycaster();
+ return (foot:readonly number[])=>{
+  ray.set(new T.Vector3(foot[0],foot[1]+.35*tank.scale,foot[2]),new T.Vector3(0,-1,0));ray.far=.8*tank.scale;
+  const hit=ray.intersectObject(group,true)[0];
+  assert.ok(hit,'A planted foot must have a real visible surface below it: '+JSON.stringify(foot));
+  const clearance=foot[1]-hit.point.y;
+  assert.ok(Math.abs(clearance-.007*tank.scale)<.0001,
+   'Planted foot must be 7 mm above actual tread, not above the sloped route: '+JSON.stringify({foot,clearance,surface:hit.point.y}));
+ };
+}
 
 function runScenario(clockwise:boolean,rotation:number,speed:1|2|4){
  const tank=newEntity('TANK',7,-2);
  tank.heading=rotation;
  tank.facility={...tank.facility,stairs:true,clockwise,stairStart:-100,stairSweep:535,stairWidth:1.02,stairLandings:true};
  const motor=new Nathan2Motor(tank);
+ let previousRailDirection:T.Vector3|undefined;
+ for(const [a,b] of motor.stairs.railSegments){
+  const localA=worldToLocal(tank,a),localB=worldToLocal(tank,b);
+  const delta=Math.atan2(localB[0],localB[2])-Math.atan2(localA[0],localA[2]);
+  const signed=Math.atan2(Math.sin(delta),Math.cos(delta))*motor.stairs.layout.sign;
+  assert.ok(signed>=-1e-7,'Physical rail cannot backtrack at a duplicated Catmull-Rom knot');
+  const direction=new T.Vector3(...b).sub(new T.Vector3(...a)).normalize();
+  if(previousRailDirection)assert.ok(previousRailDirection.angleTo(direction)<Math.PI/3,
+   'A landing must not rotate the rail axis (and gripping wrist) by 143-180 degrees in one segment');
+  previousRailDirection=direction;
+ }
+ const checkSurface=visibleSupports(motor);
  motor.setSpeed(speed);
  const whole=motor.stairs.total;
  assert.ok(whole>tank.height+3,'True curved route is longer than simple tank height');
@@ -29,17 +78,20 @@ function runScenario(clockwise:boolean,rotation:number,speed:1|2|4){
    phase++;
    if(pose.contact){
     shoeFrames++;
-    const total=(pose.contact.handGrips?.[0].length??0)+(pose.contact.handGrips?.[1].length??0);
-    assert.equal(total,1,'Only tank-OUTSIDE hand must hold a rail');
-    assert.equal(pose.outsideHand,outsideRailHand(tank.position,pose.position,pose.heading));
-    assert.equal(pose.contact.handGrips?.[pose.outsideHand!].length,1,'Wrong gripping hand selected');
-    const planted=pose.contact.feet[pose.plantedFoot!];
-    const other=pose.contact.feet[1-pose.plantedFoot!];
-    assert.ok(planted.every(Number.isFinite)&&other.every(Number.isFinite),'IK contacts must be finite');
-    assert.ok(planted[1]>-0.1,'Never put planted sole below facility ground');
-    if(oldFoot!==undefined&&oldFoot!==pose.plantedFoot)feetSwitched++;
+    const hands=(pose.contact.handGrips||[[],[]]).filter(grips=>grips.length>0).length;
+    if(pose.outsideHand!==undefined){
+     assert.equal(hands,1,'Only tank-OUTSIDE hand must hold the connected rail');
+     assert.equal(pose.outsideHand,outsideRailHand(tank.position,pose.position,pose.heading));
+     assert.ok(pose.contact.handGrips?.[pose.outsideHand!].length,'Wrong gripping hand selected');
+     handFrames++;
+    }else assert.equal(hands,0,'No fictional grip before the physical rail is reachable');
+    assert.ok(pose.contact.feet.flat().every(Number.isFinite),'IK contacts must be finite');
+    const planted=pose.plantedFoot===undefined?undefined:pose.contact.feet[pose.plantedFoot];
+    if(planted){
+     assert.ok(planted[1]>-0.1,'Never put planted sole below facility ground');
+     if(oldFoot!==pose.plantedFoot){checkSurface(planted);if(oldFoot!==undefined)feetSwitched++;}
+    }
     oldFoot=pose.plantedFoot;
-    handFrames++;
    }
   }
   if(pose.activity==='roof'){ascendingSteps=i;break;}
@@ -61,9 +113,12 @@ function runScenario(clockwise:boolean,rotation:number,speed:1|2|4){
   if(pose.activity==='spiral-down'){
    downFrames++;
    if(pose.contact){
-    descGrip++;
-    assert.equal(pose.contact.handGrips?.[pose.outsideHand!].length,1,'Outside hand holds on descent');
-    if(oldFoot!==undefined&&oldFoot!==pose.plantedFoot)downSwitches++;
+    if(pose.outsideHand!==undefined){
+     descGrip++;
+     assert.ok(pose.contact.handGrips?.[pose.outsideHand].length,'Outside hand holds on descent');
+     assert.equal(pose.contact.handGrips?.[1-pose.outsideHand].length,0,'Only outside hand holds on descent');
+    }
+    if(pose.plantedFoot!==undefined&&oldFoot!==pose.plantedFoot){checkSurface(pose.contact.feet[pose.plantedFoot]);if(oldFoot!==undefined)downSwitches++;}
     oldFoot=pose.plantedFoot;
    }
   }
@@ -92,4 +147,18 @@ assert.ok(Math.abs(a.tick(.016).motionRate-calibrated)<1e-9);
 assert.ok(Math.abs(b.tick(.016).motionRate-calibrated)<1e-9,'4x test speed scales route and clip together, not gait type');
 a.setWalkCycleSeconds(1.12);
 assert.ok(Math.abs(a.tick(.016).motionRate-(.49*1.12/(2*.34*tank.scale)))<1e-9,'Runtime walks use real GLB clip duration');
+// DUR is a frozen pose, not an Idle transition that drops all stair contacts.
+a.distance=a.stairs.total*.42;a.heading=a.stairs.headingAt(a.distance,1);a.activity='spiral-up';
+const moving=a.tick(0);assert.ok(moving.contact);
+a.stop();
+for(let i=0;i<20;i++){
+ const stopped=a.tick(.05);
+ assert.equal(stopped.paused,true);assert.deepEqual(stopped.position,moving.position);assert.equal(stopped.heading,moving.heading);
+ assert.deepEqual(stopped.contact,moving.contact,'Pause preserves both soles and outer hand');
+ assert.equal(stopped.motion,moving.motion,'Pause does not select a new clip or reset its phase');
+}
+a.up();assert.equal(a.tick(.016).paused,false,'Up resumes the paused motor');
+a.stop();a.reset();const reset=a.tick(0);assert.equal(reset.paused,false);assert.ok(reset.contact);assert.equal(reset.outsideHand,undefined);assert.equal(reset.progress,0);
+for(const foot of reset.contact.feet)checkResetSurface(foot);
+function checkResetSurface(foot:readonly number[]){assert.ok(Math.abs(foot[1]-.007)<1e-9,'Reset plants both feet on real ground');}
 console.log('PASS Nathan2 independent gait motor: no running stairs, outside hand, alternating soles, no teleport, 1/4x speeds, clockwise, rotated tanks, descent');

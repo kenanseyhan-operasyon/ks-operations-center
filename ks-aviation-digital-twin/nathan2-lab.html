@@ -10,7 +10,7 @@
  <main>
   <aside aria-label="Nathan hareket denemesi kontrol paneli">
    <div class="tag">KS AVIATION · AYRI TEST ORTAMI</div>
-   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Gerçek Nathan iskeleti. Bağımsız yürüyüş motoru. Tankın dairesel merdiveninde koşma yok.</p></div>
+   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Duruş, yürüyüş ve tek elle dış korkuluğa tutunmayı yakından inceleyin.</p></div>
    <p class="sub" id="load-status" role="status">3D sahne hazırlanıyor…</p>
    <section><h2>Merdiven hareketleri</h2><div class="actions">
     <button class="primary" data-command="up" disabled>Yürüyerek ÇIK</button>
@@ -20,11 +20,11 @@
    </div></section>
    <section><h2>İnsan hareketi karşılaştırması</h2>
     <div class="speed motion-source" role="group" aria-label="Merdiven animasyonu kaynağı">
-      <button data-motion="cmu83" disabled aria-pressed="false">CMU 83 · Duruş kontrolünde</button>
-      <button data-motion="cmu" disabled aria-pressed="false">CMU 113 · Kontrol bekliyor</button>
+      <button data-motion="cmu83" disabled aria-pressed="false">CMU 83 · Hazırlanıyor</button>
+      <button data-motion="cmu" disabled aria-pressed="false">CMU 113 · İncelemede</button>
       <button data-motion="original" aria-pressed="true">Önceki Nathan</button>
     </div>
-    <p class="footnote" id="mocap-status" style="margin-top:8px">Ücretsiz CMU hareketleri indirildi. Nathan iskeletine aktarımda aşırı gövde eğilmesi tespit edildiği için henüz gösterilmiyor.</p>
+    <p class="footnote" id="mocap-status" style="margin-top:8px">Hareket kayıtları hazırlanıyor. CMU 83 çıkış kaydıdır; bu seçenekte iniş Nathan'ın yürüyüşüyle yapılır.</p>
    </section>
    <section><h2>Yalnızca test hızlandırması</h2><div class="speed" role="group" aria-label="Hızlandırma">
     <button data-speed="1" aria-pressed="true">1× Normal</button>
@@ -38,7 +38,8 @@
     <div class="metric"><span>Merdiven ilerlemesi</span><strong id="progress">%0</strong></div>
     <div class="metric"><span>Korkuluğa tutunan</span><strong id="hand">Geçiş</strong></div>
     <div class="metric"><span>Basamakta kalan</span><strong id="foot">Geçiş</strong></div>
-    <div class="metric"><span>IK temas hatası</span><strong id="ik-error">–</strong></div>
+    <div class="metric"><span>El/ayak hedef farkı</span><strong id="ik-error">–</strong></div>
+    <div class="metric"><span>Gövde eğimi</span><strong id="posture">–</strong></div>
     <div class="metric"><span>Konum X / Y / Z</span><strong id="position">–</strong></div>
     <div class="metric"><span>Hız</span><strong id="speed-label">1× test hızı</strong></div>
    </section>
@@ -47,8 +48,8 @@
   </aside>
   <div class="right"><canvas id="scene" aria-label="Nathan'ın spiral merdiven test sahnesi"></canvas>
    <div class="scene-telemetry" id="scene-telemetry" aria-live="off">Nathan 2.0 · Hazır · 0% · 0,0 m</div>
-   <div class="overlay"><button id="view-wide">Genel görünüm</button><button id="view-side">Yandan görünüm</button></div>
-   <div class="bottom">Fare: kamerayı döndür · Tekerlek: yakınlaş · <strong>Çıkış ve iniş normal yürüyüşle gerçekleşir.</strong> Bu ilk sürüm yalnızca spiral merdiven doğrulaması içindir.</div>
+   <div class="overlay"><button id="view-follow">Nathan'ı yakından izle</button><button id="view-wide">Genel görünüm</button><button id="view-side">Yandan görünüm</button></div>
+   <div class="bottom">Fare: kamerayı döndür · Tekerlek: yakınlaş · <strong>DUR: mevcut pozu dondur.</strong> İncelemek için 1× hız kullanın.</div>
   </div>
  </main>
  <script type="module" src="/src/nathan2/main.ts"></script>

@@ -6,14 +6,23 @@ import {NATHAN_MODEL_URL,NATHAN_PRESET} from '../nathan-data';
 import {newEntity} from '../scene-data';
 import {localToWorld} from '../facility-data';
 import {Nathan2Motor,type V3,type LabSpeed,type MotorPose} from './engine';
-import {retargetCmu11319,retargetCmu8334Ascent,CMU_113_19_URL,CMU_83_34_URL,CMU_UP_NAME,CMU_DOWN_NAME,CMU_83_UP_NAME,type CmuStairCapture,type CmuStairAscent} from './cmu-mocap';
+import {retargetCmu11319,retargetCmu8334Ascent,CMU_113_19_URL,CMU_83_34_URL,CMU_UP_NAME,CMU_DOWN_NAME,CMU_83_UP_NAME,NATHAN_RIG_PREFIX,type CmuStairCapture,type CmuStairAscent} from './cmu-mocap';
 import {approvedExternalStairCapture} from './mocap-quality-gate';
+import {applyLabAnimation,labMotionForPose} from './playback';
 import './style.css';
 
 const el=(id:string)=>document.getElementById(id)!;
 const canvas=el('scene') as HTMLCanvasElement;
 const scene=new T.Scene();scene.background=new T.Color('#091922');scene.fog=new T.Fog('#091922',36,100);
-const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:false});
+const renderer=(()=>{
+ try{return new T.WebGLRenderer({canvas,antialias:true,alpha:false});}
+ catch(error){
+  el('load-status').textContent='3D görüntüleme bu tarayıcıda açılamadı. Donanım hızlandırmasını etkinleştirip sayfayı yenileyin.';
+  el('scene-telemetry').textContent='3D görüntüleme kullanılamıyor';
+  el('status').textContent='WebGL desteği gerekli.';
+  throw error;
+ }
+})();
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
 renderer.outputColorSpace=T.SRGBColorSpace;
 renderer.toneMapping=T.ACESFilmicToneMapping;
@@ -38,10 +47,17 @@ tankWall.position.y=tank.height/2;scene.add(tankWall);
 const rim=new T.Mesh(new T.TorusGeometry(tank.radius,.09,8,72),new T.MeshStandardMaterial({color:'#e8f2f3',metalness:.65,roughness:.3}));
 rim.rotation.x=Math.PI/2;rim.position.y=tank.height+.15;scene.add(rim);
 const roof=new T.Mesh(new T.CylinderGeometry(tank.radius-.08,tank.radius-.08,.10,72),new T.MeshStandardMaterial({color:'#93aeb7',roughness:.83}));
-roof.position.y=tank.height+.27;scene.add(roof);
+roof.position.y=layout.height-.05;scene.add(roof);
 const stairMaterial=new T.MeshStandardMaterial({color:'#b8cad1',metalness:.48,roughness:.55});
 const landingMat=new T.MeshStandardMaterial({color:'#e7c76c',metalness:.45,roughness:.56});
 const railMaterial=new T.MeshStandardMaterial({color:'#f1d65d',metalness:.32,roughness:.55});
+// Physical roof landing: the route crosses the gap between the outer stairs
+// and roof. Its top must match the motor's exact support height.
+const landing=layout.roofLanding;
+const roofLanding=new T.Mesh(new T.BoxGeometry(landing.outer-landing.inner,.09,landing.depth),landingMat);
+const landingRadius=(landing.outer+landing.inner)/2;
+roofLanding.position.set(Math.sin(landing.angle)*landingRadius,landing.height-.045,Math.cos(landing.angle)*landingRadius);
+roofLanding.rotation.y=landing.angle+Math.PI/2;scene.add(roofLanding);
 const rad=layout.radius,outer=rad+layout.width/2+.025;
 const railPoints:T.Vector3[]=[];
 for(let i=0;i<layout.pieces.length;i++){
@@ -66,8 +82,12 @@ for(let i=0;i<layout.pieces.length;i++){
   }
  }
 }
-const railCurve=new T.CatmullRomCurve3(railPoints,false,'centripetal');
-const handrail=new T.Mesh(new T.TubeGeometry(railCurve,railPoints.length*2,.031,8,false),railMaterial);
+// Adjacent pieces share an endpoint. Duplicate Catmull-Rom controls create
+// tiny backtracking loops at landings and can reverse the grip tangent.
+const cleanRailPoints=railPoints.filter((p,i)=>i===0||p.distanceToSquared(railPoints[i-1])>=1e-12);
+const railCurve=new T.CatmullRomCurve3(cleanRailPoints,false,'centripetal');
+railCurve.arcLengthDivisions=Math.max(200,cleanRailPoints.length*8);
+const handrail=new T.Mesh(new T.TubeGeometry(railCurve,cleanRailPoints.length*2,.031,8,false),railMaterial);
 scene.add(handrail);
 const entryLocal=layout.entry,firstLocal=layout.path[1];
 const entryMid=[(entryLocal[0]+firstLocal[0])/2,entryLocal[1]-.04,(entryLocal[2]+firstLocal[2])/2] as V3;
@@ -92,10 +112,10 @@ let mocap:CmuStairCapture|undefined;
 let normalAscent:CmuStairAscent|undefined;
 let selectedMotion:'original'|'cmu'|'cmu83'='original';
 let originalCycle=.9;
-const motionLabel=()=>selectedMotion==='cmu83'?'CMU 83 · Normal çıkış / CMU 113 iniş':selectedMotion==='cmu'?'CMU 113 · Gerçek insan kaydı':'Eski Nathan';
+const motionLabel=()=>selectedMotion==='cmu83'?'CMU 83 çıkış / Nathan iniş':selectedMotion==='cmu'?'CMU 113 · Karşılaştırma':'Nathan · Önceki';
 function selectMotion(which:'original'|'cmu'|'cmu83'){
  if(which==='cmu'&&!mocap)return;
- if(which==='cmu83'&&(!normalAscent||!mocap))return;
+ if(which==='cmu83'&&!normalAscent)return;
  selectedMotion=which;
  document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.motion===which)));
  el('motion-source').textContent=motionLabel();
@@ -123,47 +143,33 @@ async function loadNathan(){
   actor.motion('Idle');
   el('load-status').textContent=`Gerçek Nathan GLB yüklendi · ${actor.clips.length} animasyon`;
   for(const button of document.querySelectorAll<HTMLButtonElement>('[data-command]'))button.disabled=false;
-  // FAIL CLOSED. The CMU83 clip put Nathan's hip-neck axis ~92 degrees
-  // from vertical; it must not be shown as an approved upright gait.
-  // The CMU113 clip is unverified and recorded from a different source
-  // participant; the metadata does not imply an illness or age.
-  if(!approvedExternalStairCapture('cmu83')||!approvedExternalStairCapture('cmu113')){
-    el('mocap-status').textContent='CMU 83/113 kayıtları saklandı, ancak iskelet uyarlamasında gövde yaklaşık 92° eğildiği için bu animasyonlar güvenlik/kalite kontrolünden geçmedi. Şimdilik orijinal Nathan yürüyüşü açık. Kimseye hasta/yaşlı hareketi atfedilmiyor.';
-    loadLabel.textContent='Orijinal Nathan hazır · CMU hareketleri doğrulanana kadar kapalı';
-    return;
-  }
-  // Downloaded source is bundled locally, no account/service used at runtime.
-  // BVH source is genuine 6.7 second CMU stair ascent+descent; the original
-  // Nathan rig, textures and scene are preserved unchanged.
-  try{
+  // Each capture has its own release gate. An approved 83 ascent neither
+  // depends on 113 nor silently selects 113 for descent.
+  if(approvedExternalStairCapture('cmu83'))try{
+   const response=await fetch(CMU_83_34_URL);
+   if(!response.ok)throw Error('CMU 83 HTTP '+response.status);
+   normalAscent=retargetCmu8334Ascent(actor,await response.text());
+   if(!actor.addExternalMotion(normalAscent.ascent))throw Error('CMU 83 not installed');
+   const button=document.querySelector<HTMLButtonElement>('[data-motion="cmu83"]');
+   if(button){button.disabled=false;button.textContent='CMU 83 · Çıkış';}
+   selectMotion('cmu83');
+  }catch(error){console.error('CMU 83 loading failed',error);}
+  if(approvedExternalStairCapture('cmu113'))try{
    const response=await fetch(CMU_113_19_URL);
-   if(!response.ok)throw Error('BVH HTTP '+response.status);
+   if(!response.ok)throw Error('CMU 113 HTTP '+response.status);
    mocap=retargetCmu11319(actor,await response.text());
-   if(!actor.addExternalMotion(mocap.ascent)||!actor.addExternalMotion(mocap.descent))
-     throw Error('Could not register both motion clips');
-   const newButton=document.querySelector<HTMLButtonElement>('[data-motion="cmu"]');
-   if(newButton)newButton.disabled=false;
-   selectMotion('cmu');
-   el('mocap-status').textContent=`CMU 113_19: gerçek insan çıkış ve inişi; ${mocap.sourceFrames} kare; ${mocap.mappedBones} kemik eşlendi. Dış korkuluk kavraması ayrıca IK ile sağlanır.`;
-   loadLabel.textContent=`Gerçek Nathan + CMU merdiven MoCap yüklendi · ${actor.clips.length} animasyon`;
-   try{
-    const normalResponse=await fetch(CMU_83_34_URL);
-    if(!normalResponse.ok)throw Error('CMU 83 HTTP '+normalResponse.status);
-    normalAscent=retargetCmu8334Ascent(actor,await normalResponse.text());
-    if(!actor.addExternalMotion(normalAscent.ascent))throw Error('CMU 83 not installed');
-    const normalBtn=document.querySelector<HTMLButtonElement>('[data-motion="cmu83"]');
-    if(normalBtn)normalBtn.disabled=false;
-    selectMotion('cmu83');
-    el('mocap-status').textContent=`İndirilen gerçek kayıtlar hazır: CMU 83 normal çıkış (${normalAscent.sourceFrames} kare), CMU 113 çıkış/iniş (${mocap.sourceFrames} kare). Korkuluk tek el IK ile kavranır.`;
-    loadLabel.textContent=`Nathan + iki ücretsiz CMU hareket kaydı yüklendi · ${actor.clips.length} animasyon`;
-   }catch(e){console.warn('CMU 83 ascent unavailable, CMU 113 remains',e);}
-  }catch(error){
-   console.error('CMU licensed free motion retarget failed; original motion remains available',error);
-   el('mocap-status').textContent='Ücretsiz MoCap yüklenemedi. Önceki Nathan hareketi kullanılabilir; test raporunu kontrol edin.';
-  }
+   if(!actor.addExternalMotion(mocap.ascent)||!actor.addExternalMotion(mocap.descent))throw Error('CMU 113 not installed');
+   const button=document.querySelector<HTMLButtonElement>('[data-motion="cmu"]');
+   if(button){button.disabled=false;button.textContent='CMU 113 · Karşılaştır';}
+   // This optional comparison never changes the user's current selection.
+  }catch(error){console.error('CMU 113 loading failed',error);}
+  el('mocap-status').textContent=normalAscent
+   ?'CMU 83 çıkış kaydı hazır. Bu seçenekte iniş Nathan yürüyüşüyle yapılır. Tek elle korkuluk tutuşu merdivene göre uyarlanır.'
+   :'Nathan yürüyüşü hazır. CMU karşılaştırmaları duruş ve temas incelemesi tamamlandığında açılır.';
+  loadLabel.textContent=normalAscent?'Nathan ve CMU 83 hazır · yakın görünümde inceleyebilirsiniz.':'Nathan yürüyüşü hazır.';
  }catch(error){
   console.error('Nathan 2.0 laboratory model load',error);
-  loadLabel.textContent='Model yüklenemedi; önce GitHub derlemesini kontrol edin.';
+  loadLabel.textContent='Nathan modeli yüklenemedi. Bağlantınızı kontrol edip sayfayı yenileyin.';
  }
 }
 void loadNathan();
@@ -171,7 +177,7 @@ void loadNathan();
 function showPose(p:MotorPose){
  const names={ready:'Hazır',approach:'Yaklaşma',align:'Dönüş / hizalanma',
   'spiral-up':'Spiral çıkış — YÜRÜYÜŞ','spiral-down':'Spiral iniş — YÜRÜYÜŞ',roof:'Tank çatısında',ground:'Zeminde'};
- el('state').textContent=names[p.activity];
+ el('state').textContent=p.paused?'Duraklatıldı':names[p.activity];
  el('status').textContent=p.message;
  el('progress').textContent=`%${Math.round(p.progress*100)}`;
  el('hand').textContent=p.outsideHand===undefined?'Geçiş':p.outsideHand===0?'SOL EL → dış korkuluk':'SAĞ EL → dış korkuluk';
@@ -179,13 +185,24 @@ function showPose(p:MotorPose){
  el('position').textContent=p.position.map(x=>x.toFixed(2)).join(' / ');
  el('speed-label').textContent=`${p.speed}× test hızı`;
  el('motion-source').textContent=motionLabel();
- el('scene-telemetry').textContent=`Nathan 2.0 · ${motionLabel()} · ${names[p.activity]} · ${Math.round(p.progress*100)}% · Y ${p.position[1].toFixed(2)} m · ${p.speed}×`;
+ el('scene-telemetry').textContent=`${motionLabel()} · ${p.paused?'Duraklatıldı':names[p.activity]} · ${Math.round(p.progress*100)}% · ${p.position[1].toFixed(2)} m · ${p.speed}×`;
 }
-function cameraPreset(which:'wide'|'side'){
+let cameraMode:'wide'|'side'|'follow'|'custom'='follow';
+function followCamera(immediate=false){
+ const centre=v(motor.position).add(new T.Vector3(0,.95,0));
+ const outward=v(motor.position).setY(0).normalize();
+ const tangent=new T.Vector3(outward.z,0,-outward.x);
+ const point=centre.clone().addScaledVector(outward,3.2).addScaledVector(tangent,2.0).add(new T.Vector3(0,.65,0));
+ controls.target.lerp(centre,immediate?1:.18);camera.position.lerp(point,immediate?1:.18);
+}
+function cameraPreset(which:'wide'|'side'|'follow'){
+ cameraMode=which;
+ if(which==='follow'){followCamera(true);controls.update();return;}
  const point=which==='side'?new T.Vector3(-11,4,-13):new T.Vector3(16,14,19);
  controls.target.set(0,4.7,0);camera.position.copy(point);controls.update();
 }
-cameraPreset('wide');
+cameraPreset('follow');
+controls.addEventListener('start',()=>{cameraMode='custom';});
 document.querySelectorAll<HTMLButtonElement>('[data-command]').forEach(b=>{
  b.addEventListener('click',()=>{
   const command=b.dataset.command;
@@ -208,26 +225,29 @@ document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>{
 el('debug-toggle').addEventListener('change',e=>{debug.visible=(e.target as HTMLInputElement).checked;});
 el('view-wide').addEventListener('click',()=>cameraPreset('wide'));
 el('view-side').addEventListener('click',()=>cameraPreset('side'));
+el('view-follow').addEventListener('click',()=>cameraPreset('follow'));
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
 let last=performance.now(),frames=0;
 function frame(now:number){
  requestAnimationFrame(frame);
  const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
- // Keep the imported human gait paired with the actual spiral path speed.
- // The 113_19 subclips cover approximately two left/right footstep pairs.
- const cycle=mocap&&selectedMotion!=='original' ? (motor.activity==='spiral-down'?mocap.descent.duration:selectedMotion==='cmu83'&&normalAscent?normalAscent.ascent.duration:mocap.ascent.duration)/2 : originalCycle;
- motor.setWalkCycleSeconds(cycle);
- const pose=motor.tick(dt);
- root.position.fromArray(pose.position);
- root.rotation.y=-T.MathUtils.degToRad(pose.heading);
- if(actor){
-  const clip=selectedMotion==='cmu83'&&normalAscent&&pose.activity==='spiral-up'?CMU_83_UP_NAME:
-    selectedMotion==='cmu'&&mocap&&pose.activity==='spiral-up'?CMU_UP_NAME:
-    selectedMotion!=='original'&&mocap&&pose.activity==='spiral-down'?CMU_DOWN_NAME:pose.motion;
-  actor.motion(clip,pose.motionRate);
-  actor.contact(pose.contact);
-  actor.update(dt*pose.speed);
+ // Small simulation steps keep 4x preview within NathanActor's update limit.
+ // Clip rate also follows actual travelled distance through easing/turns.
+ const steps=Math.max(1,Math.ceil(dt*motor.speed/.04)),subdt=dt/steps;
+ let pose!:MotorPose;
+ for(let i=0;i<steps;i++){
+  const down=motor.activity==='spiral-down';
+  const onStairs=motor.distance>=motor.stairs.lengths[2];
+  const external=onStairs?(selectedMotion==='cmu'&&mocap?(down?mocap.descent:mocap.ascent):
+   selectedMotion==='cmu83'&&normalAscent&&!down?normalAscent.ascent:undefined):undefined;
+  motor.setWalkCycleSeconds(external?external.duration:originalCycle);
+  pose=motor.tick(subdt);
+  root.position.fromArray(pose.position);root.rotation.y=-T.MathUtils.degToRad(pose.heading);
+  if(actor&&!pose.paused){
+   const clip=labMotionForPose(pose,motor.distance,motor.stairs.lengths[2],selectedMotion,{cmu83:!!normalAscent,cmu:!!mocap});
+   applyLabAnimation(actor,pose,clip,motor.distance,motor.stairs.total,tank.scale,subdt*pose.speed);
+  }
  }
  debug.visible=(el('debug-toggle') as HTMLInputElement).checked;
  for(let i=0;i<2;i++){
@@ -235,12 +255,19 @@ function frame(now:number){
   footTargets[i].visible=!!target;if(target)footTargets[i].position.fromArray(target);
  }
  const grip=pose.contact?.gripAim?.[0];handTarget.visible=!!grip;if(grip)handTarget.position.fromArray(grip);
+ if(cameraMode==='follow')followCamera();
  controls.update();renderer.render(scene,camera);
  if(++frames%12===0){
   showPose(pose);
   const errors=actor?.contactRig?.errors||[];
   const maximum=errors.length?Math.max(...errors):0;
   el('ik-error').textContent=actor?`${Math.round(maximum*1000)} mm`:'Model bekleniyor';
+  const hip=actor?.model.getObjectByName(NATHAN_RIG_PREFIX+'hip');
+  const neck=actor?.model.getObjectByName(NATHAN_RIG_PREFIX+'neck');
+  if(hip&&neck){
+   const axis=neck.getWorldPosition(new T.Vector3()).sub(hip.getWorldPosition(new T.Vector3())).normalize();
+   el('posture').textContent=`${T.MathUtils.radToDeg(Math.acos(T.MathUtils.clamp(axis.y,-1,1))).toFixed(1)}°`;
+  }
  }
 }
 requestAnimationFrame(frame);

@@ -2,7 +2,7 @@ import * as T from 'three';
 import type { V3 } from './personnel-navigation';
 import {NathanGrasp} from './nathan-grasp';
 
-export type NathanContact = { handsOnly?:boolean; feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handTangents?:[V3,V3]; handWeight?:number; handApproach?:V3; grips?:[V3,V3][]; handGrips?:[[V3,V3][],[V3,V3][]]; gripAim?:[V3,V3]; settleGrips?:boolean; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number; elbowPole?:V3; gripHands?:boolean; steeringBlend?:number; disableClimbFallback?:boolean; freeHands?:boolean; keepFreeHandMotion?:boolean; procedural?:boolean; gripRadius?:number; elbowLimits?:[number,number] };
+export type NathanContact = { handsOnly?:boolean; feet: [V3,V3]; hands?: [V3|undefined,V3|undefined]; handTangents?:[V3,V3]; handWeight?:number; handApproach?:V3; grips?:[V3,V3][]; handGrips?:[[V3,V3][],[V3,V3][]]; gripAim?:[V3,V3]; settleGrips?:boolean; gripGait?:{phase:number;advance:V3}; hipHeight?: number; seated?: V3; lean?:number; elbowPole?:V3; gripHands?:boolean; steeringBlend?:number; disableClimbFallback?:boolean; freeHands?:boolean; keepFreeHandMotion?:boolean; blendFromAnimatedHand?:boolean; procedural?:boolean; gripRadius?:number; elbowLimits?:[number,number] };
 const up=new T.Vector3(0,1,0),pos=(n:T.Object3D)=>n.getWorldPosition(new T.Vector3());
 function worldRotation(bone:T.Object3D,q:T.Quaternion){bone.quaternion.copy(bone.parent!.getWorldQuaternion(new T.Quaternion()).invert().multiply(q));bone.updateWorldMatrix(false,true);}
 /** Analytic two-link IK: preserve segment lengths and the requested bend plane. */
@@ -165,7 +165,7 @@ export class NathanContactRig{
       grasp?.setRadius(pose.gripRadius??.012);
       // Keep the unoccupied hand's natural walking swing when one hand holds
       // the tank rail; older two-hand vehicle climbing still resets both arms.
-      if(pose.freeHands&&(!pose.keepFreeHandMotion||!!target||!!grips?.length)){
+      if(pose.freeHands&&!pose.blendFromAnimatedHand&&(!pose.keepFreeHandMotion||!!target||!!grips?.length)){
         for(const bone of [arm.upper,arm.lower,arm.end,...(grasp?.fingers.keys()||[])]){
           if(!this.saved.has(bone))this.saved.set(bone,bone.quaternion.clone());bone.quaternion.copy(this.neutral.get(bone)!);
         }
@@ -267,8 +267,16 @@ export class NathanContactRig{
           // Reach/release with a straight wrist. Blending two world-space hand
           // rotations while the elbow follows an arc bent the wrist backward
           // halfway through the transfer, even though both endpoints were valid.
-          const neutral=arm.lower.getWorldQuaternion(new T.Quaternion()).multiply(this.neutral.get(arm.end)!);
-          handRotation.copy(neutral).slerp(fitted?.rotation||handRotation.clone(),T.MathUtils.smoothstep(weight,.65,1));
+          if(pose.blendFromAnimatedHand){
+            // Opt-in lab transition: at weight zero, position AND rotation
+            // approach this frame's real free animation, not a neutral arm
+            // that would snap when the final rail target is removed.
+            const closed=fitted?.rotation||handRotation.clone();
+            handRotation.copy(freeRotation).slerp(closed,T.MathUtils.smoothstep(weight,0,1));
+          }else{
+            const neutral=arm.lower.getWorldQuaternion(new T.Quaternion()).multiply(this.neutral.get(arm.end)!);
+            handRotation.copy(neutral).slerp(fitted?.rotation||handRotation.clone(),T.MathUtils.smoothstep(weight,.65,1));
+          }
         }
         // Put pronation/supination in the forearm. Applying the whole world-space
         // grasp rotation to the wrist alone used to turn it almost 180 degrees.
@@ -287,7 +295,8 @@ export class NathanContactRig{
         const weight=target?T.MathUtils.smoothstep(pose.handWeight??1,.55,1)*transferWeight:0;
         for(const bone of [...(grasp?.fingers.keys()||[])]){
           if(!this.saved.has(bone))this.saved.set(bone,bone.quaternion.clone());
-          bone.quaternion.copy(this.neutral.get(bone)!.clone().slerp(bone.quaternion,weight));
+          const free=pose.blendFromAnimatedHand?this.saved.get(bone)!:this.neutral.get(bone)!;
+          bone.quaternion.copy(free.clone().slerp(bone.quaternion,weight));
         }
       }
       arm.upper.updateWorldMatrix(true,true);

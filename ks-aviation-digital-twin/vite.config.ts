@@ -4,11 +4,13 @@ import {resolve} from 'node:path';
 export default defineConfig(({mode})=>{
   const env=loadEnv(mode,process.cwd(),'VITE_');
   const test=(process.env.VITE_KS_TEST_SITE||env.VITE_KS_TEST_SITE)==='1';
-  const buildLabel='Gemini test · '+(process.env.RENDER_GIT_COMMIT||'local').slice(0,8)+' · '+new Date().toISOString().slice(0,16)+'Z';
+  const buildId=(process.env.RENDER_GIT_COMMIT||'local').slice(0,8)+' · '+new Date().toISOString().slice(0,16)+'Z';
   return {plugins:[{
     name:'ks-test-site-branding',
     transformIndexHtml(html:string){
-      if(!test)return html;
+      const lab=html.includes('<title>KS Aviation · Nathan 2.0 Hareket Laboratuvarı</title>');
+      if(!test&&!lab)return html;
+      const buildLabel=(lab?'Nathan 2.0 Lab · ':'Gemini test · ')+buildId;
       return html
         .replace('<title>KS Aviation Digital Twin</title>','<title>Kenan Seyhan 3D Test</title>')
         .replace('content="KS Aviation"','content="KS 3D Test"')

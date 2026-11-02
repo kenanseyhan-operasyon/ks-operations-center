@@ -1,3 +1,5 @@
+> Güncel durum ve düzeltilmiş kesitler: [Nathan 2.0 dik duruş kontrolü](NATHAN2_UPRIGHT_REVIEW_20261102.md). Aşağıdaki metin ilk aktarımın ve önceki kapalı kalite kapısının tarihsel kaydıdır.
+
 # KS Aviation — Nathan 2.0 / Gerçek ve ücretsiz merdiven hareketleri
 
 **Durum:** Sadece bağımsız Nathan 2.0 laboratuvarında deneme. Orijinal Nathan GLB,

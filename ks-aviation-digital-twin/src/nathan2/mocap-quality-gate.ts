@@ -3,27 +3,27 @@
  * These are QA results for OUR retarget implementation, not a judgement
  * about a motion-capture performer's age, health or physical condition.
  *
- * On 2026-11-02 the unmodified Nathan bind pose was 0.32 degrees off world
- * vertical, but CMU83 on the same skinned rig was 91.95 degrees average
- * and 95.79 degrees maximum. The mapping is not acceptable.
- *
- * Gate remains closed until a CORRECT retarget passes the posture test,
- * real sole/rail contact checks and an actual visual movement review.
+ * Scope: the isolated laboratory, CMU83 ascent plus native Nathan descent.
+ * Evidence and limits: docs/NATHAN2_UPRIGHT_REVIEW_20261102.md.
+ * Posture, loop, physical contacts and visual review must all pass. Approval
+ * of one recording never implicitly enables another recording.
  */
 export type ExternalStairCapture='cmu83'|'cmu113';
 export const STAIR_CAPTURE_QA:Readonly<Record<ExternalStairCapture,{
   postureMeanDegrees:number|null;
   postureMaxDegrees:number|null;
   posturePassed:boolean;
+  loopPassed:boolean;
+  contactsPassed:boolean;
   visuallyAccepted:boolean;
   reason:string;
 }>>={
- cmu83:{postureMeanDegrees:91.95,postureMaxDegrees:95.79,posturePassed:false,visuallyAccepted:false,
-  reason:'Nathan skinned torso lies almost horizontal with current CMU83 retarget'},
- cmu113:{postureMeanDegrees:null,postureMaxDegrees:null,posturePassed:false,visuallyAccepted:false,
-  reason:'Neutral upright rig posture and appearance have not been verified'}
+ cmu83:{postureMeanDegrees:14.607,postureMaxDegrees:17.929,posturePassed:true,loopPassed:true,contactsPassed:true,visuallyAccepted:true,
+  reason:'Accepted for the isolated lab: corrected bind axes and loop, full-route contact checks, and actual-model CPU visual review; browser GPU review remains outstanding'},
+ cmu113:{postureMeanDegrees:6.078,postureMaxDegrees:8.727,posturePassed:true,loopPassed:true,contactsPassed:false,visuallyAccepted:false,
+  reason:'Retarget posture corrected, but this optional capture is not accepted for the laboratory route'}
 };
 export function approvedExternalStairCapture(which:ExternalStairCapture):boolean{
  const q=STAIR_CAPTURE_QA[which];
- return q.posturePassed && q.visuallyAccepted;
+ return q.posturePassed && q.loopPassed && q.contactsPassed && q.visuallyAccepted;
 }

@@ -24,7 +24,7 @@ assert.ok(result.sourceSeconds>6.6&&result.sourceSeconds<6.8);
 assert.ok(result.mappedBones>=19,'Must transfer both legs, hips, spine, both arms, hands');
 assert.equal(result.ascent.name,CMU_UP_NAME);assert.equal(result.descent.name,CMU_DOWN_NAME);
 for(const [kind,clip] of [['up',result.ascent],['down',result.descent]] as const){
- assert.ok(clip.duration>1.5&&clip.duration<2.5,kind+' trim length');
+ assert.ok(clip.duration>1.2&&clip.duration<2,kind+' one complete stair stride, excluding landing/turnaround');
  assert.ok(clip.tracks.length>=19,kind+' must have actual joint animation, not an empty fallback');
  assert.ok(clip.tracks.every(x=>x.name.startsWith('rp_nathan_animated_003_walking_')&&x.name.endsWith('.quaternion')),'Only native Nathan joint rotations may be retargeted');
  assert.ok(!clip.tracks.some(x=>x.name.includes('root.position')),'Never replay CMU translation as double root motion');
@@ -49,7 +49,7 @@ assert.ok(ordinaryText.includes('Frames: 968'),'The additional NORMAL stair moti
 const normal=retargetCmu8334Ascent(actor,ordinaryText);
 assert.equal(normal.sourceFrames,968);
 assert.equal(normal.ascent.name,CMU_83_UP_NAME);
-assert.ok(normal.ascent.duration>2&&normal.ascent.duration<3,'Natural stairs clip trimmed, not standing/walking on level ground');
+assert.ok(normal.ascent.duration>1.7&&normal.ascent.duration<1.9,'One stair stride pair, excluding standing on the landing');
 assert.ok(normal.mappedBones>=19);
 assert.ok(normal.ascent.tracks.length>=19);
 assert.equal(actor.addExternalMotion(normal.ascent),true);
