@@ -54,15 +54,15 @@ for(const clip of gltf.animations||[]){
      durationSeconds:time.last[0]-time.first[0]};
    if(path==='translation'){
      report.delta=first.map((v,i)=>Number((last[i]-v).toFixed(4)));
-     report.offsetMetres=Number(Math.hypot(...report.delta).toFixed(4));
+     report.offsetRawUnits=Number(Math.hypot(...report.delta).toFixed(4));
    }
    tracks.push(report);
    if(/(hip|hips|root)/i.test(name))roots.push(report);
  }
- const maximumSourceRootDrift=Math.max(0,...roots.filter(x=>x.path==='translation').map(x=>x.offsetMetres));
+ const maximumSourceRootDrift=Math.max(0,...roots.filter(x=>x.path==='translation').map(x=>x.offsetRawUnits));
  output.animations.push({
    clip:clip.name,tracks:tracks.length,rootAndHipTracks:roots.slice(0,8),
-   sourceTranslationDriftMetres:maximumSourceRootDrift,
+   sourceTranslationDriftRawUnits:maximumSourceRootDrift,
    mustReviewRootMotion:maximumSourceRootDrift>.15
  });
 }
