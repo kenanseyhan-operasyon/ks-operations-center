@@ -1,0 +1,42 @@
+name: KS Nathan 2.0 Independent Lab — blocking tests
+on:
+  push:
+    branches: [lab/nathan2-independent-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      VITE_KS_TEST_SITE: "1"
+      VITE_KS_TEST_CLOUD: "0"
+      VITE_SUPABASE_URL: ""
+      VITE_SUPABASE_ANON_KEY: ""
+    defaults:
+      run:
+        working-directory: ks-aviation-digital-twin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ks-aviation-digital-twin/package-lock.json
+      - name: Install locked existing packages
+        run: npm ci --no-audit --no-fund
+      - name: Test Nathan2 clockwise and anticlockwise, 1/4x, 360-degree yaw, planted feet and outside grips
+        run: |
+          npx esbuild tests/nathan2-engine.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan2-engine.mjs
+          node node_modules/.cache/nathan2-engine.mjs
+      - name: Build real Nathan model and the two independent entrypoints
+        run: npm run build
+      - name: Verify both HTML pages and Nathan runtime GLB exist
+        run: |
+          test -s dist/index.html
+          test -s dist/nathan2-lab.html
+          test -s dist/models/personnel/KS_Nathan_Runtime.glb
+          grep -q 'Nathan 2.0' dist/nathan2-lab.html
+      - name: Existing Nathan skinned movement still passes
+        run: npm run test:nathan-movement
