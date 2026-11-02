@@ -1,0 +1,42 @@
+name: KS Nathan Motion Lab (isolated, never deploy)
+on:
+  push:
+    branches: [fix/nathan-outside-rail-20261102]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  motion-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_KS_TEST_SITE: "1"
+      VITE_KS_TEST_CLOUD: "0"
+      VITE_SUPABASE_URL: ""
+      VITE_SUPABASE_ANON_KEY: ""
+    defaults:
+      run:
+        working-directory: ks-aviation-digital-twin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ks-aviation-digital-twin/package-lock.json
+      - name: Install existing dependencies only
+        run: npm ci --no-audit --no-fund
+      - name: Nathan motion library (outer rail + 18 movement contracts + gait)
+        run: |
+          npx esbuild tests/nathan-motion-contract.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan-motion-contract.mjs
+          node node_modules/.cache/nathan-motion-contract.mjs
+      - name: Verify both tank stair shapes and exact geometry
+        run: npm run test:tank-access && npm run test:tank-walk
+      - name: Assemble the currently licensed local Nathan assets
+        run: npm run pretest
+      - name: Real skinned Nathan movement regression
+        run: npm run test:nathan-movement
+      - name: Real hand/contact interactions
+        run: npm run test:nathan-interactions && npm run test:nathan-grasp
+      - name: Compile full isolated site without deployment
+        run: npm run build && npm run verify:test-build
