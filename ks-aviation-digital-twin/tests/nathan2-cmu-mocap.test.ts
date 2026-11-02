@@ -6,7 +6,7 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {newEntity} from '../src/scene-data';
 import {NATHAN_MODEL_URL,NATHAN_PRESET} from '../src/nathan-data';
 import {NathanActor,makeNathanPlaceholder} from '../src/nathan-model';
-import {retargetCmu11319,CMU_UP_NAME,CMU_DOWN_NAME,CMU_TO_NATHAN_BONES} from '../src/nathan2/cmu-mocap';
+import {retargetCmu11319,retargetCmu8334Ascent,CMU_UP_NAME,CMU_DOWN_NAME,CMU_83_UP_NAME,CMU_TO_NATHAN_BONES} from '../src/nathan2/cmu-mocap';
 
 const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'https://test.invalid'});
 for(const key of ['window','document','HTMLElement','HTMLCanvasElement'])Object.defineProperty(globalThis,key,{value:(dom.window as any)[key],configurable:true});
@@ -44,5 +44,29 @@ for(const [kind,clip] of [['up',result.ascent],['down',result.descent]] as const
  console.log('PASS CMU actual Nathan GLB retarget: '+JSON.stringify({kind,clip:clip.name,frames:clip.tracks[0].times.length,mappedBones:result.mappedBones,duration:clip.duration}));
 }
 assert.ok(Object.keys(CMU_TO_NATHAN_BONES).length>=20);
+const ordinaryText=fs.readFileSync('public/mocap/cmu/83_34.bvh','utf8');
+assert.ok(ordinaryText.includes('Frames: 968'),'The additional NORMAL stair motion must be a true downloaded CMU capture');
+const normal=retargetCmu8334Ascent(actor,ordinaryText);
+assert.equal(normal.sourceFrames,968);
+assert.equal(normal.ascent.name,CMU_83_UP_NAME);
+assert.ok(normal.ascent.duration>2&&normal.ascent.duration<3,'Natural stairs clip trimmed, not standing/walking on level ground');
+assert.ok(normal.mappedBones>=19);
+assert.ok(normal.ascent.tracks.length>=19);
+assert.equal(actor.addExternalMotion(normal.ascent),true);
+assert.equal(actor.motion(CMU_83_UP_NAME,.7),true);
+for(let i=0;i<5;i++)actor.update(.04);
+function jointTravel(clip:T.AnimationClip,name:string){
+ const track=clip.tracks.find(t=>t.name.endsWith(name+'.quaternion'))!;
+ const q0=new T.Quaternion().fromArray(track.values,0);
+ let max=0;
+ for(let i=4;i<track.values.length;i+=4)max=Math.max(max,q0.angleTo(new T.Quaternion().fromArray(track.values,i)));
+ return max;
+}
+for(const [label,clip] of [['CMU 83 normal stairs',normal.ascent],['CMU 113 ascent',result.ascent],['CMU 113 descent',result.descent]] as const){
+ assert.ok(jointTravel(clip,'upperleg_l')>.08,label+' left leg must actually animate');
+ assert.ok(jointTravel(clip,'upperleg_r')>.08,label+' right leg must actually animate');
+ assert.ok(jointTravel(clip,'lowerleg_l')>.08,label+' left knee must actually articulate');
+ console.log('PASS REAL MOCAP '+JSON.stringify({label,duration:clip.duration,legSwingRadians:jointTravel(clip,'upperleg_l'),tracks:clip.tracks.length}));
+}
 actor.dispose();
 console.log('PASS CMU 113_19 genuine free stair ascent and descent mapped, installed and played on Nathan actual skeleton');
