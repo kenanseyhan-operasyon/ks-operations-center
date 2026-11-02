@@ -101,6 +101,9 @@ export class Nathan2Motor {
   distance=0;
   activity:LabActivity='ready';
   speed:LabSpeed=1;
+  // Clip period is calibrated from the real imported Nathan_Original_Walk clip.
+  // One full animation cycle must match two alternating 0.34 m footfalls.
+  private walkCycleSeconds=.9;
   private desired:1|-1=1;
   private status='Hazır. NORMAL yürüyüş; koşma kullanılmaz.';
   constructor(readonly tank:Entity){
@@ -109,6 +112,7 @@ export class Nathan2Motor {
     this.heading=this.stairs.headingAt(0,1);
   }
   setSpeed(n:LabSpeed){this.speed=n;}
+  setWalkCycleSeconds(seconds:number){if(Number.isFinite(seconds)&&seconds>.3&&seconds<3)this.walkCycleSeconds=seconds;}
   reset(){this.distance=0;this.position=[...this.initial];this.activity='ready';this.heading=this.stairs.headingAt(0,1);this.status='Başlangıçta.';}
   up(){
     if(this.distance>=this.stairs.total-.05){this.status='Nathan zaten tank çatısında.';return;}
@@ -150,7 +154,10 @@ export class Nathan2Motor {
     const inTurn=this.activity==='align';
     return {position:[...this.position],heading:this.heading,activity:this.activity,
       progress:this.distance/this.stairs.total,motion:moving&&!inTurn?'Nathan_Original_Walk':'Idle',
-      motionRate:.49/1.15,contact:contact?.pose,plantedFoot:contact?.plantedFoot,
+      // Source clip cadence is tied to the actual length of one left-right
+      // step pair. A hardcoded source speed (previously 1.15 m/s) made the
+      // clip lag the route by ~50% and forced feet to jump via IK.
+      motionRate:.49*this.walkCycleSeconds/(2*.34*this.tank.scale),contact:contact?.pose,plantedFoot:contact?.plantedFoot,
       outsideHand:contact?.outsideHand,speed:this.speed,message:this.status};
   }
   private stairContacts(direction:1|-1):{pose:NathanContact,plantedFoot:0|1,outsideHand:0|1}|undefined{
@@ -172,7 +179,11 @@ export class Nathan2Motor {
     const planted=shoe(index*stride,stanceLeg);
     const origin=shoe((index-1)*stride,swingLeg),dest=shoe((index+1)*stride,swingLeg);
     const moving=lerp(origin,dest,smooth(phase));
-    moving[1]=T.MathUtils.lerp(origin[1],dest[1],smooth(phase))+.12*this.tank.scale*Math.sin(Math.PI*phase);
+    // Clear the NEXT riser while reducing the exaggerated knees-up 'run'
+    // look seen in the user's 55-second video. Descent must also lift the
+    // toe above the higher supporting tread before lowering it.
+    const arc=Math.sin(Math.PI*phase),baseY=T.MathUtils.lerp(origin[1],dest[1],smooth(phase));
+    moving[1]=baseY+arc*(Math.max(0,Math.max(origin[1],dest[1])-baseY)+.055*this.tank.scale);
     const feet:[V3,V3]=[[...planted],[...planted]];feet[stanceLeg]=planted;feet[swingLeg]=moving;
     const outer=outsideRailHand(this.tank.position,this.position,this.heading);
     const midpoint=lerp(rail[0],rail[1],.5),fade=Math.min(1,smooth((this.distance-.4)/.45),smooth((length-.4-this.distance)/.45));
