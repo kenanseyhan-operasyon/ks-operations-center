@@ -1,7 +1,7 @@
 name: KS Nathan 2.0 Independent Lab — blocking tests
 on:
   push:
-    branches: [lab/nathan2-independent-20261102, fix/nathan2-video-contact-20261102]
+    branches: [lab/nathan2-independent-20261102, fix/nathan2-video-contact-20261102, lab/nathan2-free-stairs-mocap-20261102]
   workflow_dispatch:
 permissions:
   contents: read
@@ -38,6 +38,10 @@ jobs:
           test -s dist/nathan2-lab.html
           test -s dist/models/personnel/KS_Nathan_Runtime.glb
           grep -q 'Nathan 2.0' dist/nathan2-lab.html
+      - name: Verify the downloaded 804-frame CMU stair motion RETARGETS onto real Nathan rig
+        run: |
+          npx esbuild tests/nathan2-cmu-mocap.test.ts --bundle --external:jsdom --loader:.css=empty --platform=node --format=esm --outfile=node_modules/.cache/nathan2-cmu-mocap.mjs
+          node node_modules/.cache/nathan2-cmu-mocap.mjs
       - name: Verify actual skinned Nathan palms GRIP physical rail and feet land on treads
         run: |
           npx esbuild tests/nathan2-skin-contact.test.ts --bundle --external:jsdom --loader:.css=empty --platform=node --format=esm --outfile=node_modules/.cache/nathan2-skin-contact.mjs
