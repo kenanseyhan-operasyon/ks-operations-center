@@ -68,5 +68,30 @@ for(const [label,clip] of [['CMU 83 normal stairs',normal.ascent],['CMU 113 asce
  assert.ok(jointTravel(clip,'lowerleg_l')>.08,label+' left knee must actually articulate');
  console.log('PASS REAL MOCAP '+JSON.stringify({label,duration:clip.duration,legSwingRadians:jointTravel(clip,'upperleg_l'),tracks:clip.tracks.length}));
 }
+// Posture quality check: measure the actual skinned hip-to-neck axis in the
+// selected neutral CMU83 clip, not a demographic guess about the performer.
+const hipBone=actor.model.getObjectByName('rp_nathan_animated_003_walking_hip');
+const neckBone=actor.model.getObjectByName('rp_nathan_animated_003_walking_neck');
+assert.ok(hipBone&&neckBone,'Required native Nathan spine bones for upright posture QA');
+const normalIdx=actor.clips.findIndex(c=>c.name===CMU_83_UP_NAME);
+assert.ok(normalIdx>=0,'Normal stair-up must be installed on real Nathan');
+actor.mixer.stopAllAction();
+actor.actions[normalIdx].reset().setEffectiveWeight(1).setEffectiveTimeScale(1).setLoop(T.LoopOnce,1).play();
+const inclinations:number[]=[];
+for(let i=0;i<22;i++){
+ const time=normal.ascent.duration*(.08+.84*i/21);
+ actor.mixer.setTime(time);
+ root.updateMatrixWorld(true);
+ const hip=hipBone!.getWorldPosition(new T.Vector3()),neck=neckBone!.getWorldPosition(new T.Vector3());
+ const axis=neck.sub(hip);
+ assert.ok(axis.length()>.22,'Retarget cannot collapse Nathan hip and upper spine');
+ const degrees=Math.acos(T.MathUtils.clamp(axis.y/axis.length(),-1,1))*180/Math.PI;
+ assert.ok(Number.isFinite(degrees),'Actual Nathan spine inclination must be finite');
+ inclinations.push(Number(degrees.toFixed(2)));
+}
+const maxInclination=Math.max(...inclinations),avgInclination=inclinations.reduce((x,y)=>x+y,0)/inclinations.length;
+console.log('NATHAN2_CMU83_REAL_RIG_SPINE_DEGREES '+JSON.stringify({mean:avgInclination,max:maxInclination,samples:inclinations}));
+assert.ok(maxInclination<55&&avgInclination<40,
+ 'Reject visibly hunched/stunted retargeted stair posture from default Nathan: '+JSON.stringify({maxInclination,avgInclination}));
 actor.dispose();
-console.log('PASS CMU 113_19 genuine free stair ascent and descent mapped, installed and played on Nathan actual skeleton');
+console.log('PASS CMU staircase human motion: CMU83 default must retain natural spine, CMU113 opt-in comparison only');
