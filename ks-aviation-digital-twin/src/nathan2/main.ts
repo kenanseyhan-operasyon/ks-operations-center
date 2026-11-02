@@ -6,6 +6,7 @@ import {NATHAN_MODEL_URL,NATHAN_PRESET} from '../nathan-data';
 import {newEntity} from '../scene-data';
 import {localToWorld} from '../facility-data';
 import {Nathan2Motor,type V3,type LabSpeed,type MotorPose} from './engine';
+import {retargetCmu11319,CMU_113_19_URL,CMU_UP_NAME,CMU_DOWN_NAME,type CmuStairCapture} from './cmu-mocap';
 import './style.css';
 
 const el=(id:string)=>document.getElementById(id)!;
@@ -86,6 +87,16 @@ handTarget.renderOrder=30;debug.add(handTarget);
 const trace=new T.Line(new T.BufferGeometry().setFromPoints(motor.stairs.points.map(p=>v(p))),new T.LineBasicMaterial({color:0x71dff4,transparent:true,opacity:.7}));
 debug.add(trace);
 let actor:NathanActor|undefined;
+let mocap:CmuStairCapture|undefined;
+let selectedMotion:'original'|'cmu'='original';
+let originalCycle=.9;
+const motionLabel=()=>selectedMotion==='cmu'?'CMU · Gerçek insan kaydı':'Eski Nathan';
+function selectMotion(which:'original'|'cmu'){
+ if(which==='cmu'&&!mocap)return;
+ selectedMotion=which;
+ document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.motion===which)));
+ el('motion-source').textContent=motionLabel();
+}
 const person=newEntity(NATHAN_PRESET,motor.position[0],motor.position[2]);
 const root=makeNathanPlaceholder(person);scene.add(root);
 root.position.fromArray(motor.position);
@@ -104,11 +115,29 @@ async function loadNathan(){
   // Calibrate animation cadence from the real rig's trimmed walking cycle;
   // the route always moves at normal stair speed unless test speed is selected.
   const walk=actor.clips.find(clip=>clip.name==='Nathan_Original_Walk');
-  if(walk)motor.setWalkCycleSeconds(walk.duration);
+  if(walk){originalCycle=walk.duration;motor.setWalkCycleSeconds(walk.duration);}
   if(placeholder)placeholder.visible=false;
   actor.motion('Idle');
   el('load-status').textContent=`Gerçek Nathan GLB yüklendi · ${actor.clips.length} animasyon`;
   for(const button of document.querySelectorAll<HTMLButtonElement>('[data-command]'))button.disabled=false;
+  // Downloaded source is bundled locally, no account/service used at runtime.
+  // BVH source is genuine 6.7 second CMU stair ascent+descent; the original
+  // Nathan rig, textures and scene are preserved unchanged.
+  try{
+   const response=await fetch(CMU_113_19_URL);
+   if(!response.ok)throw Error('BVH HTTP '+response.status);
+   mocap=retargetCmu11319(actor,await response.text());
+   if(!actor.addExternalMotion(mocap.ascent)||!actor.addExternalMotion(mocap.descent))
+     throw Error('Could not register both motion clips');
+   const newButton=document.querySelector<HTMLButtonElement>('[data-motion="cmu"]');
+   if(newButton)newButton.disabled=false;
+   selectMotion('cmu');
+   el('mocap-status').textContent=`CMU 113_19: gerçek insan çıkış ve inişi; ${mocap.sourceFrames} kare; ${mocap.mappedBones} kemik eşlendi. Dış korkuluk kavraması ayrıca IK ile sağlanır.`;
+   loadLabel.textContent=`Gerçek Nathan + CMU merdiven MoCap yüklendi · ${actor.clips.length} animasyon`;
+  }catch(error){
+   console.error('CMU licensed free motion retarget failed; original motion remains available',error);
+   el('mocap-status').textContent='Ücretsiz MoCap yüklenemedi. Önceki Nathan hareketi kullanılabilir; test raporunu kontrol edin.';
+  }
  }catch(error){
   console.error('Nathan 2.0 laboratory model load',error);
   loadLabel.textContent='Model yüklenemedi; önce GitHub derlemesini kontrol edin.';
@@ -126,7 +155,8 @@ function showPose(p:MotorPose){
  el('foot').textContent=p.plantedFoot===undefined?'Geçiş':p.plantedFoot===0?'SOL ayak basıyor':'SAĞ ayak basıyor';
  el('position').textContent=p.position.map(x=>x.toFixed(2)).join(' / ');
  el('speed-label').textContent=`${p.speed}× test hızı`;
- el('scene-telemetry').textContent=`Nathan 2.0 · ${names[p.activity]} · ${Math.round(p.progress*100)}% · Y ${p.position[1].toFixed(2)} m · ${p.speed}×`;
+ el('motion-source').textContent=motionLabel();
+ el('scene-telemetry').textContent=`Nathan 2.0 · ${motionLabel()} · ${names[p.activity]} · ${Math.round(p.progress*100)}% · Y ${p.position[1].toFixed(2)} m · ${p.speed}×`;
 }
 function cameraPreset(which:'wide'|'side'){
  const point=which==='side'?new T.Vector3(-11,4,-13):new T.Vector3(16,14,19);
@@ -149,6 +179,9 @@ document.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach(b=>{
   document.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.speed)===speed)));
  });
 });
+document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>{
+ btn.addEventListener('click',()=>selectMotion(btn.dataset.motion as 'original'|'cmu'));
+});
 el('debug-toggle').addEventListener('change',e=>{debug.visible=(e.target as HTMLInputElement).checked;});
 el('view-wide').addEventListener('click',()=>cameraPreset('wide'));
 el('view-side').addEventListener('click',()=>cameraPreset('side'));
@@ -158,11 +191,17 @@ let last=performance.now(),frames=0;
 function frame(now:number){
  requestAnimationFrame(frame);
  const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
+ // Keep the imported human gait paired with the actual spiral path speed.
+ // The 113_19 subclips cover approximately two left/right footstep pairs.
+ const cycle=mocap&&selectedMotion==='cmu' ? (motor.activity==='spiral-down'?mocap.descent.duration:mocap.ascent.duration)/2 : originalCycle;
+ motor.setWalkCycleSeconds(cycle);
  const pose=motor.tick(dt);
  root.position.fromArray(pose.position);
  root.rotation.y=-T.MathUtils.degToRad(pose.heading);
  if(actor){
-  actor.motion(pose.motion,pose.motionRate);
+  const clip=selectedMotion==='cmu'&&mocap&&pose.activity==='spiral-up'?CMU_UP_NAME:
+    selectedMotion==='cmu'&&mocap&&pose.activity==='spiral-down'?CMU_DOWN_NAME:pose.motion;
+  actor.motion(clip,pose.motionRate);
   actor.contact(pose.contact);
   actor.update(dt*pose.speed);
  }
