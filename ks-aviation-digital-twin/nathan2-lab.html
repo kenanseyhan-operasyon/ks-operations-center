@@ -18,6 +18,13 @@
     <button class="danger" data-command="stop" disabled>DUR</button>
     <button data-command="reset" disabled>Başa al</button>
    </div></section>
+   <section><h2>İnsan hareketi karşılaştırması</h2>
+    <div class="speed motion-source" role="group" aria-label="Merdiven animasyonu kaynağı">
+      <button data-motion="cmu" disabled aria-pressed="false">Gerçek kayıt · CMU</button>
+      <button data-motion="original" aria-pressed="true">Önceki Nathan</button>
+    </div>
+    <p class="footnote" id="mocap-status" style="margin-top:8px">Ücretsiz gerçek insan merdiven hareketi yükleniyor…</p>
+   </section>
    <section><h2>Yalnızca test hızlandırması</h2><div class="speed" role="group" aria-label="Hızlandırma">
     <button data-speed="1" aria-pressed="true">1× Normal</button>
     <button data-speed="2" aria-pressed="false">2×</button>
@@ -26,6 +33,7 @@
    <section class="panel"><h2>Canlı teknik göstergeler</h2>
     <div class="state" id="state">Hazır</div>
     <p class="sub" id="status">İlk hareketi seçin.</p>
+    <div class="metric"><span>Animasyon</span><strong id="motion-source">Eski Nathan</strong></div>
     <div class="metric"><span>Merdiven ilerlemesi</span><strong id="progress">%0</strong></div>
     <div class="metric"><span>Korkuluğa tutunan</span><strong id="hand">Geçiş</strong></div>
     <div class="metric"><span>Basamakta kalan</span><strong id="foot">Geçiş</strong></div>
