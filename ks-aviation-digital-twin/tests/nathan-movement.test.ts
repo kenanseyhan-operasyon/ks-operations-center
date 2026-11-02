@@ -40,6 +40,19 @@ model.scale.setScalar(scale);model.position.set(-R14.centreX*scale,-bounds.min.y
 const orient=new T.Group();orient.rotation.y=-Math.PI/2;orient.add(model);const vehicleRoot=new T.Group();vehicleRoot.add(orient);vehicleRoot.userData.entityId=truck.id;applyTransform(vehicleRoot,truck);
 const personRoot=makeObject(person),objects=new Map([[person.id,personRoot],[truck.id,vehicleRoot]]);
 const actors=new NathanActors(()=>{},async()=>asset);actors.sync(entities,objects);await new Promise(r=>setTimeout(r,0));const actor=actors.states.get(person.id)!.actor!;assert.ok(actor);
+// The downloaded source GLB contains large translation on the animated root
+// for Walk/Run/Climb. The scene controller already moves the operator in world
+// space. The in-place correction MUST remove only the source-root POSITION
+// channel, leaving hip, fingers, other joints and source assets untouched.
+const importedRootTrack='rp_nathan_animated_003_walking_root.position';
+for(const clipName of ['Nathan_Original_Walk','Running','Running_Up_Stairs','Climbing','Climbing_Ladder']){
+  const original=asset.animations.find(c=>c.name===clipName)!;
+  const runtime=actor.clips.find(c=>c.name===clipName)!;
+  assert.ok(original.tracks.some(t=>t.name===importedRootTrack),'Source GLB root translation must remain available for research: '+clipName);
+  assert.equal(runtime.tracks.some(t=>t.name===importedRootTrack),false,'Controller-driven motion must not replay source root translation: '+clipName);
+  assert.ok(runtime.tracks.length>10,'Sanitizer must retain all actual bone and finger motion: '+clipName);
+}
+console.log('PASS Nathan GLB root-motion isolation without overwriting original rig, source clips or joint rotations');
 const bone=(suffix:string)=>actor.model.getObjectByName(`rp_nathan_animated_003_walking_${suffix}`)!.getWorldPosition(new T.Vector3());
 const toe=bone('ball_l').sub(bone('foot_l'));assert.ok(toe.z<0,'Actual foot/toe points along heading zero (-Z)');
 let checkpoints=0,commits=0,input=false,vehicleSpeed=0,gate=0,accessReady=true;const notices:string[]=[];
