@@ -69,7 +69,7 @@ export function retargetCmu11319(actor:NathanActor,bvhText:string):CmuStairCaptu
   });
   const clean=temp.tracks.filter(track=>track.name.endsWith('.quaternion')).map(track=>{
     const cloned=track.clone();
-    cloned.name=cloned.name.replace(/^\\.bones\\[([^\\]]+)\\]\\.quaternion$/,(_all:string,bone:string)=>bone+'.quaternion');
+    cloned.name=cloned.name.replace(/^\.bones\[([^\]]+)\]\.quaternion$/,(_all:string,bone:string)=>bone+'.quaternion');
     return cloned;
   });
   if(clean.length<14||clean.some(track=>track.name.startsWith('.bones[')))
