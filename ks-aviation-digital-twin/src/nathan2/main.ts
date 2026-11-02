@@ -7,6 +7,7 @@ import {newEntity} from '../scene-data';
 import {localToWorld} from '../facility-data';
 import {Nathan2Motor,type V3,type LabSpeed,type MotorPose} from './engine';
 import {retargetCmu11319,retargetCmu8334Ascent,CMU_113_19_URL,CMU_83_34_URL,CMU_UP_NAME,CMU_DOWN_NAME,CMU_83_UP_NAME,type CmuStairCapture,type CmuStairAscent} from './cmu-mocap';
+import {approvedExternalStairCapture} from './mocap-quality-gate';
 import './style.css';
 
 const el=(id:string)=>document.getElementById(id)!;
@@ -122,6 +123,15 @@ async function loadNathan(){
   actor.motion('Idle');
   el('load-status').textContent=`Gerçek Nathan GLB yüklendi · ${actor.clips.length} animasyon`;
   for(const button of document.querySelectorAll<HTMLButtonElement>('[data-command]'))button.disabled=false;
+  // FAIL CLOSED. The CMU83 clip put Nathan's hip-neck axis ~92 degrees
+  // from vertical; it must not be shown as an approved upright gait.
+  // The CMU113 clip is unverified and recorded from a different source
+  // participant; the metadata does not imply an illness or age.
+  if(!approvedExternalStairCapture('cmu83')||!approvedExternalStairCapture('cmu113')){
+    el('mocap-status').textContent='CMU 83/113 kayıtları saklandı, ancak iskelet uyarlamasında gövde yaklaşık 92° eğildiği için bu animasyonlar güvenlik/kalite kontrolünden geçmedi. Şimdilik orijinal Nathan yürüyüşü açık. Kimseye hasta/yaşlı hareketi atfedilmiyor.';
+    loadLabel.textContent='Orijinal Nathan hazır · CMU hareketleri doğrulanana kadar kapalı';
+    return;
+  }
   // Downloaded source is bundled locally, no account/service used at runtime.
   // BVH source is genuine 6.7 second CMU stair ascent+descent; the original
   // Nathan rig, textures and scene are preserved unchanged.
