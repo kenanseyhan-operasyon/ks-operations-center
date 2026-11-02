@@ -47,7 +47,7 @@ paketlerini ve oturum gerektiren KIT kayıtlarını kullanmıyor.
   gerçek tankın dış korkuluk noktasına mevcut Nathan `Hand IK` kuralı ile
   eklenir. Kimseye kayıt içinde korkuluk varmış izlenimi verilmez.
 - Aynı laboratuvar menüsünden üç alternatif karşılaştırılır:
-    1. CMU 83 normal çıkış + CMU 113 iniş,
+    1. CMU 83 normal çıkış + şimdilik orijinal Nathan inişi (**CMU 113 otomatik kullanılmaz**),
     2. CMU 113 çıkış ve iniş,
     3. Nathan'ın önceki yürüyüş animasyonu.
 
@@ -64,3 +64,26 @@ rotasyonları yeniden hedefler ve animasyonları karakter iskeletinde oynatır.
 gelmez. İlk canlı değerlendirmede arkadan ve yandan iskelet hareketi,
 adım temposu, merdiven boyunca tek elin korkuluğa temas etmesi,
 inişte doğru yüz yönü ayrı izlenmelidir.
+
+## Kaynak katılımcı ve beden duruşu kontrolü (2 Kasım 2026)
+
+CMU'nin resmî **Subjects** listesinde:
+- **Subject 83:** `steps` (genel basamak hareketleri);
+- **Subject 113:** `Post pregnant woman` (doğum sonrası kadın katılımcı).
+
+Bu, kayıtların yaşlı veya hasta insanların hareketi olduğunu **kanıtlamaz**.
+Ancak kullanıcının istediği dinç, düz bel pozisyonunu ve Nathan'ın görüntüsünü
+otomatik garanti etmez.
+
+**Güvenli varsayılan:** CMU 83'ün normal merdiven çıkışı; inişte uygun farklı
+bir kayıt seçilene kadar orijinal Nathan. CMU 113 sadece kullanıcı tarafından
+ayrıca seçilen karşılaştırma modunda çalışır. Bu kural
+`src/nathan2/motion-selection.ts` ve `tests/nathan2-neutral-selection.test.ts`
+ile garanti edilir.
+
+`tests/nathan2-cmu-mocap.test.ts` ayrıca gerçek Nathan GLB'nin
+CMU 83 merdiven çıkışında kalça–boyun eksenini ölçerek aşırı öne
+eğilmeyi denetler. Bu, yaş/sağlık değerlendirmesi DEĞİLDİR;
+yalnızca iskelet animasyonunun teknik duruş kontrolüdür.
+
+Resmî katalog: https://mocap.cs.cmu.edu/subjects.php
