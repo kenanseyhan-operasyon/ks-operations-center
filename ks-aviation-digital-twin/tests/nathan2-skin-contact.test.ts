@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import * as T from 'three';
+import {JSDOM} from 'jsdom';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {newEntity} from '../src/scene-data';
+import {NathanActor,makeNathanPlaceholder} from '../src/nathan-model';
+import {NATHAN_PRESET,NATHAN_MODEL_URL} from '../src/nathan-data';
+import {Nathan2Motor} from '../src/nathan2/engine';
+
+const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'https://test.invalid'});
+for(const key of ['window','document','HTMLElement','HTMLCanvasElement'])Object.defineProperty(globalThis,key,{value:(dom.window as any)[key],configurable:true});
+dom.window.HTMLCanvasElement.prototype.getContext=()=>null;
+const bytes=fs.readFileSync('public'+NATHAN_MODEL_URL),loader=new GLTFLoader();
+loader.register(()=>({name:'KS_TEST_TEXTURE_NO_GL',loadTexture:async()=>new T.Texture()}));
+const asset=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
+const tank=newEntity('TANK',0,0);
+tank.facility={...tank.facility,stairs:true,stairStart:-105,stairSweep:535,clockwise:true,stairWidth:1.02,stairLandings:true,stairLandingLength:1.35};
+const motor=new Nathan2Motor(tank);
+const person=newEntity(NATHAN_PRESET,motor.position[0],motor.position[2]);
+const root=makeNathanPlaceholder(person);
+const actor=new NathanActor(root,asset,person.height);
+const report:{progress:number;hand:number;handError:number;leftFootError:number;rightFootError:number;actualGripping:boolean;declaredHand:number}[]=[];
+for(const progress of [.07,.15,.28,.42,.56,.72,.86,.93]){
+ motor.distance=progress*motor.stairs.total;
+ motor.heading=motor.stairs.headingAt(motor.distance,1);
+ motor.activity='spiral-up';
+ const pose=motor.tick(0);
+ assert.ok(pose.contact,'Actual stair IK contact should exist at sample '+progress);
+ root.position.fromArray(pose.position);root.rotation.y=-T.MathUtils.degToRad(pose.heading);
+ actor.contactRig!.resetGrips();actor.motion(pose.motion,pose.motionRate);actor.contact(pose.contact);actor.update(1/60);
+ const h=pose.outsideHand!,actual=actor.contactRig!.handContacts[h];
+ const error=actual?actual.centre.distanceTo(actual.target):Infinity;
+ const feet=pose.contact!.feet.map((p,i)=>actor.contactRig!.sole(i).distanceTo(new T.Vector3(...p)));
+ report.push({progress,hand:h,handError:error,leftFootError:feet[0],rightFootError:feet[1],actualGripping:!!actual?.gripping,declaredHand:h});
+ assert.ok(Number.isFinite(error),'Selected outer hand must have an actual reachable contact: '+JSON.stringify(report.at(-1)));
+ assert.ok(error<.09,'Real skinned palm must follow physical outside rail, not merely report a target: '+JSON.stringify(report.at(-1)));
+ assert.ok(feet[0]<.10&&feet[1]<.10,'Actual soles must stay near designated steps: '+JSON.stringify(report.at(-1)));
+}
+console.log('NATHAN2_REAL_SKIN_CONTACT_REPORT '+JSON.stringify(report));
+console.log('PASS Nathan2 real skinned hand and both actual soles across 7%-93% of spiral rise');
+actor.dispose();
