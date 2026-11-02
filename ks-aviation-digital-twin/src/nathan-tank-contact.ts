@@ -5,6 +5,7 @@ import type {NathanContact} from './nathan-contact';
 import {tankStairLayout} from './tank-stairs';
 import {localToWorld,worldToLocal} from './facility-data';
 import {sampleAccess,type NathanAccess} from './nathan-access';
+import {outsideRailHand,stairStepPhase} from './nathan-motion-contract';
 
 const radiusTube=.024;
 const smooth=(x:number)=>{const t=T.MathUtils.clamp(x,0,1);return t*t*(3-2*t);};
@@ -45,21 +46,20 @@ export function tankStairContact(tank:Entity,access:NathanAccess,progress:number
   const a=segment(T.MathUtils.clamp(u-.075,0,1)),b=segment(T.MathUtils.clamp(u+.075,0,1));
   if(new T.Vector3(...a).distanceTo(new T.Vector3(...b))<.015)return;
   const rail:[V3,V3]=[a,b],mid=a.map((v,i)=>(v+b[i])*.5) as V3;
-  const radial:[number,number]=[Math.sin(angle),Math.cos(angle)];
+  // The old calculation dotted a WORLD-space right vector against a
+  // TANK-LOCAL radial vector; rotated tanks therefore chose the wrong hand.
   const h=heading*Math.PI/180;
   const right:[number,number]=[Math.cos(h),-Math.sin(h)];
-  const handSide=right[0]*radial[0]+right[1]*radial[1]>0?1:0;
+  const handSide=outsideRailHand(tank.position,root,heading);
   // Footfall model: stance foot stays planted on its tread while the other
   // swings toward the next step. Reverse the travel distance for descent.
   // At every stride boundary the formerly swinging foot becomes the planted
   // one, preserving continuous foot positions instead of ground-level snaps.
   const stride=.34*tank.scale,length=access.length;
-  const travelled=(descending?1-progress:progress)*length;
-  const index=Math.floor(travelled/stride),fraction=T.MathUtils.clamp((travelled-index*stride)/stride,0,1);
+  const {index,phase:fraction,stanceLeg,swingLeg}=stairStepPhase(progress,length,stride,descending);
   const path=(d:number)=>sampleAccess(access,T.MathUtils.clamp((descending?length-d:d)/length,0,1));
   const plant=path(index*stride),previous=path((index-1)*stride),next=path((index+1)*stride);
   const swing=T.MathUtils.smoothstep(fraction,0,1),moving=new T.Vector3(...previous).lerp(new T.Vector3(...next),swing).toArray() as V3;
-  const stanceLeg=index%2,swingLeg=1-stanceLeg;
   const feet:[V3,V3]=[[...plant],[...plant]];
   feet[stanceLeg]=plant;feet[swingLeg]=moving;
   // Visible treads are flat at piece.y1, not the sloping route interpolation.
