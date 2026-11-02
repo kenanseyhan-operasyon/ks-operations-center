@@ -14,6 +14,9 @@ import { retargetClip, clone as cloneSkinned } from 'three/examples/jsm/utils/Sk
 import type { NathanActor } from '../nathan-model';
 
 export const CMU_113_19_URL = '/mocap/cmu/113_19.bvh';
+export const CMU_83_34_URL = '/mocap/cmu/83_34.bvh';
+export const CMU_83_UP_NAME='CMU_83_34_Stairs_Up';
+export const CMU_83_ASCENT_SECONDS = [4.65,7.05] as const;
 export const CMU_ASCENT_SECONDS = [0.87, 3.05] as const;
 export const CMU_DESCENT_SECONDS = [3.60, 5.35] as const;
 export const CMU_UP_NAME='CMU_113_19_Stairs_Up';
@@ -43,7 +46,23 @@ export type CmuStairCapture = {
  * exclude it. Source world root movement is not copied: Nathan2Motor retains
  * sole authority over his physical path around the spiral tank.
  */
+export type CmuStairAscent=Omit<CmuStairCapture,'descent'>;
+type ClipWindow={name:string;start:number;end:number};
 export function retargetCmu11319(actor:NathanActor,bvhText:string):CmuStairCapture {
+ const data=retargetCmuWindows(actor,bvhText,[
+   {name:CMU_UP_NAME,start:CMU_ASCENT_SECONDS[0],end:CMU_ASCENT_SECONDS[1]},
+   {name:CMU_DOWN_NAME,start:CMU_DESCENT_SECONDS[0],end:CMU_DESCENT_SECONDS[1]}
+ ]);
+ if(!data.descent)throw Error('CMU 113_19 descent missing');
+ return {...data,descent:data.descent};
+}
+export function retargetCmu8334Ascent(actor:NathanActor,bvhText:string):CmuStairAscent {
+ const data=retargetCmuWindows(actor,bvhText,[
+   {name:CMU_83_UP_NAME,start:CMU_83_ASCENT_SECONDS[0],end:CMU_83_ASCENT_SECONDS[1]}
+ ]);
+ return {ascent:data.ascent,sourceFrames:data.sourceFrames,sourceSeconds:data.sourceSeconds,mappedBones:data.mappedBones};
+}
+function retargetCmuWindows(actor:NathanActor,bvhText:string,windows:readonly ClipWindow[]):CmuStairAscent&{descent?:T.AnimationClip} {
   if(!bvhText.startsWith('HIERARCHY')||!bvhText.includes('MOTION'))throw Error('CMU BVH source invalid or incomplete');
   const source=new BVHLoader().parse(bvhText);
   const snapshot=cloneSkinned(actor.model);
@@ -74,10 +93,13 @@ export function retargetCmu11319(actor:NathanActor,bvhText:string):CmuStairCaptu
   });
   if(clean.length<14||clean.some(track=>track.name.startsWith('.bones[')))
     throw Error('CMU retarget produced incomplete/unbound Nathan tracks: '+clean.length);
-  const whole=new T.AnimationClip('CMU_113_19_Full',temp.duration,clean);
-  const up=T.AnimationUtils.subclip(whole,CMU_UP_NAME,Math.round(CMU_ASCENT_SECONDS[0]*30),Math.round(CMU_ASCENT_SECONDS[1]*30),30);
-  const down=T.AnimationUtils.subclip(whole,CMU_DOWN_NAME,Math.round(CMU_DESCENT_SECONDS[0]*30),Math.round(CMU_DESCENT_SECONDS[1]*30),30);
-  for(const clip of [up,down]){
+  const whole=new T.AnimationClip('CMU_Lab_Source',temp.duration,clean);
+  const clips=windows.map(({name,start,end})=>{
+    if(end<=start||end>source.clip.duration)throw Error('Invalid CMU capture time window: '+name);
+    return T.AnimationUtils.subclip(whole,name,Math.round(start*30),Math.round(end*30),30);
+  });
+  const [up,down]=clips;
+  for(const clip of clips){
     if(clip.duration<=.6||clip.tracks.length<14)throw Error('Invalid retargeted CMU motion '+clip.name);
     // Avoid quaternion sign inversion on closely sampled motion clips.
     for(const track of clip.tracks)if(track instanceof T.QuaternionKeyframeTrack)
@@ -89,6 +111,6 @@ export function retargetCmu11319(actor:NathanActor,bvhText:string):CmuStairCaptu
   return {
     sourceFrames:source.clip.tracks.find(track=>track.name==='Hips.position')?.times.length||0,
     sourceSeconds:source.clip.duration,mappedBones:Object.keys(names).length,
-    ascent:up,descent:down
+    ascent:up, ...(down?{descent:down}:{})
   };
 }
