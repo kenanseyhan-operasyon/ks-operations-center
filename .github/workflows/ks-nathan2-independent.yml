@@ -1,7 +1,7 @@
 name: KS Nathan 2.0 Independent Lab — blocking tests
 on:
   push:
-    branches: [lab/nathan2-independent-20261102, fix/nathan2-video-contact-20261102, lab/nathan2-free-stairs-mocap-20261102]
+    branches: [lab/nathan2-independent-20261102, fix/nathan2-video-contact-20261102, lab/nathan2-free-stairs-mocap-20261102, fix/nathan2-block-unverified-cmu-20261102]
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +30,10 @@ jobs:
         run: |
           npx esbuild tests/nathan2-engine.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan2-engine.mjs
           node node_modules/.cache/nathan2-engine.mjs
+      - name: Reject external mocap until Nathan's actual torso geometry and visual QA pass
+        run: |
+          npx esbuild tests/nathan2-external-gate.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan2-external-gate.mjs
+          node node_modules/.cache/nathan2-external-gate.mjs
       - name: Build real Nathan model and the two independent entrypoints
         run: npm run build
       - name: Verify both HTML pages and Nathan runtime GLB exist
