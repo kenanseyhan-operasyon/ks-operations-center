@@ -18,6 +18,19 @@ const bytes=fs.readFileSync('public'+NATHAN_MODEL_URL),loader=new GLTFLoader();
 loader.register(()=>({name:'KS_NODE_TEXTURE',loadTexture:async()=>new T.Texture()}));
 const gltf=await loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 const person=newEntity(NATHAN_PRESET,0,0),root=makeNathanPlaceholder(person),actor=new NathanActor(root,gltf,person.height);
+// Before transferring any CMU clip, record Nathan's own skeleton
+// reference axis. Imported GLBs often use nonstandard bone orientations;
+ // a raw world-up angle is meaningless until compared with the bind rig.
+root.updateMatrixWorld(true);
+function worldBone(suffix:string){
+ const o=actor.model.getObjectByName('rp_nathan_animated_003_walking_'+suffix);
+ if(!o)throw Error('Missing Nathan bone '+suffix);
+ return o.getWorldPosition(new T.Vector3());
+}
+const neutralPoints=Object.fromEntries(['hip','neck','head','spine_03','foot_l','foot_r'].map(name=>[name,worldBone(name).toArray().map(n=>Number(n.toFixed(3)))]));
+const neutralAxis=worldBone('neck').sub(worldBone('hip')).normalize();
+const neutralInclination=Math.acos(T.MathUtils.clamp(neutralAxis.y,-1,1))*180/Math.PI;
+console.log('NATHAN2_NATIVE_RIG_REFERENCE '+JSON.stringify({points:neutralPoints,hipToNeckDegrees:neutralInclination}));
 const result=retargetCmu11319(actor,text);
 assert.equal(result.sourceFrames,804);
 assert.ok(result.sourceSeconds>6.6&&result.sourceSeconds<6.8);
@@ -77,7 +90,8 @@ const normalIdx=actor.clips.findIndex(c=>c.name===CMU_83_UP_NAME);
 assert.ok(normalIdx>=0,'Normal stair-up must be installed on real Nathan');
 actor.mixer.stopAllAction();
 actor.actions[normalIdx].reset().setEffectiveWeight(1).setEffectiveTimeScale(1).setLoop(T.LoopOnce,1).play();
-const inclinations:number[]=[];
+const inclinations:number[]=[],deviationsFromNeutral:number[]=[];
+let firstMotionPoints:Record<string,number[]>|undefined;
 for(let i=0;i<22;i++){
  const time=normal.ascent.duration*(.08+.84*i/21);
  actor.mixer.setTime(time);
@@ -88,9 +102,11 @@ for(let i=0;i<22;i++){
  const degrees=Math.acos(T.MathUtils.clamp(axis.y/axis.length(),-1,1))*180/Math.PI;
  assert.ok(Number.isFinite(degrees),'Actual Nathan spine inclination must be finite');
  inclinations.push(Number(degrees.toFixed(2)));
+ deviationsFromNeutral.push(Number(axis.normalize().angleTo(neutralAxis)*180/Math.PI));
+ if(i===0)firstMotionPoints=Object.fromEntries(['hip','neck','head','foot_l','foot_r'].map(name=>[name,worldBone(name).toArray().map(n=>Number(n.toFixed(3)))]));
 }
 const maxInclination=Math.max(...inclinations),avgInclination=inclinations.reduce((x,y)=>x+y,0)/inclinations.length;
-console.log('NATHAN2_CMU83_REAL_RIG_SPINE_DEGREES '+JSON.stringify({mean:avgInclination,max:maxInclination,samples:inclinations}));
+console.log('NATHAN2_CMU83_REAL_RIG_SPINE_DEGREES '+JSON.stringify({baseline:neutralInclination,mean:avgInclination,max:maxInclination,meanDifference:deviationsFromNeutral.reduce((a,b)=>a+b,0)/deviationsFromNeutral.length,maxDifference:Math.max(...deviationsFromNeutral),firstMotionPoints,samples:inclinations}));
 assert.ok(maxInclination<55&&avgInclination<40,
  'Reject visibly hunched/stunted retargeted stair posture from default Nathan: '+JSON.stringify({maxInclination,avgInclination}));
 actor.dispose();
