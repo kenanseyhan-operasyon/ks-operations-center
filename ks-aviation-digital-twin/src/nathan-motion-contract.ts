@@ -7,7 +7,7 @@
  *
  * Original implementation based on the KS 3D scene coordinate convention:
  *   heading=0 means forward -Z, heading=90 means forward +X;
- *   Three.js local +X (right hand side) in world is [cos(h), -sin(h)].
+ *   Three.js local +X (right hand side) in world is [cos(h), +sin(h)].
  */
 export type MotionTask =
   | 'idle' | 'ground-walk' | 'ground-run' | 'turn-in-place'
@@ -63,7 +63,7 @@ export function outsideRailHand(tankCentre:Vec3,operatorWorld:Vec3,headingDegree
   const len=Math.hypot(x,z);
   if(len<1e-6)return previous??0;
   const heading=rad(headingDegrees);
-  const dot=(Math.cos(heading)*x-Math.sin(heading)*z)/len;
+  const dot=(Math.cos(heading)*x+Math.sin(heading)*z)/len;
   // When Nathan pivots on a tread, keep the current grip near the
   // perpendicular boundary rather than rapidly swapping hands.
   if(Math.abs(dot)<.12&&previous!==undefined)return previous;
