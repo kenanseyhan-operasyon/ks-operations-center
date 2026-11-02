@@ -65,7 +65,7 @@ export function retargetCmu11319(actor:NathanActor,bvhText:string):CmuStairCaptu
   // node names, preserve rotations, and reject all double root translations.
   const temp=retargetClip(mesh,source.skeleton,source.clip,{
     names,hip:'Hips',hipInfluence:new T.Vector3(0,0,0),fps:30,
-    preserveBonePositions:true,preserveBoneMatrix:true,useFirstFramePosition:true
+    preserveBoneMatrix:true,useFirstFramePosition:true
   });
   const clean=temp.tracks.filter(track=>track.name.endsWith('.quaternion')).map(track=>{
     const cloned=track.clone();
