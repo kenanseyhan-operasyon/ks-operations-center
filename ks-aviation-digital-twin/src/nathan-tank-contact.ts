@@ -49,7 +49,7 @@ export function tankStairContact(tank:Entity,access:NathanAccess,progress:number
   // The old calculation dotted a WORLD-space right vector against a
   // TANK-LOCAL radial vector; rotated tanks therefore chose the wrong hand.
   const h=heading*Math.PI/180;
-  const right:[number,number]=[Math.cos(h),-Math.sin(h)];
+  const right:[number,number]=[Math.cos(h),Math.sin(h)];
   const handSide=outsideRailHand(tank.position,root,heading);
   // Footfall model: stance foot stays planted on its tread while the other
   // swings toward the next step. Reverse the travel distance for descent.
