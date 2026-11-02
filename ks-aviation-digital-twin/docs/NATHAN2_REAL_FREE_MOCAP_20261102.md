@@ -64,3 +64,26 @@ rotasyonları yeniden hedefler ve animasyonları karakter iskeletinde oynatır.
 gelmez. İlk canlı değerlendirmede arkadan ve yandan iskelet hareketi,
 adım temposu, merdiven boyunca tek elin korkuluğa temas etmesi,
 inişte doğru yüz yönü ayrı izlenmelidir.
+
+## Duruş güvenlik kapısı (2 Kasım 2026)
+
+Resmî CMU kataloğunda Subject 83 genel `steps` hareketleridir.
+Subject 113 ise `Post pregnant woman` olarak etiketlidir. Bu bilgi
+katılımcının hasta veya yaşlı olduğunu göstermez.
+
+Ancak farklı bir teknik sorun bulduk: Orijinal Nathan'ın kalça–boyun
+doğrultusu dünya dikeyine yaklaşık **0,32°** yakınken, CMU 83 hareketi
+mevcut `SkeletonUtils.retargetClip` eşlemesiyle Nathan'a aktarılınca
+gövde açısı ortalama **91,95°**, en fazla **95,79°** oluyor.
+Bu, kaynağın kişinin duruşu değil, bizim **retargeting hatamızdır**.
+
+Bu nedenle `src/nathan2/mocap-quality-gate.ts` tüm dış CMU hareketlerini
+**canlı Nathan 2.0 sayfasında geçici olarak devre dışı bırakır**.
+Ham CMU kaynakları, laboratuvar araştırma kodu ve gerçek-kemik
+testleri korunur. Korkuluk eli ve ayak temasları düzeltilmiş olsa bile,
+ayakta duramayan retarget kabul edilemez.
+
+Önce 90° iskelet ekseni/kalça rotasyonu düzeltilecek; sonrasında
+kalça-boyun ekseni, diz/ayak, gerçek basamak ve tek-el korkuluk tutuşu
+hem otomatik hem görsel olarak doğrulanacak. Kontroller geçmeden
+CMU83 veya CMU113 kullanıcıya doğal hareket diye sunulmayacak.
