@@ -189,7 +189,10 @@ export class Nathan2Motor {
     const midpoint=lerp(rail[0],rail[1],.5),fade=Math.min(1,smooth((this.distance-.4)/.45),smooth((length-.4-this.distance)/.45));
     const pose:NathanContact={feet,grips:[rail],handGrips:outer===0?[[rail],[]]:[[],[rail]],
       gripAim:[midpoint,midpoint],handWeight:fade,
-      freeHands:true,keepFreeHandMotion:true,gripHands:true,procedural:true,
+      // Preserve the actual walk clip's animated hips, knees, torso and free arm.
+      // The original procedural=true reset all those bones to bind pose every
+      // frame, reducing visible walking to robotic two-bone target chasing.
+      freeHands:true,keepFreeHandMotion:true,gripHands:true,procedural:false,
       disableClimbFallback:true,hipHeight:.89,gripRadius:.024,elbowPole:[0,-1,0]};
     return {pose,plantedFoot:stanceLeg,outsideHand:outer};
   }
