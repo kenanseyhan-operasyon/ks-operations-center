@@ -6,7 +6,8 @@ import {NATHAN_MODEL_URL,NATHAN_PRESET} from '../nathan-data';
 import {newEntity} from '../scene-data';
 import {localToWorld} from '../facility-data';
 import {Nathan2Motor,type V3,type LabSpeed,type MotorPose} from './engine';
-import {retargetCmu11319,retargetCmu8334Ascent,CMU_113_19_URL,CMU_83_34_URL,CMU_UP_NAME,CMU_DOWN_NAME,CMU_83_UP_NAME,type CmuStairCapture,type CmuStairAscent} from './cmu-mocap';
+import {retargetCmu11319,retargetCmu8334Ascent,CMU_113_19_URL,CMU_83_34_URL,type CmuStairCapture,type CmuStairAscent} from './cmu-mocap';
+import {chosenStairClip,chosenStairCycleSeconds,type StairMotionChoice} from './motion-selection';
 import './style.css';
 
 const el=(id:string)=>document.getElementById(id)!;
@@ -89,12 +90,12 @@ debug.add(trace);
 let actor:NathanActor|undefined;
 let mocap:CmuStairCapture|undefined;
 let normalAscent:CmuStairAscent|undefined;
-let selectedMotion:'original'|'cmu'|'cmu83'='original';
+let selectedMotion:StairMotionChoice='original';
 let originalCycle=.9;
-const motionLabel=()=>selectedMotion==='cmu83'?'CMU 83 · Normal çıkış / CMU 113 iniş':selectedMotion==='cmu'?'CMU 113 · Gerçek insan kaydı':'Eski Nathan';
-function selectMotion(which:'original'|'cmu'|'cmu83'){
+const motionLabel=()=>selectedMotion==='cmu83'?'CMU 83 · Normal çıkış / eski Nathan iniş':selectedMotion==='cmu'?'CMU 113 · Yalnızca karşılaştırma':'Önceki Nathan';
+function selectMotion(which:StairMotionChoice){
  if(which==='cmu'&&!mocap)return;
- if(which==='cmu83'&&(!normalAscent||!mocap))return;
+ if(which==='cmu83'&&!normalAscent)return;
  selectedMotion=which;
  document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.motion===which)));
  el('motion-source').textContent=motionLabel();
@@ -133,8 +134,9 @@ async function loadNathan(){
      throw Error('Could not register both motion clips');
    const newButton=document.querySelector<HTMLButtonElement>('[data-motion="cmu"]');
    if(newButton)newButton.disabled=false;
-   selectMotion('cmu');
-   el('mocap-status').textContent=`CMU 113_19: gerçek insan çıkış ve inişi; ${mocap.sourceFrames} kare; ${mocap.mappedBones} kemik eşlendi. Dış korkuluk kavraması ayrıca IK ile sağlanır.`;
+   // CMU113 remains available by explicit choice for research comparison,
+   // but is never auto-selected (including before the CMU83 file loads).
+   el('mocap-status').textContent=`CMU 113 karşılaştırma için hazır (${mocap.sourceFrames} kare); normal merdiven çıkışı CMU 83 yükleniyor. Varsayılan hareket değişmedi.`;
    loadLabel.textContent=`Gerçek Nathan + CMU merdiven MoCap yüklendi · ${actor.clips.length} animasyon`;
    try{
     const normalResponse=await fetch(CMU_83_34_URL);
@@ -144,9 +146,9 @@ async function loadNathan(){
     const normalBtn=document.querySelector<HTMLButtonElement>('[data-motion="cmu83"]');
     if(normalBtn)normalBtn.disabled=false;
     selectMotion('cmu83');
-    el('mocap-status').textContent=`İndirilen gerçek kayıtlar hazır: CMU 83 normal çıkış (${normalAscent.sourceFrames} kare), CMU 113 çıkış/iniş (${mocap.sourceFrames} kare). Korkuluk tek el IK ile kavranır.`;
+    el('mocap-status').textContent=`CMU 83 normal çıkış (${normalAscent.sourceFrames} kare) varsayılan. İnişte şimdilik eski Nathan hareketi. CMU 113 farklı katılımcı kaydıdır; yalnızca elle seçilen karşılaştırmada kullanılır.`;
     loadLabel.textContent=`Nathan + iki ücretsiz CMU hareket kaydı yüklendi · ${actor.clips.length} animasyon`;
-   }catch(e){console.warn('CMU 83 ascent unavailable, CMU 113 remains',e);}
+   }catch(e){console.warn('CMU 83 ascent unavailable; retain original Nathan motion',e);}
   }catch(error){
    console.error('CMU licensed free motion retarget failed; original motion remains available',error);
    el('mocap-status').textContent='Ücretsiz MoCap yüklenemedi. Önceki Nathan hareketi kullanılabilir; test raporunu kontrol edin.';
@@ -206,15 +208,14 @@ function frame(now:number){
  const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
  // Keep the imported human gait paired with the actual spiral path speed.
  // The 113_19 subclips cover approximately two left/right footstep pairs.
- const cycle=mocap&&selectedMotion!=='original' ? (motor.activity==='spiral-down'?mocap.descent.duration:selectedMotion==='cmu83'&&normalAscent?normalAscent.ascent.duration:mocap.ascent.duration)/2 : originalCycle;
+ const cycle=chosenStairCycleSeconds(selectedMotion,motor.activity,originalCycle,normalAscent?.ascent.duration,mocap?.ascent.duration,mocap?.descent.duration);
  motor.setWalkCycleSeconds(cycle);
  const pose=motor.tick(dt);
  root.position.fromArray(pose.position);
  root.rotation.y=-T.MathUtils.degToRad(pose.heading);
  if(actor){
-  const clip=selectedMotion==='cmu83'&&normalAscent&&pose.activity==='spiral-up'?CMU_83_UP_NAME:
-    selectedMotion==='cmu'&&mocap&&pose.activity==='spiral-up'?CMU_UP_NAME:
-    selectedMotion!=='original'&&mocap&&pose.activity==='spiral-down'?CMU_DOWN_NAME:pose.motion;
+  // CMU 113 must not play under CMU83 mode, especially on descent.
+  const clip=chosenStairClip(selectedMotion,pose.activity,pose.motion);
   actor.motion(clip,pose.motionRate);
   actor.contact(pose.contact);
   actor.update(dt*pose.speed);
