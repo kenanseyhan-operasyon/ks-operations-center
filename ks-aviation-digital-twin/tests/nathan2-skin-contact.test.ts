@@ -27,6 +27,7 @@ for(const progress of [.07,.15,.28,.42,.56,.72,.86,.93]){
  motor.activity='spiral-up';
  const pose=motor.tick(0);
  assert.ok(pose.contact,'Actual stair IK contact should exist at sample '+progress);
+ assert.notEqual(pose.contact!.procedural,true,'Do not reset the original walking hips, spine and legs to bind pose on the stairs');
  root.position.fromArray(pose.position);root.rotation.y=-T.MathUtils.degToRad(pose.heading);
  actor.contactRig!.resetGrips();actor.motion(pose.motion,pose.motionRate);actor.contact(pose.contact);actor.update(1/60);
  const h=pose.outsideHand!,actual=actor.contactRig!.handContacts[h];
