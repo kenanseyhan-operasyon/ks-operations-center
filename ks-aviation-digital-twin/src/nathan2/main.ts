@@ -101,6 +101,10 @@ async function loadNathan(){
    if(response.ok)gltf.animations.push(...parseNathanAccessClips(await response.json()));
   }catch{/* Spiral uses the original Walk; extra clips are optional in this isolated lab. */}
   actor=new NathanActor(root,gltf,person.height);
+  // Calibrate animation cadence from the real rig's trimmed walking cycle;
+  // the route always moves at normal stair speed unless test speed is selected.
+  const walk=actor.clips.find(clip=>clip.name==='Nathan_Original_Walk');
+  if(walk)motor.setWalkCycleSeconds(walk.duration);
   if(placeholder)placeholder.visible=false;
   actor.motion('Idle');
   el('load-status').textContent=`Gerçek Nathan GLB yüklendi · ${actor.clips.length} animasyon`;
