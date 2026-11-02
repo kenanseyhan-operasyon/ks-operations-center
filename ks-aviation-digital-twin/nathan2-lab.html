@@ -9,10 +9,50 @@
 <body>
  <main>
   <aside aria-label="Nathan hareket denemesi kontrol paneli">
-   <div class="tag">KS AVIATION · AYRI TEST ORTAMI</div>
-   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Duruş, yürüyüş ve tek elle dış korkuluğa tutunmayı yakından inceleyin.</p></div>
-   <p class="sub" id="load-status" role="status">3D sahne hazırlanıyor…</p>
-   <section><h2>Merdiven hareketleri</h2><div class="actions">
+   <div class="tag">KS AVIATION · MIXAMO HAREKETLERİ</div>
+   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Gönderdiğin beş hareketi Nathan üzerinde izle. Merdivende tek el tutuşunu açıp kapat.</p></div>
+   <p class="sub" id="load-status" role="status">Nathan ve hareketler hazırlanıyor…</p>
+   <section aria-labelledby="mixamo-heading"><h2 id="mixamo-heading">Gönderdiğin 5 hareket</h2>
+    <div class="motion-list" role="group" aria-label="Mixamo animasyonu seç">
+     <button data-mixamo="start-walking" disabled aria-pressed="false"><span>Yürümeye başla</span><small>Start Walking</small></button>
+     <button data-mixamo="walking" disabled aria-pressed="false"><span>Yürü</span><small>Walking</small></button>
+     <button data-mixamo="stop-walking" disabled aria-pressed="false"><span>Yürüyüşü bitir</span><small>Stop Walking</small></button>
+     <button data-mixamo="ascending-stairs" disabled aria-pressed="false"><span>Merdiven çık · 1</span><small>Ascending Stairs</small></button>
+     <button data-mixamo="walking-up-stairs" disabled aria-pressed="false"><span>Merdiven çık · 2</span><small>Walking Up The Stairs</small></button>
+    </div>
+    <p class="footnote" id="mixamo-info" role="status">Kayıtlar yükleniyor…</p>
+   </section>
+   <section id="preview-controls" aria-label="Animasyonu oynat">
+    <div class="preview-actions">
+     <button class="primary" data-preview="resume" disabled>Oynat</button>
+     <button class="danger" data-preview="pause" disabled>DUR</button>
+     <button data-preview="replay" disabled>Tekrar</button>
+    </div>
+    <label class="timeline-label" for="mixamo-timeline"><span>Kayıtta ilerle</span><strong id="mixamo-time">0,00 / 0,00 sn</strong></label>
+    <input id="mixamo-timeline" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Animasyon zamanı" />
+    <label class="toggle rail-toggle"><input type="checkbox" id="rail-toggle" disabled /> Tek elle korkuluğa tutun</label>
+    <p class="footnote" id="rail-help">İki merdiven kaydında açılabilir. Bacak hareketi aynı kalır.</p>
+   </section>
+   <section><h2>Oynatma hızı</h2><div class="speed" role="group" aria-label="Hızlandırma">
+    <button data-speed="1" aria-pressed="true">1× Normal</button>
+    <button data-speed="2" aria-pressed="false">2×</button>
+    <button data-speed="4" aria-pressed="false">4×</button>
+   </div></section>
+   <section class="panel"><div class="state" id="state">Hazırlanıyor</div>
+    <p class="sub" id="status">Nathan modeli bekleniyor.</p>
+    <details class="technical"><summary>Hareket bilgileri</summary>
+     <div class="metric"><span>Animasyon</span><strong id="motion-source">–</strong></div>
+     <div class="metric"><span id="progress-title">Kayıt ilerlemesi</span><strong id="progress">%0</strong></div>
+     <div class="metric"><span>Korkuluğa tutunan</span><strong id="hand">–</strong></div>
+     <div class="metric"><span>Ayak hareketi</span><strong id="foot">–</strong></div>
+     <div class="metric"><span>Temas farkı</span><strong id="ik-error">–</strong></div>
+     <div class="metric"><span>Gövde eğimi</span><strong id="posture">–</strong></div>
+     <div class="metric"><span>Konum X / Y / Z</span><strong id="position">–</strong></div>
+     <div class="metric"><span>Hız</span><strong id="speed-label">1×</strong></div>
+    </details>
+   </section>
+   <details id="spiral-controls" class="legacy-controls"><summary>Önceki spiral karşılaştırması</summary>
+   <section><h2>Spiral merdiven</h2><div class="actions">
     <button class="primary" data-command="up" disabled>Yürüyerek ÇIK</button>
     <button class="primary" data-command="down" disabled>Yürüyerek İN</button>
     <button class="danger" data-command="stop" disabled>DUR</button>
@@ -26,30 +66,14 @@
     </div>
     <p class="footnote" id="mocap-status" style="margin-top:8px">Hareket kayıtları hazırlanıyor. CMU 83 çıkış kaydıdır; bu seçenekte iniş Nathan'ın yürüyüşüyle yapılır.</p>
    </section>
-   <section><h2>Yalnızca test hızlandırması</h2><div class="speed" role="group" aria-label="Hızlandırma">
-    <button data-speed="1" aria-pressed="true">1× Normal</button>
-    <button data-speed="2" aria-pressed="false">2×</button>
-    <button data-speed="4" aria-pressed="false">4×</button>
-   </div><p class="footnote" style="margin-top:7px">2× ve 4×, yürüyüş hareketini hızlandırır. Koşma animasyonuna geçmez.</p></section>
-   <section class="panel"><h2>Canlı teknik göstergeler</h2>
-    <div class="state" id="state">Hazır</div>
-    <p class="sub" id="status">İlk hareketi seçin.</p>
-    <div class="metric"><span>Animasyon</span><strong id="motion-source">Eski Nathan</strong></div>
-    <div class="metric"><span>Merdiven ilerlemesi</span><strong id="progress">%0</strong></div>
-    <div class="metric"><span>Korkuluğa tutunan</span><strong id="hand">Geçiş</strong></div>
-    <div class="metric"><span>Basamakta kalan</span><strong id="foot">Geçiş</strong></div>
-    <div class="metric"><span>El/ayak hedef farkı</span><strong id="ik-error">–</strong></div>
-    <div class="metric"><span>Gövde eğimi</span><strong id="posture">–</strong></div>
-    <div class="metric"><span>Konum X / Y / Z</span><strong id="position">–</strong></div>
-    <div class="metric"><span>Hız</span><strong id="speed-label">1× test hızı</strong></div>
-   </section>
    <label class="toggle"><input type="checkbox" id="debug-toggle" checked /> El/ayak temas işaretlerini göster</label>
-   <p class="footnote">Burası gerçek tesis değildir. Nathan'ın motorunu incelemek için hazırlanmış bağımsız bir laboratuvardır. Sarı: dış korkuluk kavraması, turkuaz/turuncu: ayak hedefleri, mavi: erişim rotası. Canlı tesis ve kayıtlar etkilenmez.</p>
+   </details>
+   <p class="footnote">Kısa kayıtlar son karede durur. Yeniden izlemek için Tekrar'a bas; bir pozu incelemek için zaman çubuğunu kullan.</p>
   </aside>
   <div class="right"><canvas id="scene" aria-label="Nathan'ın spiral merdiven test sahnesi"></canvas>
    <div class="scene-telemetry" id="scene-telemetry" aria-live="off">Nathan 2.0 · Hazır · 0% · 0,0 m</div>
    <div class="overlay"><button id="view-follow">Nathan'ı yakından izle</button><button id="view-wide">Genel görünüm</button><button id="view-side">Yandan görünüm</button></div>
-   <div class="bottom">Fare: kamerayı döndür · Tekerlek: yakınlaş · <strong>DUR: mevcut pozu dondur.</strong> İncelemek için 1× hız kullanın.</div>
+   <div class="bottom">Fare: kamerayı döndür · Tekerlek: yakınlaş · <strong>DUR: pozu dondur.</strong> Zaman çubuğu: kareyi seç.</div>
   </div>
  </main>
  <script type="module" src="/src/nathan2/main.ts"></script>
