@@ -1,7 +1,7 @@
 name: KS Nathan 2.0 Independent Lab — blocking tests
 on:
   push:
-    branches: [lab/nathan2-independent-20261102]
+    branches: [lab/nathan2-independent-20261102, fix/nathan2-video-contact-20261102]
   workflow_dispatch:
 permissions:
   contents: read
