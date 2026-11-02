@@ -157,7 +157,8 @@ async function loadNathan(){
    for(const button of document.querySelectorAll<HTMLButtonElement>('[data-mixamo]'))button.disabled=false;
    selectMixamo('walking');
    preview.pause();
-   loadLabel.textContent='Nathan ve gönderdiğin 5 Mixamo hareketi hazır.';
+   loadLabel.textContent=`Nathan ve gönderdiğin ${mixamoMotions.length} Mixamo hareketi hazır.`;
+   el('mixamo-heading').textContent=`Gönderdiğin ${mixamoMotions.length} hareket`;
   }catch(error){
    console.error('Mixamo recordings could not be loaded',error);
    el('mixamo-info').textContent='Mixamo kayıtları yüklenemedi. Sayfayı yenileyerek tekrar deneyin.';
@@ -170,7 +171,7 @@ async function loadNathan(){
 }
 
 // The earlier comparison remains available on demand. Its BVH conversion
-// does not delay the user's five already-baked Mixamo recordings.
+// does not delay the user's already-baked Mixamo recordings.
 function loadLegacyMotions(){
  if(legacyLoading||!actor)return legacyLoading;
  const currentActor=actor;
@@ -208,17 +209,34 @@ function selectMixamo(id:string){
  preview.select(recording);
  preview.setSpeed(motor.speed);
  const rail=el('rail-toggle') as HTMLInputElement;
- rail.disabled=recording.kind!=='stairs';
- preview.setRailGrip(recording.kind==='stairs'&&rail.checked);
+ const onStairs=(recording.kind==='stairs'||recording.kind==='stairs-down')&&!recording.previewOnly;
+ rail.disabled=!onStairs;
+ preview.setRailGrip(onStairs&&rail.checked);
  document.querySelectorAll<HTMLButtonElement>('[data-mixamo]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mixamo===id)));
  document.querySelectorAll<HTMLButtonElement>('[data-preview]').forEach(button=>button.disabled=false);
  (el('mixamo-timeline') as HTMLInputElement).disabled=false;
  el('progress-title').textContent='Kayıt ilerlemesi';
- el('mixamo-info').textContent=`${recording.file} · ${recording.duration.toLocaleString('tr-TR',{maximumFractionDigits:2})} sn · Kayıt son karede durur.`;
- el('rail-help').textContent=recording.kind==='stairs'
+ el('mixamo-info').textContent=`${recording.file} · ${recording.duration.toLocaleString('tr-TR',{maximumFractionDigits:2})} sn · ${recording.note||'Kayıt son karede durur.'}`;
+ el('mixamo-info').classList.toggle('capture-warning',!!recording.previewOnly);
+ el('rail-help').textContent=onStairs
   ?'Tutunmayı açıp kapatırken kayıt ve bacak pozu değişmez.'
-  :'Korkuluk seçeneği iki merdiven kaydında kullanılabilir.';
+  :recording.previewOnly?'Özgün kaydı incelemek için zaman çubuğunu kullan. Bu kayıtta korkuluk uyarlaması kapalı.'
+  :recording.kind==='driving'?'Sürüş kaydı: koltukta oturuşu ve el-kol hareketlerini izle.'
+  :'Korkuluk seçeneği iki merdiven çıkış kaydında kullanılabilir.';
+ updateDescentTerrainControls();
  cameraPreset('follow');
+}
+
+function updateDescentTerrainControls(){
+ const state=preview?.active?preview.snapshot():undefined;
+ const visible=state?.motionId==='descending-stairs';
+ el('descent-terrain-controls').hidden=!visible;
+ if(!visible||!state)return;
+ document.querySelectorAll<HTMLButtonElement>('[data-descent-terrain]').forEach(button=>
+  button.setAttribute('aria-pressed',String(button.dataset.descentTerrain===state.descentTerrain)));
+ el('descent-terrain-info').textContent=state.descentTerrain==='stairs'
+  ?'Yüksek başlangıç platformu, aşağı basamaklar ve alt sahanlık. Zemin değişirken kaydın eklem hareketleri korunur.'
+  :'Aynı kayıt düz zemin üzerinde. Bir karede DUR ile durdurup iki zemini karşılaştırabilirsin.';
 }
 
 function switchToSpiral(){
@@ -231,6 +249,7 @@ function switchToSpiral(){
   (el('rail-toggle') as HTMLInputElement).disabled=true;
   cameraPreset('follow');
  }
+ el('descent-terrain-controls').hidden=true;
  spiralScene.visible=true;
  el('progress-title').textContent='Merdiven ilerlemesi';
  void loadLegacyMotions();
@@ -321,6 +340,13 @@ document.querySelectorAll<HTMLButtonElement>('[data-motion]').forEach(btn=>{
 });
 document.querySelectorAll<HTMLButtonElement>('[data-mixamo]').forEach(button=>{
  button.addEventListener('click',()=>selectMixamo(button.dataset.mixamo!));
+});
+document.querySelectorAll<HTMLButtonElement>('[data-descent-terrain]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  if(!preview?.active)return;
+  preview.setDescentTerrain(button.dataset.descentTerrain as 'stairs'|'level');
+  updateDescentTerrainControls();cameraPreset('follow');showPreview();
+ });
 });
 document.querySelectorAll<HTMLButtonElement>('[data-preview]').forEach(button=>{
  button.addEventListener('click',()=>{

@@ -1,6 +1,6 @@
-// Explicit import of the five user-supplied Mixamo captures. The published
-// asset contains movement only, not five duplicate character meshes.
-// Usage: node scripts/import-nathan2-mixamo.mjs <directory containing FBX files>
+// Explicit import of the user-supplied Mixamo captures. The published
+// asset contains movement only, without duplicate character meshes.
+// Usage: node scripts/import-nathan2-mixamo.mjs <FBX directory> [additional FBX directories...]
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
@@ -9,15 +9,17 @@ import {FBXLoader} from 'three/examples/jsm/loaders/FBXLoader.js';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-const input=process.argv[2];
-if(!input)throw Error('Usage: node scripts/import-nathan2-mixamo.mjs <FBX directory>');
+const inputs=process.argv.slice(2);
+if(!inputs.length)throw Error('Usage: node scripts/import-nathan2-mixamo.mjs <FBX directory> [additional FBX directories...]');
 const prefix='rp_nathan_animated_003_walking_';
 const definitions=[
  {id:'start-walking',label:'Yürümeye başla',file:'Start Walking.fbx',name:'Mixamo_Start_Walking',kind:'start'},
  {id:'walking',label:'Yürü',file:'Walking.fbx',name:'Mixamo_Walking',kind:'walk'},
  {id:'stop-walking',label:'Yürüyüşü bitir',file:'Stop Walking.fbx',name:'Mixamo_Stop_Walking',kind:'stop'},
  {id:'ascending-stairs',label:'Merdiven A',file:'Ascending Stairs.fbx',name:'Mixamo_Ascending_Stairs',kind:'stairs'},
- {id:'walking-up-stairs',label:'Merdiven B',file:'Walking Up The Stairs.fbx',name:'Mixamo_Walking_Up_The_Stairs',kind:'stairs'}
+ {id:'walking-up-stairs',label:'Merdiven B',file:'Walking Up The Stairs.fbx',name:'Mixamo_Walking_Up_The_Stairs',kind:'stairs'},
+ {id:'descending-stairs',label:'İniş kaydı',file:'Descending Stairs (1).fbx',name:'Mixamo_Descending_Stairs',kind:'stairs-down',previewOnly:true,note:'Bu kayıt son bölümde çömelme içerir; doğal merdiven inişi olarak doğrulanmadı.'},
+ {id:'driving',label:'Araç kullan',file:'Driving (1).fbx',name:'Mixamo_Driving',kind:'driving'}
 ];
 const mapping={
  hip:'Hips',spine_01:'Spine',spine_02:'Spine1',spine_03:'Spine2',neck:'Neck',head:'Head',
@@ -43,7 +45,9 @@ const depth=node=>{let n=0;for(let p=node.parent;p;p=p.parent)n++;return n;};
 const records=[];
 
 for(const definition of definitions){
- const bytes=buffer(path.join(input,definition.file));
+ const locations=inputs.map(input=>path.join(input,definition.file)).filter(file=>fs.existsSync(file));
+ if(locations.length!==1)throw Error(`Expected exactly one source for ${definition.file}; found ${locations.length}`);
+ const bytes=buffer(locations[0]);
  const source=new FBXLoader().parse(bytes,'');
  const sourceClip=source.animations.find(clip=>clip.name==='mixamo.com');
  if(!sourceClip||sourceClip.duration<=0)throw Error(`Missing Mixamo capture: ${definition.file}`);

@@ -10,17 +10,27 @@
  <main>
   <aside aria-label="Nathan hareket denemesi kontrol paneli">
    <div class="tag">KS AVIATION · MIXAMO HAREKETLERİ</div>
-   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Gönderdiğin beş hareketi Nathan üzerinde izle. Merdivende tek el tutuşunu açıp kapat.</p></div>
+   <div><h1>Nathan 2.0<br />Hareket Laboratuvarı</h1><p class="sub" style="margin-top:8px">Gönderdiğin yürüyüş, merdiven ve sürüş kayıtlarını Nathan üzerinde izle.</p></div>
    <p class="sub" id="load-status" role="status">Nathan ve hareketler hazırlanıyor…</p>
-   <section aria-labelledby="mixamo-heading"><h2 id="mixamo-heading">Gönderdiğin 5 hareket</h2>
+   <section aria-labelledby="mixamo-heading"><h2 id="mixamo-heading">Gönderdiğin 7 hareket</h2>
     <div class="motion-list" role="group" aria-label="Mixamo animasyonu seç">
      <button data-mixamo="start-walking" disabled aria-pressed="false"><span>Yürümeye başla</span><small>Start Walking</small></button>
      <button data-mixamo="walking" disabled aria-pressed="false"><span>Yürü</span><small>Walking</small></button>
      <button data-mixamo="stop-walking" disabled aria-pressed="false"><span>Yürüyüşü bitir</span><small>Stop Walking</small></button>
      <button data-mixamo="ascending-stairs" disabled aria-pressed="false"><span>Merdiven çık · 1</span><small>Ascending Stairs</small></button>
      <button data-mixamo="walking-up-stairs" disabled aria-pressed="false"><span>Merdiven çık · 2</span><small>Walking Up The Stairs</small></button>
+     <button data-mixamo="descending-stairs" disabled aria-pressed="false"><span>İniş kaydı</span><small>Descending Stairs · Önizleme</small></button>
+     <button data-mixamo="driving" disabled aria-pressed="false"><span>Araç kullan</span><small>Driving</small></button>
     </div>
     <p class="footnote" id="mixamo-info" role="status">Kayıtlar yükleniyor…</p>
+   </section>
+   <section id="descent-terrain-controls" hidden aria-label="İniş kaydının zemini">
+    <h2>İniş zemini</h2>
+    <div class="speed" role="group" aria-label="İniş zemini seç">
+     <button data-descent-terrain="stairs" aria-pressed="true">Yüksekten iniş</button>
+     <button data-descent-terrain="level" aria-pressed="false">Düz zemin</button>
+    </div>
+    <p class="footnote" id="descent-terrain-info" style="margin-top:8px">Üst platform, aşağı inen basamaklar ve alt sahanlık. Aynı pozu iki zeminde karşılaştırabilirsin.</p>
    </section>
    <section id="preview-controls" aria-label="Animasyonu oynat">
     <div class="preview-actions">
@@ -31,7 +41,7 @@
     <label class="timeline-label" for="mixamo-timeline"><span>Kayıtta ilerle</span><strong id="mixamo-time">0,00 / 0,00 sn</strong></label>
     <input id="mixamo-timeline" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Animasyon zamanı" />
     <label class="toggle rail-toggle"><input type="checkbox" id="rail-toggle" disabled /> Tek elle korkuluğa tutun</label>
-    <p class="footnote" id="rail-help">İki merdiven kaydında açılabilir. Bacak hareketi aynı kalır.</p>
+    <p class="footnote" id="rail-help">İki merdiven çıkış kaydında açılabilir. Bacak hareketi aynı kalır.</p>
    </section>
    <section><h2>Oynatma hızı</h2><div class="speed" role="group" aria-label="Hızlandırma">
     <button data-speed="1" aria-pressed="true">1× Normal</button>
@@ -70,7 +80,7 @@
    </details>
    <p class="footnote">Kısa kayıtlar son karede durur. Yeniden izlemek için Tekrar'a bas; bir pozu incelemek için zaman çubuğunu kullan.</p>
   </aside>
-  <div class="right"><canvas id="scene" aria-label="Nathan'ın spiral merdiven test sahnesi"></canvas>
+  <div class="right"><canvas id="scene" aria-label="Nathan'ın yürüyüş, merdiven ve sürüş hareketi sahnesi"></canvas>
    <div class="scene-telemetry" id="scene-telemetry" aria-live="off">Nathan 2.0 · Hazır · 0% · 0,0 m</div>
    <div class="overlay"><button id="view-follow">Nathan'ı yakından izle</button><button id="view-wide">Genel görünüm</button><button id="view-side">Yandan görünüm</button></div>
    <div class="bottom">Fare: kamerayı döndür · Tekerlek: yakınlaş · <strong>DUR: pozu dondur.</strong> Zaman çubuğu: kareyi seç.</div>

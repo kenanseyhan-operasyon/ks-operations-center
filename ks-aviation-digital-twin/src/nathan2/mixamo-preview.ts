@@ -4,8 +4,9 @@ import {SkinnedBounds} from '../skinned-bounds';
 import type {MixamoMotion} from './mixamo-mocap';
 
 type V3 = [number,number,number];
-type Sample = {time:number;hip:T.Vector3;feet:[T.Vector3,T.Vector3]};
+type Sample = {time:number;hip:T.Vector3;feet:[T.Vector3,T.Vector3];hands:[T.Vector3,T.Vector3]};
 type Support = {distance:number;height:number};
+export type DescentTerrain='stairs'|'level';
 const PREFIX='rp_nathan_animated_003_walking_';
 const tuple=(p:T.Vector3):V3=>[p.x,p.y,p.z];
 const median=(values:number[])=>{
@@ -30,6 +31,9 @@ export interface MixamoPreviewSnapshot {
   gripError:number;
   speed:1|2|4;
   stairCount:number;
+  railAvailable:boolean;
+  sourceWarning?:string;
+  descentTerrain:DescentTerrain;
 }
 
 /** A source-motion viewer, deliberately independent of the spiral motor.
@@ -55,6 +59,11 @@ export class MixamoPreview {
   private stairCount=0;
   private supports:Support[]=[];
   private forward=new T.Vector3(0,0,-1);
+  private sourceWarning?:string;
+  private descentTerrain:DescentTerrain='stairs';
+  private descentSamples:Sample[]=[];
+  private descentBaseOffsetY=0;
+  private descentElevation=0;
   private saved?:{
     position:T.Vector3;rotation:T.Quaternion;offset:T.Vector3;
     index:number;playing:boolean;controlled:boolean;
@@ -85,6 +94,8 @@ export class MixamoPreview {
     this.actor.playing=false;
     this.actor.controlled=true;
     this.motion=motion;
+    this.sourceWarning=motion.note;
+    this.descentSamples=[];this.descentElevation=0;
     this.actor.addExternalMotion(motion.clip);
     this.actor.index=this.actor.clips.findIndex(clip=>clip.name===motion.clip.name);
     this.action=this.actor.actions[this.actor.index];
@@ -117,10 +128,28 @@ export class MixamoPreview {
     for(let frame=0;frame<=frames;frame++){
       const time=motion.duration*frame/frames;
       this.evaluate(time);
-      samples.push({time,hip:this.point('hip'),feet:this.feet()});
+      samples.push({time,hip:this.point('hip'),feet:this.feet(),hands:this.hands()});
     }
-    this.buildStage(samples,motion.kind==='stairs');
-    this.render(0,true);
+    // A descending capture may extend below its first supporting tread. Move
+    // the complete recording once so the lower landing is above world ground;
+    // never alter the captured pelvis or leg channels frame by frame.
+    if(motion.kind==='stairs-down'&&!motion.previewOnly){
+      const lift=Math.max(0,.025-Math.min(...samples.flatMap(sample=>sample.feet.map(foot=>foot.y))));
+      if(lift>0){
+        this.actor.offset.position.y+=lift;
+        for(const sample of samples){sample.hip.y+=lift;for(const point of [...sample.feet,...sample.hands])point.y+=lift;}
+      }
+    }
+    if(motion.kind==='stairs-down'){
+      this.descentTerrain='stairs';
+      this.descentSamples=samples;
+      this.descentBaseOffsetY=this.actor.offset.position.y;
+      this.rebuildDescentTerrain();
+    }else{
+      this.evaluate(0);
+      this.buildStage(samples,motion.kind);
+      this.render(0,true);
+    }
   }
 
   setSpeed(speed:1|2|4){this.speed=speed;}
@@ -144,12 +173,20 @@ export class MixamoPreview {
     this.render(0,true);
   }
   setRailGrip(enabled:boolean){
-    this.gripEnabled=enabled;
+    this.gripEnabled=enabled&&!!this.rail&&!this.motion?.previewOnly&&this.motion?.kind!=='driving';
     if(this.active){
       this.actor.contactRig?.resetGrips();
       // A paused A/B comparison must change only the arm, at the same time.
       this.render(0,true);
     }
+  }
+  /** Geometry comparison only: the source timeline, bone rotations and
+   * relative hip translation stay identical in both views. */
+  setDescentTerrain(terrain:DescentTerrain){
+    if(terrain!=='stairs'&&terrain!=='level')return;
+    if(!this.active||this.motion?.kind!=='stairs-down'||terrain===this.descentTerrain)return;
+    this.descentTerrain=terrain;
+    this.rebuildDescentTerrain();
   }
   tick(dt:number){
     if(!this.active||!this.motion)return;
@@ -187,7 +224,9 @@ export class MixamoPreview {
       paused:this.paused,finished:this.finished,position:[hip.x,floor,hip.z],
       cameraTarget:tuple(hip.clone().lerp(neck,.35)),feet:this.feet().map(tuple) as [V3,V3],
       gripEnabled:this.gripEnabled,gripActive:!!contact&&this.gripWeight>.99,
-      gripError:contact?contact.target.distanceTo(contact.centre):0,speed:this.speed,stairCount:this.stairCount};
+      gripError:contact?contact.target.distanceTo(contact.centre):0,speed:this.speed,stairCount:this.stairCount,
+      railAvailable:!!this.rail&&!this.motion?.previewOnly&&this.motion?.kind!=='driving',sourceWarning:this.sourceWarning,
+      descentTerrain:this.descentTerrain};
   }
 
   private point(suffix:string){
@@ -196,6 +235,11 @@ export class MixamoPreview {
   private feet():[T.Vector3,T.Vector3]{
     const rig=this.actor.contactRig;
     return rig?[rig.sole(0),rig.sole(1)]:[this.point('foot_l'),this.point('foot_r')];
+  }
+  private hands():[T.Vector3,T.Vector3]{
+    const rig=this.actor.contactRig;
+    return rig?rig.arms.map(arm=>arm.end.localToWorld(arm.sole.clone())) as [T.Vector3,T.Vector3]:
+      [this.point('hand_l'),this.point('hand_r')];
   }
   private evaluate(time:number){
     if(!this.action)return;
@@ -231,7 +275,23 @@ export class MixamoPreview {
     return height;
   }
 
-  private buildStage(samples:Sample[],stairs:boolean){
+  private rebuildDescentTerrain(){
+    if(!this.descentSamples.length)return;
+    const first=this.descentSamples[0],last=this.descentSamples.at(-1)!;
+    // A single scene placement change lifts the complete unmodified clip to
+    // the upper platform. There is no second root-motion path, vertical
+    // animation correction, or attempt to straighten the recorded knees.
+    this.descentElevation=this.descentTerrain==='stairs'?Math.max(.20,first.hip.y-last.hip.y):0;
+    this.actor.offset.position.y=this.descentBaseOffsetY+this.descentElevation;
+    const shifted=(point:T.Vector3)=>point.clone().add(new T.Vector3(0,this.descentElevation,0));
+    const samples=this.descentSamples.map(sample=>({time:sample.time,hip:shifted(sample.hip),
+      feet:sample.feet.map(shifted) as [T.Vector3,T.Vector3],hands:sample.hands.map(shifted) as [T.Vector3,T.Vector3]}));
+    this.evaluate(0);
+    this.buildStage(samples,'stairs-down');
+    this.render(0,true);
+  }
+
+  private buildStage(samples:Sample[],kind:MixamoMotion['kind']){
     for(const object of this.stage.children.slice()){
       object.traverse(child=>{
         if(child instanceof T.Mesh||child instanceof T.Line){
@@ -242,6 +302,8 @@ export class MixamoPreview {
       });
       this.stage.remove(object);
     }
+    this.rail=undefined;this.railSegments=[];
+    const stairs=kind==='stairs';
     const first=samples[0],last=samples.at(-1)!;
     this.forward.copy(last.hip).sub(first.hip).setY(0);
     if(this.forward.length()<.04)this.forward.set(0,0,-1);else this.forward.normalize();
@@ -255,6 +317,20 @@ export class MixamoPreview {
     this.stage.add(base);
     this.supports=[{distance:low,height:0}];
     this.stairCount=0;
+
+    if(kind==='driving'){
+      this.gripEnabled=false;this.gripWeight=0;
+      this.buildDrivingStation(samples);
+      return;
+    }
+    if(kind==='stairs-down'){
+      // This supplied recording lowers the hips while its toes remain on a
+      // single plane. The requested raised-step scene is a comparison, not
+      // validation: no rail or foot constraint conceals the source motion.
+      this.gripEnabled=false;this.gripWeight=0;
+      if(this.descentTerrain==='stairs')this.buildDescendingSteps(samples,low,high);
+      return;
+    }
 
     if(stairs){
       // Find near-stationary source foot contacts. Geometry is fitted to the
@@ -329,5 +405,87 @@ export class MixamoPreview {
       const post=new T.Mesh(new T.CylinderGeometry(.022,.022,height,10),new T.MeshStandardMaterial({color:'#b8a35c',roughness:.5,metalness:.3}));
       post.position.copy(point);post.position.y=floor+height/2;this.stage.add(post);
     }
+  }
+
+  private buildDescendingSteps(samples:Sample[],low:number,high:number){
+    const first=samples[0],last=samples.at(-1)!;
+    const travel=Math.max(.32,last.hip.clone().sub(first.hip).dot(this.forward));
+    const run=travel/2;
+    const firstFoot=Math.min(...first.feet.map(foot=>foot.dot(this.forward)));
+    const upperEdge=firstFoot+run/2,lowerEdge=upperEdge+run;
+    const lowerHeight=.006;
+    this.supports=[{distance:low,height:this.descentElevation},
+      {distance:upperEdge,height:(this.descentElevation+lowerHeight)/2},
+      {distance:lowerEdge,height:lowerHeight}];
+    this.stairCount=2;
+    for(let i=0;i<this.supports.length;i++){
+      const support=this.supports[i],end=this.supports[i+1]?.distance??high;
+      const depth=Math.max(.12,end-support.distance),thickness=Math.max(.08,support.height);
+      const material=new T.MeshStandardMaterial({color:i===0?'#d4c18a':i===1?'#bcced4':'#75929d',roughness:.7,metalness:.18});
+      const tread=new T.Mesh(new T.BoxGeometry(1.10,thickness,depth),material);
+      tread.name=i===0?'MIXAMO_DESCENT_UPPER_LANDING':i===1?'MIXAMO_DESCENT_STEP':'MIXAMO_DESCENT_LOWER_LANDING';
+      tread.position.copy(this.forward).multiplyScalar(support.distance+depth/2);
+      tread.position.y=support.height-thickness/2;
+      tread.rotation.y=Math.atan2(this.forward.x,this.forward.z);
+      this.stage.add(tread);
+    }
+  }
+
+  private buildDrivingStation(samples:Sample[]){
+    const first=samples[0],hip=first.hip;
+    const sideways=new T.Vector3(-this.forward.z,0,this.forward.x);
+    const yaw=Math.atan2(this.forward.x,this.forward.z);
+    const cushion=new T.MeshStandardMaterial({color:'#293b43',roughness:.94});
+    const frame=new T.MeshStandardMaterial({color:'#71838a',metalness:.62,roughness:.45});
+    const rubber=new T.MeshStandardMaterial({color:'#131f24',roughness:.85});
+    const seatTop=(this.point('upperleg_l').y+this.point('upperleg_r').y)/2-.085;
+    const box=(name:string,width:number,height:number,depth:number,position:T.Vector3,material:T.Material)=>{
+      const mesh=new T.Mesh(new T.BoxGeometry(width,height,depth),material);
+      mesh.name=name;mesh.position.copy(position);mesh.rotation.y=yaw;this.stage.add(mesh);return mesh;
+    };
+    const cylinder=(name:string,a:T.Vector3,b:T.Vector3,radius:number,material:T.Material)=>{
+      const delta=b.clone().sub(a);
+      const mesh=new T.Mesh(new T.CylinderGeometry(radius,radius,delta.length(),14),material);
+      mesh.name=name;mesh.position.copy(a).lerp(b,.5);
+      mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());
+      this.stage.add(mesh);return mesh;
+    };
+
+    // Props follow the captured seated posture. The animation is not fitted
+    // to a seat, wheel, pedals, or the facility's driving controller.
+    const seatCentre=hip.clone().addScaledVector(this.forward,.08).setY(seatTop-.035);
+    box('MIXAMO_DRIVER_SEAT',.53,.07,.48,seatCentre,cushion);
+    const backCentre=hip.clone().addScaledVector(this.forward,-.20).setY(seatTop+.30);
+    const back=box('MIXAMO_DRIVER_BACKREST',.53,.60,.075,backCentre,cushion);
+    const torso=this.point('neck').sub(hip).normalize();
+    const lean=-Math.atan2(torso.dot(this.forward),torso.y);
+    back.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(sideways,lean));
+    cylinder('MIXAMO_DRIVER_SEAT_PEDESTAL',seatCentre.clone().setY(.02),seatCentre.clone().setY(seatTop-.07),.085,frame);
+    box('MIXAMO_DRIVER_SEAT_BASE',.48,.035,.40,seatCentre.clone().setY(.0175),frame);
+
+    const palms=samples.map(sample=>sample.hands[0].clone().add(sample.hands[1]).multiplyScalar(.5));
+    const middle=palms.reduce((sum,point)=>sum.add(point),new T.Vector3()).divideScalar(palms.length);
+    const handSpan=median(samples.map(sample=>sample.hands[0].distanceTo(sample.hands[1])));
+    const radius=T.MathUtils.clamp(handSpan*.60,.19,.25);
+    const normal=this.forward.clone().negate().add(new T.Vector3(0,.35,0)).normalize();
+    const wheelUp=new T.Vector3(0,1,0).addScaledVector(normal,-normal.y).normalize();
+    const upperOffset=Math.sqrt(Math.max(.003,radius*radius-handSpan*handSpan/4));
+    const centre=middle.clone().addScaledVector(wheelUp,-upperOffset);
+    const wheel=new T.Mesh(new T.TorusGeometry(radius,.018,10,48),rubber);
+    wheel.name='MIXAMO_DRIVER_STEERING_WHEEL';wheel.position.copy(centre);
+    wheel.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),normal);this.stage.add(wheel);
+    const hub=new T.Mesh(new T.CylinderGeometry(.055,.055,.045,20),rubber);
+    hub.name='MIXAMO_DRIVER_STEERING_HUB';hub.position.copy(centre);
+    hub.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),normal);this.stage.add(hub);
+    for(const direction of [sideways.clone(),sideways.clone().negate(),wheelUp.clone().negate()])
+      cylinder('MIXAMO_DRIVER_WHEEL_SPOKE',centre,centre.clone().addScaledVector(direction,radius-.015),.012,frame);
+    const columnEnd=centre.clone().addScaledVector(this.forward,.38).add(new T.Vector3(0,-.30,0));
+    cylinder('MIXAMO_DRIVER_STEERING_COLUMN',centre,columnEnd,.033,frame);
+    cylinder('MIXAMO_DRIVER_COLUMN_SUPPORT',columnEnd.clone().setY(.025),columnEnd,.04,frame);
+
+    // The right foot in this capture is raised over the accelerator position.
+    // A small fixed pedal makes that original pose understandable without IK.
+    const pedalCentre=first.feet[1].clone();pedalCentre.y=Math.max(.035,pedalCentre.y-.018);
+    box('MIXAMO_DRIVER_PEDAL',.13,.025,.20,pedalCentre,rubber);
   }
 }
