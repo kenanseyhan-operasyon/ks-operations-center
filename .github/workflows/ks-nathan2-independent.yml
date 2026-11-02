@@ -30,10 +30,6 @@ jobs:
         run: |
           npx esbuild tests/nathan2-engine.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/nathan2-engine.mjs
           node node_modules/.cache/nathan2-engine.mjs
-      - name: Verify actual skinned Nathan palms GRIP physical rail and feet land on treads
-        run: |
-          npx esbuild tests/nathan2-skin-contact.test.ts --bundle --external:jsdom --loader:.css=empty --platform=node --format=esm --outfile=node_modules/.cache/nathan2-skin-contact.mjs
-          node node_modules/.cache/nathan2-skin-contact.mjs
       - name: Build real Nathan model and the two independent entrypoints
         run: npm run build
       - name: Verify both HTML pages and Nathan runtime GLB exist
@@ -42,5 +38,9 @@ jobs:
           test -s dist/nathan2-lab.html
           test -s dist/models/personnel/KS_Nathan_Runtime.glb
           grep -q 'Nathan 2.0' dist/nathan2-lab.html
+      - name: Verify actual skinned Nathan palms GRIP physical rail and feet land on treads
+        run: |
+          npx esbuild tests/nathan2-skin-contact.test.ts --bundle --external:jsdom --loader:.css=empty --platform=node --format=esm --outfile=node_modules/.cache/nathan2-skin-contact.mjs
+          node node_modules/.cache/nathan2-skin-contact.mjs
       - name: Existing Nathan skinned movement still passes
         run: npm run test:nathan-movement
