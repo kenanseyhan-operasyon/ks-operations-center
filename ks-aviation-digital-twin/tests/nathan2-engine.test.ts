@@ -85,4 +85,11 @@ for(let i=0;i<50;i++){a.tick(.025);b.tick(.025);}
 assert.ok(b.distance>a.distance*2,'Test speed changes route advancement (including turn-in-place)');
 assert.ok(a.tick(.016).motion==='Nathan_Original_Walk');
 assert.ok(b.tick(.016).motion==='Nathan_Original_Walk');
+// One left-right stride pair covers exactly 2*0.34 metres. Never use a
+// guessed FBX source walking speed to time the cyclic leg movement.
+const calibrated=.49*.9/(2*.34*tank.scale);
+assert.ok(Math.abs(a.tick(.016).motionRate-calibrated)<1e-9);
+assert.ok(Math.abs(b.tick(.016).motionRate-calibrated)<1e-9,'4x test speed scales route and clip together, not gait type');
+a.setWalkCycleSeconds(1.12);
+assert.ok(Math.abs(a.tick(.016).motionRate-(.49*1.12/(2*.34*tank.scale)))<1e-9,'Runtime walks use real GLB clip duration');
 console.log('PASS Nathan2 independent gait motor: no running stairs, outside hand, alternating soles, no teleport, 1/4x speeds, clockwise, rotated tanks, descent');
