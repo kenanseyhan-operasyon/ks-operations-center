@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import * as T from 'three';
 import {NATHAN_MOTION_CONTRACTS,outsideRailHand,stairStepPhase,ballValveLeverRadians,type MotionTask} from '../src/nathan-motion-contract';
 import {newEntity} from '../src/scene-data';
 import {tankStairLayout} from '../src/tank-stairs';
@@ -32,10 +33,14 @@ const centre:[number,number,number]=[15,0,-18];
 for(const angle of [0,15,45,90,165,220,315])for(const heading of [0,33,90,145,220,280]){
   const rad=angle*Math.PI/180,h=heading*Math.PI/180,radius=7.3;
   const world:[number,number,number]=[centre[0]+radius*Math.sin(rad),4,centre[2]+radius*Math.cos(rad)];
-  const right=(world[0]-centre[0])*Math.cos(h)-(world[2]-centre[2])*Math.sin(h);
+  // Independent oracle: THREE's actual transform uses -heading, unlike
+  // the former self-affirming math test that repeated the production error.
+  const operator=new T.Group();operator.rotation.y=-h;
+  const realWorldRight=new T.Vector3(1,0,0).applyQuaternion(operator.quaternion);
+  const right=(world[0]-centre[0])*realWorldRight.x+(world[2]-centre[2])*realWorldRight.z;
   if(Math.abs(right)<.001)continue;
   const expect=right>0?1:0;
-  assert.equal(outsideRailHand(centre,world,heading),expect,'Right hand must be on actual OUTER rail');
+  assert.equal(outsideRailHand(centre,world,heading),expect,'Actual rig rotation determines which hand reaches outer rail');
   assert.equal(outsideRailHand(centre,world,heading+180),1-expect,'Reversing walking direction must switch to the newly outer hand');
 }
 assert.equal(outsideRailHand(centre,centre,90,1),1,'Pivot near tank centre may keep previous hold');
