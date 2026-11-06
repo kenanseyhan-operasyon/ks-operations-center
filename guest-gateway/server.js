@@ -1,9 +1,16 @@
 import http from 'node:http';
 import { randomUUID, randomInt } from 'node:crypto';
 import { URL } from 'node:url';
+import webpush from 'web-push';
 
 const PORT = process.env.PORT || 10000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+const ADMIN_PIN = process.env.ADMIN_PIN || '';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@example.com';
+const subscriptions = new Map();
+if(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY){ webpush.setVapidDetails(VAPID_SUBJECT,VAPID_PUBLIC_KEY,VAPID_PRIVATE_KEY); }
 const ALLOW_ORIGIN = 'https://ks-misafirleri.onrender.com';
 const requests = new Map();
 
@@ -34,7 +41,15 @@ function cookies(req){
   return out;
 }
 function isAdmin(req,u){
-  return ADMIN_TOKEN && (u.searchParams.get('token')===ADMIN_TOKEN || cookies(req).ks_admin===ADMIN_TOKEN);
+  const pin=req.headers['x-admin-pin'];
+  return (ADMIN_PIN && pin===ADMIN_PIN) || (ADMIN_TOKEN && (u.searchParams.get('token')===ADMIN_TOKEN || cookies(req).ks_admin===ADMIN_TOKEN));
+}
+async function notifyAdmins(item){
+  if(!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  const payload=JSON.stringify({title:'KS AVIATION',body:item.name+' giriş izni istiyor',url:'/ks-admin/'});
+  for(const [key,sub] of subscriptions){
+    try{await webpush.sendNotification(sub,payload);}catch(e){if(e && (e.statusCode===404||e.statusCode===410))subscriptions.delete(key);}
+  }
 }
 
 const adminHtml = `<!doctype html>
@@ -241,6 +256,20 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='GET' && u.pathname==='/admin.js'){
     if(!isAdmin(req,u)) return send(res,403,'forbidden','text/plain; charset=utf-8',{'access-control-allow-origin':'*'});
     return send(res,200,adminJs,'application/javascript; charset=utf-8',{'access-control-allow-origin':'*'});
+  }
+
+  if(req.method==='GET' && u.pathname==='/api/admin/config'){
+    if(!isAdmin(req,u)) return send(res,403,{error:'forbidden'});
+    return send(res,200,{vapidPublicKey:VAPID_PUBLIC_KEY});
+  }
+  if(req.method==='POST' && u.pathname==='/api/admin/subscribe'){
+    if(!isAdmin(req,u)) return send(res,403,{error:'forbidden'});
+    try{
+      const sub=await bodyJson(req);
+      if(!sub || !sub.endpoint) return send(res,400,{error:'bad_subscription'});
+      subscriptions.set(sub.endpoint,sub);
+      return send(res,200,{ok:true});
+    }catch{return send(res,400,{error:'bad_request'});}
   }
 
   if(req.method==='GET' && u.pathname==='/api/admin/requests'){
