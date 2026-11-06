@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="tr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111d"><link rel="manifest" href="/ks-admin/manifest.json">
+<title>KS AVIATION - Hızlı İş Bitirici</title>
+<style>
+body{margin:0;background:#07111d;color:#fff;font-family:Arial,sans-serif}.app{max-width:680px;margin:auto;padding:18px}
+h1{font-size:26px;margin:8px 0}.sub{color:#9fb0c4}.card{background:#102033;border:1px solid #29415d;border-radius:18px;padding:16px;margin:12px 0}
+input,button{width:100%;box-sizing:border-box;border-radius:12px;padding:13px;margin-top:8px;font-size:16px}
+input{background:#0b1726;color:#fff;border:1px solid #35506d}button{border:0;font-weight:700}.ok{background:#22c55e}.no{background:#ef4444;color:#fff}.sec{background:#f59e0b;color:#111}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.green{color:#86efac}.red{color:#fca5a5}.hide{display:none}
+</style></head>
+<body><div class="app">
+<div class="sub">KS AVIATION</div><h1>Hızlı İş Bitirici</h1>
+<div id="login" class="card">
+<b>Yönetici Girişi</b><div class="sub">6 haneli PIN</div>
+<input id="pin" inputmode="numeric" maxlength="6" placeholder="••••••">
+<button id="loginBtn" class="ok">Giriş Yap</button><div id="loginMsg" class="sub"></div>
+</div>
+<div id="main" class="hide">
+<div id="status" class="card">Bağlantı kontrol ediliyor...</div>
+<div class="row"><button id="pushBtn" class="sec">Bildirimleri Aç</button><button id="refreshBtn">Yenile</button></div>
+<div id="list"></div>
+</div>
+</div>
+<script>
+const API='https://ks-misafir-gateway.onrender.com';let PIN=localStorage.getItem('ks_admin_pin')||'';
+const q=s=>document.querySelector(s);function headers(){return {'x-admin-pin':PIN,'content-type':'application/json'}}
+async function api(path,opt={}){opt.headers={...(opt.headers||{}),...headers()};const r=await fetch(API+path,opt);if(!r.ok)throw new Error(String(r.status));return r.json()}
+function showMain(){q('#login').classList.add('hide');q('#main').classList.remove('hide');load()}
+async function tryLogin(){PIN=q('#pin').value.trim();try{await api('/api/admin/config');localStorage.setItem('ks_admin_pin',PIN);showMain()}catch{q('#loginMsg').textContent='PIN hatalı veya bağlantı yok.'}}
+q('#loginBtn').onclick=tryLogin;q('#refreshBtn').onclick=load;
+async function act(id,action){await api('/api/admin/action',{method:'POST',body:JSON.stringify({id,action})});load()}
+function card(x){const d=document.createElement('div');d.className='card';const t=document.createElement('b');t.textContent=x.name;d.appendChild(t);
+const c=document.createElement('div');c.className='sub';c.textContent=x.company||'Firma belirtilmedi';d.appendChild(c);
+const tm=document.createElement('div');tm.className='sub';tm.textContent=new Date(x.createdAt).toLocaleString('tr-TR');d.appendChild(tm);
+const st=document.createElement('div');st.textContent='Durum: '+x.status;d.appendChild(st);
+if(x.status==='pending'){const r=document.createElement('div');r.className='row';const a=document.createElement('button');a.className='ok';a.textContent='ONAYLA';a.onclick=()=>act(x.id,'approve');const n=document.createElement('button');n.className='no';n.textContent='REDDET';n.onclick=()=>act(x.id,'reject');r.append(a,n);d.appendChild(r)}return d}
+async function load(){try{const data=await api('/api/admin/requests');q('#status').innerHTML='<span class="green">● BAĞLANDI</span> • '+new Date().toLocaleTimeString('tr-TR');q('#list').innerHTML='';if(!data.requests.length){q('#list').innerHTML='<div class="card sub">Bekleyen talep yok.</div>'}else data.requests.forEach(x=>q('#list').appendChild(card(x)))}catch{q('#status').innerHTML='<span class="red">● BAĞLANTI HATASI</span>'}}
+function b64(s){const p='='.repeat((4-s.length%4)%4);const b=(s+p).replace(/-/g,'+').replace(/_/g,'/');const r=atob(b);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))}
+q('#pushBtn').onclick=async()=>{try{if(!('serviceWorker'in navigator))throw 0;const reg=await navigator.serviceWorker.register('/ks-admin/sw.js');const cfg=await api('/api/admin/config');const perm=await Notification.requestPermission();if(perm!=='granted')throw 0;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(cfg.vapidPublicKey)});await api('/api/admin/subscribe',{method:'POST',body:JSON.stringify(sub)});q('#pushBtn').textContent='Bildirim Hazır ✓'}catch{q('#pushBtn').textContent='Bildirim açılamadı'}}
+if(PIN){api('/api/admin/config').then(showMain).catch(()=>localStorage.removeItem('ks_admin_pin'))}
+setInterval(()=>{if(!q('#main').classList.contains('hide'))load()},2500);
+</script></body></html>
