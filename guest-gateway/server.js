@@ -20,7 +20,7 @@ function send(res, status, body, type='application/json; charset=utf-8', extra={
     'cache-control':'no-store',
     'access-control-allow-origin': ALLOW_ORIGIN,
     'access-control-allow-methods':'GET,POST,OPTIONS',
-    'access-control-allow-headers':'content-type',
+    'access-control-allow-headers':'content-type,x-admin-pin',
     ...extra
   });
   res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
