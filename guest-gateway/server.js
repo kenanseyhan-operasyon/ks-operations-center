@@ -73,85 +73,131 @@ let audioCtx = null;
 let alarmTimer = null;
 let armed = false;
 
-function esc(v){
-  return String(v).replace(/[&<>"]/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
-  });
-}
 function beep(){
   if(!audioCtx) return;
-  const o=audioCtx.createOscillator();
-  const g=audioCtx.createGain();
-  o.frequency.value=880;
-  g.gain.value=.2;
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start(); o.stop(audioCtx.currentTime+.25);
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.frequency.value = 880;
+  g.gain.value = 0.2;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.25);
 }
 function stopAlarm(){
   clearInterval(alarmTimer);
-  document.getElementById('alarm').className='';
+  document.getElementById('alarm').className = '';
 }
 function startAlarm(name){
-  document.getElementById('alarmName').textContent=name+' giriş izni istiyor';
-  document.getElementById('alarm').className='on';
+  document.getElementById('alarmName').textContent = name + ' giriş izni istiyor';
+  document.getElementById('alarm').className = 'on';
   beep();
   clearInterval(alarmTimer);
-  alarmTimer=setInterval(beep,1200);
+  alarmTimer = setInterval(beep, 1200);
   if(navigator.vibrate) navigator.vibrate([300,200,300,200,500]);
 }
-document.getElementById('arm').onclick=async function(){
+document.getElementById('arm').addEventListener('click', async function(){
   try{
-    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     await audioCtx.resume();
-    armed=true;
+    armed = true;
     beep();
-    this.textContent='Alarm Hazır ✓';
-    this.disabled=true;
+    this.textContent = 'Alarm Hazır ✓';
+    this.disabled = true;
   }catch(e){
-    this.textContent='Ses açılamadı';
+    this.textContent = 'Ses açılamadı';
   }
-};
-document.getElementById('test').onclick=function(){
-  if(!armed){alert('Önce Alarmı Hazırla butonuna basın.');return;}
+});
+document.getElementById('test').addEventListener('click', function(){
+  if(!armed){
+    alert('Önce Alarmı Hazırla butonuna basın.');
+    return;
+  }
   startAlarm('TEST');
-  setTimeout(stopAlarm,4000);
-};
-async function act(id,action){
+  setTimeout(stopAlarm, 4000);
+});
+
+async function act(id, action){
   stopAlarm();
-  await fetch('/api/admin/action',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,action}),cache:'no-store'});
+  await fetch('/api/admin/action', {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({id:id, action:action}),
+    cache:'no-store'
+  });
   load();
 }
-async function load(){
-  const conn=document.getElementById('conn');
-  try{
-    const r=await fetch('/api/admin/requests',{cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    conn.innerHTML='<span class="good">● BAĞLANDI</span> • '+new Date().toLocaleTimeString('tr-TR');
-    const list=document.getElementById('list');
-    if(!data.requests.length){
-      list.innerHTML='<div class="empty">Bekleyen talep yok.</div>';
-      return;
+
+function renderRequests(items){
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  if(!items.length){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Bekleyen talep yok.';
+    list.appendChild(empty);
+    return;
+  }
+  items.forEach(function(x){
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const name = document.createElement('b');
+    name.textContent = x.name;
+    card.appendChild(name);
+
+    const company = document.createElement('div');
+    company.className = 'muted';
+    company.textContent = x.company || 'Firma belirtilmedi';
+    card.appendChild(company);
+
+    const time = document.createElement('div');
+    time.className = 'muted';
+    time.textContent = new Date(x.createdAt).toLocaleString('tr-TR');
+    card.appendChild(time);
+
+    const status = document.createElement('div');
+    status.textContent = 'Durum: ' + x.status;
+    card.appendChild(status);
+
+    if(x.status === 'pending'){
+      const approve = document.createElement('button');
+      approve.className = 'ok';
+      approve.textContent = 'Onayla';
+      approve.addEventListener('click', function(){ act(x.id, 'approve'); });
+
+      const reject = document.createElement('button');
+      reject.className = 'no';
+      reject.textContent = 'Reddet';
+      reject.addEventListener('click', function(){ act(x.id, 'reject'); });
+
+      card.appendChild(approve);
+      card.appendChild(reject);
     }
-    list.innerHTML=data.requests.map(function(x){
-      const b=x.status==='pending'
-        ? '<button class="ok" onclick="act(\''+x.id+'\',\'approve\')">Onayla</button><button class="no" onclick="act(\''+x.id+'\',\'reject\')">Reddet</button>'
-        : '';
-      return '<div class="card"><b>'+esc(x.name)+'</b><div class="muted">'+esc(x.company||'Firma belirtilmedi')+'</div><div class="muted">'+new Date(x.createdAt).toLocaleString('tr-TR')+'</div><div>Durum: <b>'+esc(x.status)+'</b></div>'+b+'</div>';
-    }).join('');
-    data.requests.forEach(function(x){
-      if(x.status==='pending'&&!seen[x.id]){
-        seen[x.id]=true;
-        if(armed) startAlarm(x.name);
-      }
-    });
+    list.appendChild(card);
+
+    if(x.status === 'pending' && !seen[x.id]){
+      seen[x.id] = true;
+      if(armed) startAlarm(x.name);
+    }
+  });
+}
+
+async function load(){
+  const conn = document.getElementById('conn');
+  try{
+    const r = await fetch('/api/admin/requests', {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    conn.innerHTML = '<span class="good">● BAĞLANDI</span> • ' + new Date().toLocaleTimeString('tr-TR');
+    renderRequests(data.requests || []);
   }catch(e){
-    conn.innerHTML='<span class="bad">● BAĞLANTI HATASI</span>';
+    conn.innerHTML = '<span class="bad">● BAĞLANTI HATASI</span>';
   }
 }
 load();
-setInterval(load,1500);
-`;
+setInterval(load, 1500);
+`
 
 const server=http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://localhost');
